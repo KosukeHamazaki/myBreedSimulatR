@@ -345,8 +345,10 @@ lociInfo <- R6::R6Class(
     #' myLoci$plot(alpha = 0.1)
     plot = function(alpha = 0.01) {
       ends <- self$specie$lChr
+      genoMap <- self$genoMap
+      genoMap$chr <- factor(genoMap$chr, levels = self$specie$chrNames)
 
-      plotly::plot_ly(data = self$genoMap,
+      plotly::plot_ly(data = genoMap,
                       x = ~ chr,
                       y = ~ pos,
                       type = "scatter",

@@ -1017,6 +1017,7 @@ traitInfo <- R6::R6Class(
                     sizeQTLmin = 6,
                     sizeQTLmax = 12) {
       ends <- self$lociInfo$specie$lChr
+      chrNames <- self$lociInfo$specie$chrNames
       if (self$lociInfo$specie$simInfo$simPheno) {
         genoDetail <- self$genoMapDetail()
         genoDetail$rec <- round(genoDetail$rec, 3)
@@ -1052,6 +1053,7 @@ traitInfo <- R6::R6Class(
       } else {
         genoDetailMarkers <- self$genoMapDetail()[self$mrkPos, ]
       }
+      genoDetailMarkers$chr <- factor(genoDetailMarkers$chr, levels = chrNames)
       plt <- plotly::plot_ly(data = genoDetailMarkers,
                              x = ~ chr,
                              y = ~ pos,
@@ -1074,6 +1076,7 @@ traitInfo <- R6::R6Class(
                                          c(ends, rep(0, length(ends)))))
 
       if (self$lociInfo$specie$simInfo$simPheno) {
+        genoDetailQTLs$chr <- factor(genoDetailQTLs$chr, levels = chrNames)
         plt <- plt %>%
           plotly::add_markers(data = genoDetailQTLs,
                               x = ~ chr,
