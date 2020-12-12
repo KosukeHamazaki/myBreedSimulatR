@@ -413,7 +413,7 @@ simEval <- R6::R6Class(
         densityValueDf <- do.call(what = rbind,
                                   args = densityValueDfList)
         densityValueDf$Strategy <- rep(names(trueGVSummaryDfList), unlist(lapply(densityValueDfList, nrow)))
-
+        densityValueDf$Strategy <- factor(densityValueDf$Strategy, levels = names(trueGVSummaryDfList))
 
         plt <- plot_ly(
           data = densityValueDf,
