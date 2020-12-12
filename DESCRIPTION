@@ -1,0 +1,65 @@
+Type: Package
+Package: myBreedSimulatR
+Title: R Breeding Simulator
+Version: 0.1.2
+Date: 2020-11-06
+Authors@R: 
+    c(person(given = "Julien",
+             family = "Diot",
+             role = c("aut", "cre"),
+             email = "juliendiot@ut-biomet.org"),
+      person(given = "Kosuke",
+             family = "Hamazaki",
+             role = c("aut", "ctb"),
+             email = "hamazaki@ut-biomet.org"),
+      person(given = "Hiroyoshi",
+             family = "Iwata",
+             role = c("aut", "ctb"),
+             email = "aiwata@mail.ecc.u-tokyo.ac.jp"))
+Description: R package providing classes and functions to
+    simulate breeding schemes.
+License: MIT + file LICENSE
+URL: https://github.com/ut-biomet/breedSimulatR
+BugReports: https://github.com/ut-biomet/breedSimulatR/issues
+Depends: 
+    R (>= 3.5.0)
+Imports: 
+    Rcpp,
+    plotly,
+    ggplot2,
+    R6,
+    pbmcapply,
+    parallel,
+    RAINBOWR,
+    tidyr,
+    lme4,
+    glmnet,
+    BGLR (>= 1.0.9),
+    stringr,
+    EMMREML,
+    TSP,
+    Rfast,
+    here,
+    OOR
+Suggests:
+    covr,
+    devtools,
+    knitr,
+    microbenchmark,
+    pkgdown,
+    rmarkdown,
+    roxygen2,
+    spelling,
+    testthat
+VignetteBuilder: 
+    knitr
+Copyright: The University of Tokyo, Laboratory of Biometry and
+    Bioinfomatics.
+Encoding: UTF-8
+Language: en-US
+LazyData: true
+LinkingTo: 
+    Rcpp
+Maintainers@R: person("Julien", "Diot", email =
+    "juliendiot@ut-biomet.org", role = c("aut", "cre"))
+RoxygenNote: 7.1.1
