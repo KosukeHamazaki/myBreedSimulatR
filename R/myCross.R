@@ -604,13 +604,15 @@ crossInfo <- R6::R6Class(
 
       if (!is.null(nProgenies)) {
         stopifnot(is.numeric(nProgenies))
-        if (length(nProgenies) == 1) {
-          nProgenies <- rep(nProgenies, nPairs)
-        }
+        if (!is.null(nPairs)) {
+          if (length(nProgenies) == 1) {
+            nProgenies <- rep(nProgenies, nPairs)
+          }
 
-        if (length(nProgenies) != nPairs) {
-          nPairs <- length(nProgenies)
-          warning("`nPairs` should be equal to `length(nProgenies)`!")
+          if (length(nProgenies) != nPairs) {
+            nPairs <- length(nProgenies)
+            warning("`nPairs` should be equal to `length(nProgenies)`!")
+          }
         }
       }
 
@@ -799,17 +801,20 @@ crossInfo <- R6::R6Class(
           stop("Please provide individuals' names as a character vector.")
         }
 
-        if (length(indNames) == nPairs) {
-          nameMethod <- "pairBase"
-        } else if (length(indNames) == nNextPop) {
+
+        if (length(indNames) == nNextPop) {
           nameMethod <- "individualBase"
         } else if (length(indNames) == 1) {
           if (nameMethod == "userSpecific") {
             nameMethod <- "pairBase"
             message("You set `indNames` with length 1, so `nameMethod` will be set as 'pairBase'.")
           }
-        } else {
-          stop('"length(indNames)" must be equal to "1", "nPairs" or to "nNextPop"')
+        } else if (!is.null(nPairs)) {
+          if (length(indNames) == nPairs) {
+            nameMethod <- "pairBase"
+          } else {
+            stop('"length(indNames)" must be equal to "1", "nPairs" or to "nNextPop"')
+          }
         }
       } else {
         generationNow <- parentPopulation$generation
