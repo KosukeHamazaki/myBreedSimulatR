@@ -194,9 +194,13 @@ Else, we will summary the simulation results in `summaryAllResAt` path.}
 
 \item{\code{simBsRes}}{[list] Simulation results of each method}
 
+\item{\code{trueGVMatInit}}{[matrix] A true GV matrix for initial population}
+
 \item{\code{trueGVMatList}}{[list] A list of true GV matrix of simulation results}
 
 \item{\code{trueGVSummaryArray}}{[array] An array of summary statistics of true GVs for each population & each iteration}
+
+\item{\code{estimatedGVMatInit}}{[matrix] An estimated GV matrix for initial population}
 
 \item{\code{estimatedGVMatList}}{[list] A list of estimated GV matrix of simulation results}
 
