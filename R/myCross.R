@@ -1577,7 +1577,7 @@ crossInfo <- R6::R6Class(
       X <- cbind(Intercept = rep(1, nrow(genoMat)),
                  genoMat)
 
-      favAllel <- sign(lociEffects[-1, ] > 0)
+      favAllel <- sign(lociEffects[-1, , drop = FALSE] > 0)
 
       w <- matrix(data = rep(parentPopulation$af, ncol(favAllel)),
                   nrow = nrow(favAllel),
@@ -1590,8 +1590,8 @@ crossInfo <- R6::R6Class(
       w[w == 0] <- 1 # give weight 1 for fixed alleles
       w <- w ^ (-0.5)
 
-      W_lociEffects <- rbind(lociEffects[1, ],
-                             lociEffects[-1, ] * w)
+      W_lociEffects <- rbind(lociEffects[1, , drop = FALSE],
+                             lociEffects[-1, , drop = FALSE] * w)
       WBV <- X %*% W_lociEffects
 
       self$WBV <- WBV
@@ -1614,7 +1614,7 @@ crossInfo <- R6::R6Class(
         blockSplitMethod <- self$blockSplitMethod
         genoMap <- parentPopulation$traitInfo$lociInfo$genoMap
 
-        lociEffectsWOIntercept <- lociEffects[-1, ]
+        lociEffectsWOIntercept <- lociEffects[-1, , drop = FALSE]
 
         chr <- genoMap$chr
         chrUnique <- unique(chr)
@@ -1656,8 +1656,8 @@ crossInfo <- R6::R6Class(
                                     haploArrayNow <- haploArray[, blockRangeNow, ]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]
-                                    haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, ]
-                                    haploEff_2 <- haploArray_2 %*% lociEffectsWOIntercept[blockRangeNow, ]
+                                    haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
+                                    haploEff_2 <- haploArray_2 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
 
                                     haploEffMax <- pmax(haploEff_1, haploEff_2)
 
@@ -2234,7 +2234,7 @@ crossInfo <- R6::R6Class(
         blockSplitMethod <- self$blockSplitMethod
         genoMap <- parentPopulation$traitInfo$lociInfo$genoMap
 
-        lociEffectsWOIntercept <- lociEffects[-1, ]
+        lociEffectsWOIntercept <- lociEffects[-1, , drop = FALSE]
 
         chr <- genoMap$chr
         chrUnique <- unique(chr)
@@ -2275,8 +2275,8 @@ crossInfo <- R6::R6Class(
                                     haploArrayNow <- haploArray[, blockRangeNow, ]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]
-                                    haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, ]
-                                    haploEff_2 <- haploArray_2 %*% lociEffectsWOIntercept[blockRangeNow, ]
+                                    haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
+                                    haploEff_2 <- haploArray_2 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
 
                                     haploEffMax <- pmax(haploEff_1, haploEff_2)
 
