@@ -40,7 +40,8 @@ Imports:
     TSP,
     Rfast,
     here,
-    OOR
+    OOR,
+    abind
 Suggests:
     covr,
     devtools,

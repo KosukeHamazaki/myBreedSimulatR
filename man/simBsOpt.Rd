@@ -218,6 +218,8 @@ Else, we will summary the simulation results in `summaryAllResAt` path.}
 
 \item{\code{hStart}}{[numeric] Initial values of hyper parameters}
 
+\item{\code{solnInit}}{[list] List of solution of StoSOO for initial state}
+
 \item{\code{hVecOptList}}{[list] List of optimized hyperparameters in each generation}
 
 \item{\code{simBsRes}}{[list] Simulation results of each method}

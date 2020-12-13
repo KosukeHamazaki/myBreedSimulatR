@@ -1711,50 +1711,52 @@ simBs <- R6::R6Class(
           }
         }
 
-        if (showProgress) {
-          simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
-                                             FUN = private$performOneSimulationTryError,
-                                             mc.cores = nCores)
-        } else {
-          simResAll <- parallel::mclapply(X = (1:nIterSimulation)[conductSimulations],
-                                          FUN = private$performOneSimulationTryError,
-                                          mc.cores = nCores)
+        if (any(conductSimulations)) {
+          if (showProgress) {
+            simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
+                                               FUN = private$performOneSimulationTryError,
+                                               mc.cores = nCores)
+          } else {
+            simResAll <- parallel::mclapply(X = (1:nIterSimulation)[conductSimulations],
+                                            FUN = private$performOneSimulationTryError,
+                                            mc.cores = nCores)
+          }
+          names(simResAll) <- iterNames[conductSimulations]
+
+          if ("all" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$all[iterNames[conductSimulations]] <- lapply(simResAll, function(x) x$all)
+          }
+
+          if ("max" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$max[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$max))
+          }
+
+          if ("mean" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$mean[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$mean))
+          }
+
+          if ("median" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$median[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$median))
+          }
+
+          if ("min" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$min[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$min))
+          }
+
+          trueGVMatListNow <- lapply(simResAll, function(x) x$trueGVMatList)
+          self$trueGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
+                                                                      function(iterName) {
+                                                                        c(self$trueGVMatList[[iterName]],
+                                                                          trueGVMatListNow[[iterName]])
+                                                                      }, simplify = FALSE)
+
+          estimatedGVMatListNow <- lapply(simResAll, function(x) x$estimatedGVMatList)
+          self$estimatedGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
+                                                                           function(iterName) {
+                                                                             c(self$estimatedGVMatList[[iterName]],
+                                                                               estimatedGVMatListNow[[iterName]])
+                                                                           }, simplify = FALSE)
         }
-        names(simResAll) <- iterNames[conductSimulations]
-
-        if ("all" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$all[iterNames[conductSimulations]] <- lapply(simResAll, function(x) x$all)
-        }
-
-        if ("max" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$max[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$max))
-        }
-
-        if ("mean" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$mean[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$mean))
-        }
-
-        if ("median" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$median[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$median))
-        }
-
-        if ("min" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$min[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$min))
-        }
-
-        trueGVMatListNow <- lapply(simResAll, function(x) x$trueGVMatList)
-        self$trueGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
-                                                                    function(iterName) {
-                                                                      c(self$trueGVMatList[[iterName]],
-                                                                        trueGVMatListNow[[iterName]])
-                                                                    }, simplify = FALSE)
-
-        estimatedGVMatListNow <- lapply(simResAll, function(x) x$estimatedGVMatList)
-        self$estimatedGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
-                                                                         function(iterName) {
-                                                                           c(self$estimatedGVMatList[[iterName]],
-                                                                             estimatedGVMatListNow[[iterName]])
-                                                                         }, simplify = FALSE)
       }
     },
 
@@ -2102,6 +2104,55 @@ simBs <- R6::R6Class(
     #
     # @param iterNo [numeric] Iteration No.
     performOneSimulation = function (iterNo) {
+      simBsName <- self$simBsName
+      bsInfoInit <- self$bsInfoInit
+      breederInfoInit <- self$breederInfoInit
+      nIterSimulation <- self$nIterSimulation
+      nGenerationProceed <- self$nGenerationProceed
+      nRefreshMemoryEvery <- self$nRefreshMemoryEvery
+      updateBreederInfo <- self$updateBreederInfo
+      phenotypingInds <- self$phenotypingInds
+      nRepForPheno <- self$nRepForPheno
+      updateModels <- self$updateModels
+      nSelectionWaysVec <- self$nSelectionWaysVec
+      selectionMethodList <- self$selectionMethodList
+      traitNoSelList <- self$traitNoSelList
+      blockSplitMethod <- self$blockSplitMethod
+      nMrkInBlock <- self$nMrkInBlock
+      minimumSegmentLength <- self$minimumSegmentLength
+      nIterOPV <- self$nIterOPV
+      nProgeniesEMBVVec <- self$nProgeniesEMBVVec
+      nIterEMBV <- self$nIterEMBV
+      nCoresEMBV <- self$nCoresEMBV
+      clusteringForSelList <- self$clusteringForSelList
+      nClusterList <- self$nClusterList
+      nTopClusterList <- self$nTopClusterList
+      nTopEachList <- self$nTopEachList
+      nSelList <- self$nSelList
+      matingMethodVec <- self$matingMethodVec
+      allocateMethodVec <- self$allocateMethodVec
+      weightedAllocationMethodList <- self$weightedAllocationMethodList
+      traitNoRAList <- self$traitNoRAList
+      hList <- self$hList
+      includeGVPVec <- self$includeGVPVec
+      nNextPopVec <- self$nNextPopVec
+      nameMethod <- self$nameMethod
+      nCores <- self$nCores
+      overWriteRes <- self$overWriteRes
+      showProgress <- self$showProgress
+      returnMethod <- self$returnMethod
+      saveAllResAt <- self$saveAllResAt
+      evaluateGVMethod <- self$evaluateGVMethod
+      traitNoEval <- self$traitNoEval
+      hEval <- self$hEval
+      verbose <- self$verbose
+
+      populationNameInit <- names(bsInfoInit$populations[bsInfoInit$generation])
+
+      iterNames <- paste0("Iteration_", 1:nIterSimulation)
+      lociEffectsInit <- self$lociEffectsInit
+
+
       iterName <- iterNames[iterNo]
       simRes <- list()
       simRes$trueGVMatList <- list()
@@ -2324,6 +2375,22 @@ simBs <- R6::R6Class(
     #
     # @param iterName [character] Iteration Name
     extractGVMatList = function (iterName) {
+      # Read arguments from `self`
+      simBsName <- self$simBsName
+      bsInfoInit <- self$bsInfoInit
+      showProgress <- self$showProgress
+      evaluateGVMethod <- self$evaluateGVMethod
+      simBsRes <- self$simBsRes
+      summaryAllResAt <- self$summaryAllResAt
+      nIterSimulation <- self$nIterSimulation
+      iterNames <- paste0("Iteration_", 1:nIterSimulation)
+
+      fileNameBsInfoRes0 <- here::here(summaryAllResAt,
+                                       paste0(simBsName, "_bsInfo_"))
+      fileNameBreederInfoRes0 <- here::here(summaryAllResAt,
+                                            paste0(simBsName, "_breederInfo_"))
+
+
       fileNameBsInfoRes <- paste0(fileNameBsInfoRes0, iterName, ".rds")
       bsInfoEach <- try(readRDS(file = fileNameBsInfoRes), silent = TRUE)
 
