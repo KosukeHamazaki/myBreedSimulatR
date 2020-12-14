@@ -2868,6 +2868,12 @@ simBsOpt <- R6::R6Class(
     performOneSimulationOptTryError = function (iterNo) {
       simRes <- try(private$performOneSimulationOpt(iterNo = iterNo),
                     silent = TRUE)
+
+      nIterSimulation <- self$nIterSimulation
+      iterNames <- paste0("Iteration_", 1:nIterSimulation)
+
+      iterName <- iterNames[iterNo]
+
       if ("try-error" %in% class(simRes)) {
         simRes <- list()
         simRes$trueGVMatList <- list()
