@@ -1651,9 +1651,11 @@ crossInfo <- R6::R6Class(
         blockRanges <- do.call(what = c,
                                args = blockRangesList)
 
+        blockRanges <- blockRanges[unlist(lapply(blockRanges, length)) != 0]
+
         haploEffMaxList <- lapply(X = blockRanges,
                                   FUN = function (blockRangeNow) {
-                                    haploArrayNow <- haploArray[, blockRangeNow, ]
+                                    haploArrayNow <- haploArray[, blockRangeNow, , drop = FALSE]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]
                                     haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
@@ -2270,9 +2272,11 @@ crossInfo <- R6::R6Class(
         blockRanges <- do.call(what = c,
                                args = blockRangesList)
 
+        blockRanges <- blockRanges[unlist(lapply(blockRanges, length)) != 0]
+
         haploEffMaxList <- lapply(X = blockRanges,
                                   FUN = function (blockRangeNow) {
-                                    haploArrayNow <- haploArray[, blockRangeNow, ]
+                                    haploArrayNow <- haploArray[, blockRangeNow, , drop = FALSE]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]
                                     haploEff_1 <- haploArray_1 %*% lociEffectsWOIntercept[blockRangeNow, , drop = FALSE]
