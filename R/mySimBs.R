@@ -2353,13 +2353,13 @@ simBs <- R6::R6Class(
 
       iterName <- iterNames[iterNo]
 
+      bsInfoInit <- self$bsInfoInit
+      populationNameInit <- names(bsInfoInit$populations[bsInfoInit$generation])
+
       if ("try-error" %in% class(simRes)) {
         simRes <- list()
         simRes$trueGVMatList <- list()
         simRes$estimatedGVMatList <- list()
-
-        bsInfo <- bsInfoInit$clone(deep = FALSE)
-        breederInfo <- breederInfoInit$clone(deep = FALSE)
 
         # trueGVMatList
         if (is.null(self$trueGVMatList[[iterName]])) {
