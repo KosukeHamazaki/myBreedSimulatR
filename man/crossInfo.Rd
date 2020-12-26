@@ -97,6 +97,8 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 
 \item{\code{minimumSegmentLength}}{[numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.}
 
+\item{\code{nSelInitOPV}}{[numeric] Number of selected candiates for first screening before selecting parent candidates by OPV}
+
 \item{\code{nIterOPV}}{[numeric] Number of iterations for computation of OPV}
 
 \item{\code{nProgeniesEMBV}}{[numeric] Number of progenies of double haploids produced when computing EMBV}
@@ -114,6 +116,11 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 \item{\code{nTopEach}}{[numeric] Number of selected individuals in each cluster}
 
 \item{\code{nSel}}{[numeric] Number of selection candidates}
+
+\item{\code{multiTraitsEvalMethod}}{[character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)}
+
+\item{\code{hSel}}{[numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.}
 
 \item{\code{matingMethod}}{[character] Mating method}
 
@@ -224,6 +231,7 @@ Create a new population object.
   blockSplitMethod = NULL,
   nMrkInBlock = NULL,
   minimumSegmentLength = NULL,
+  nSelInitOPV = NULL,
   nIterOPV = NULL,
   nProgeniesEMBV = NULL,
   nIterEMBV = NULL,
@@ -233,6 +241,8 @@ Create a new population object.
   nTopCluster = NULL,
   nTopEach = NULL,
   nSel = NULL,
+  multiTraitsEvalMethod = NULL,
+  hSel = NULL,
   matingMethod = "randomMate",
   allocateMethod = "equalAllocation",
   weightedAllocationMethod = NULL,
@@ -277,6 +287,8 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 
 \item{\code{minimumSegmentLength}}{[numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.}
 
+\item{\code{nSelInitOPV}}{[numeric] Number of selected candiates for first screening before selecting parent candidates by OPV}
+
 \item{\code{nIterOPV}}{[numeric] Number of iterations for computation of OPV}
 
 \item{\code{nProgeniesEMBV}}{[numeric] Number of progenies of double haploids produced when computing EMBV}
@@ -294,6 +306,11 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 \item{\code{nTopEach}}{[numeric] Number of selected individuals in each cluster}
 
 \item{\code{nSel}}{[numeric] Number of selection candidates}
+
+\item{\code{multiTraitsEvalMethod}}{[character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)}
+
+\item{\code{hSel}}{[numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.}
 
 \item{\code{matingMethod}}{[character] Mating method}
 
@@ -427,11 +444,14 @@ If you set `addCands = TRUE`, you can add selection candidates by setting each p
   nSelectionWaysPlus = NA,
   selectionMethod = NULL,
   traitNoSel = NULL,
+  nSelInitOPV = NULL,
   clusteringForSel = NULL,
   nCluster = NULL,
   nTopCluster = NULL,
   nTopEach = NULL,
   nSel = NULL,
+  multiTraitsEvalMethod = NULL,
+  hSel = NULL,
   parentCands = NULL,
   addCands = FALSE
 )}\if{html}{\out{</div>}}
@@ -446,6 +466,8 @@ If you set `addCands = TRUE`, you can add selection candidates by setting each p
 
 \item{\code{traitNoSel}}{[numeric / list] (list of) number of trait No of your interest for selection when you want to add candidates}
 
+\item{\code{nSelInitOPV}}{[numeric] Number of selected candiates for first screening before selecting parent candidates by OPV}
+
 \item{\code{clusteringForSel}}{[logical] Apply clustering results of marker genotype to selection or not when you want to add candidates}
 
 \item{\code{nCluster}}{[numeric] Number of clusters when you want to add candidates}
@@ -455,6 +477,11 @@ If you set `addCands = TRUE`, you can add selection candidates by setting each p
 \item{\code{nTopEach}}{[numeric] Number of selected individuals in each cluster when you want to add candidates}
 
 \item{\code{nSel}}{[numeric] Number of selection candidates when you want to add candidates}
+
+\item{\code{multiTraitsEvalMethod}}{[character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)}
+
+\item{\code{hSel}}{[numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.}
 
 \item{\code{parentCands}}{[character] Names of selection candidates to be added}
 

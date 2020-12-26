@@ -76,6 +76,8 @@ simBs <- R6::R6Class(
     nMrkInBlock = NULL,
     #' @field minimumSegmentLength [numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.
     minimumSegmentLength = NULL,
+    #' @field nSelInitOPVList [list] (list of) Number of selected candiates for first screening before selecting parent candidates by OPV for each generation
+    nSelInitOPVList = NULL,
     #' @field nIterOPV [numeric] Number of iterations for computation of OPV
     nIterOPV = NULL,
     #' @field nProgeniesEMBVVec [numeric] Number of progenies of double haploids produced when computing EMBV for each generation
@@ -94,6 +96,11 @@ simBs <- R6::R6Class(
     nTopEachList = NULL,
     #' @field nSelList [list] (list of) Number of selection candidates for each generation
     nSelList = NULL,
+    #' @field multiTraitsEvalMethodList [list] (list of) When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+    #' One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)
+    multiTraitsEvalMethodList = NULL,
+    #' @field hSelList [list] (list of) Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits for each generation
+    hSelList = NULL,
     #' @field matingMethodVec [character] Mating method for each generation
     matingMethodVec = NULL,
     #' @field allocateMethodVec [character] Allocation method for each generation
@@ -187,6 +194,7 @@ simBs <- R6::R6Class(
     #' You can define the number of markers in each block (`nMrkInBlock`) or the minimum length of each segment (`minimumSegmentLength`).
     #' @param nMrkInBlock [numeric] Number of markers in each block. This will be used for the computation of OHV.
     #' @param minimumSegmentLength [numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.
+    #' @param nSelInitOPVList [list] (list of) Number of selected candiates for first screening before selecting parent candidates by OPV for each generation
     #' @param nIterOPV [numeric] Number of iterations for computation of OPV
     #' @param nProgeniesEMBVVec [numeric] Number of progenies of double haploids produced when computing EMBV for each generation
     #' @param nIterEMBV [numeric] Number of iterations to estimate EMBV
@@ -196,6 +204,9 @@ simBs <- R6::R6Class(
     #' @param nTopClusterList [list] (list of) Number of top clusters used for selection for each generation
     #' @param nTopEachList [list] (list of) Number of selected individuals in each cluster for each generation
     #' @param nSelList [list] (list of) Number of selection candidates for each generation
+    #' @param multiTraitsEvalMethodList [list] (list of) When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+    #' One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)
+    #' @param hSelList [list] (list of) Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits for each generation
     #' @param matingMethodVec [character] Mating method for each generation
     #' @param allocateMethodVec [character] Allocation method for each generation
     #' @param weightedAllocationMethodList [list] (list of) Which selection index will be used for weighted resource allocation for each generation
@@ -312,6 +323,7 @@ simBs <- R6::R6Class(
                           blockSplitMethod = NULL,
                           nMrkInBlock = NULL,
                           minimumSegmentLength = NULL,
+                          nSelInitOPVList = NULL,
                           nIterOPV = NULL,
                           nProgeniesEMBVVec = NULL,
                           nIterEMBV = NULL,
@@ -321,6 +333,8 @@ simBs <- R6::R6Class(
                           nTopClusterList = NULL,
                           nTopEachList = NULL,
                           nSelList = NULL,
+                          multiTraitsEvalMethodList = NULL,
+                          hSelList = NULL,
                           matingMethodVec = NULL,
                           allocateMethodVec = NULL,
                           weightedAllocationMethodList = NULL,
@@ -355,8 +369,9 @@ simBs <- R6::R6Class(
                                 "selfing", "maxGenDist", "userSpecific")
       allocateMethodsOffered <- c("equalAllocation", "weightedAllocation", "userSpecific")
       blockSplitMethodsOffered <- c("nMrkInBlock", "minimumSegmentLength")
+      multiTraitsEvalMethodsOffered <- c("sum", "prod")
       nameMethodsOffered <- c("pairBase", "individualBase")
-      returnMethodsOffered <- c("all", "summary", "max", "mean", "median", "min")
+      returnMethodsOffered <- c("all", "summary", "max", "mean", "median", "min", "var")
 
 
       # simBsName
@@ -629,7 +644,10 @@ simBs <- R6::R6Class(
         selectionMethodList <- "nonSelection"
         message(paste0("`selectionMethodList` is not specified. We substitute `selectionMethodList = list(",
                        selectionMethodList,")` instead."))
-        selectionMethodList <- list(selectionMethodList)
+        selectionMethodList <- sapply(X = nSelectionWaysVec,
+                                      FUN = function(nSelectionWays) {
+                                        rep(selectionMethodList, nSelectionWays)
+                                      }, simplify = FALSE)
       }
 
       if (!(length(selectionMethodList) %in% c(1, nGenerationProceed))) {
@@ -682,7 +700,7 @@ simBs <- R6::R6Class(
       stopifnot(all(unlist(lapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, is.numeric)))))))
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x >= 1)))))))
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x <= nTraits)))))))
-      stopifnot(all(unlist(lapply(traitNoRAList, length)) == nSelectionWaysVec))
+      stopifnot(all(unlist(lapply(traitNoSelList, length)) == nSelectionWaysVec))
 
       names(traitNoSelList) <- 1:nGenerationProceed
 
@@ -752,7 +770,10 @@ simBs <- R6::R6Class(
         clusteringForSelList <- FALSE
         message(paste0("`clusteringForSelList` is not specified. We substitute `clusteringForSelList = list(",
                        clusteringForSelList,")` instead."))
-        clusteringForSelList <- list(clusteringForSelList)
+        clusteringForSelList <- sapply(X = nSelectionWaysVec,
+                                       FUN = function(nSelectionWays) {
+                                         rep(clusteringForSelList, nSelectionWays)
+                                       }, simplify = FALSE)
       }
 
       if (!(length(clusteringForSelList) %in% c(1, nGenerationProceed))) {
@@ -776,7 +797,10 @@ simBs <- R6::R6Class(
         nSelList <- nIndNow %/% 10
         message(paste0("`nSelList` is not specified. We substitute `nSelList = list(",
                        nSelList,")` instead."))
-        nSelList <- list(nSelList)
+        nSelList <- sapply(X = nSelectionWaysVec,
+                           FUN = function(nSelectionWays) {
+                             rep(nSelList, nSelectionWays)
+                           }, simplify = FALSE)
       }
 
       if (!(length(nSelList) %in% c(1, nGenerationProceed))) {
@@ -801,6 +825,58 @@ simBs <- R6::R6Class(
       names(nSelList) <- 1:nGenerationProceed
 
 
+      # nSelInitOPVList
+      if (!is.null(nSelInitOPVList)) {
+        if (!is.list(nSelInitOPVList)) {
+          nSelInitOPVList <- list(nSelInitOPVList)
+        }
+      } else {
+        nSelInitOPVList <- nIndNow %/% 2
+        if (any(unlist(lapply(selectionMethodList, function(selectionMethod) "selectOPV" %in% selectionMethod)))) {
+          message(paste0("`nSelInitOPVList` is not specified. We substitute `nSelInitOPVList = list(",
+                         nSelInitOPVList,")` instead."))
+        }
+        nSelInitOPVList <- sapply(X = nSelectionWaysVec,
+                                  FUN = function(nSelectionWays) {
+                                    rep(nSelInitOPVList, nSelectionWays)
+                                  }, simplify = FALSE)
+      }
+
+      if (!(length(nSelInitOPVList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(nSelInitOPVList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(nSelInitOPVList) == 1) {
+        nSelInitOPVList <- rep(nSelInitOPVList, nGenerationProceed)
+      }
+      stopifnot(all(unlist(lapply(nSelInitOPVList, length)) == nSelectionWaysVec))
+      stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
+      stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
+
+      whereNSelSatisfy <- unlist(mapply(FUN = function(nSelInitOPV, nSel) {
+        all(nSelInitOPV >= nSel)
+      },
+      nSelInitOPVList,
+      nSelList))
+
+      if (any(!whereNSelSatisfy)) {
+        if (any(lapply(selectionMethodList, function(selectionMethod) "selectOPV" %in% selectionMethod))) {
+          message("`nSelInitOPV` should be larger than `nSel`. We substitute `nSelInitOPV` by `nSel` when `nSelInitOPV` is smaller than `nSel`.")
+        }
+
+        nSelInitOPVList[whereNSelSatisfy] <- sapply(X = (1:nGenerationProceed)[whereNSelSatisfy],
+                                                    FUN = function(generationProceedNo) {
+                                                      nSelInitOPV <- nSelInitOPVList[generationProceedNo]
+                                                      nSel <- nSelList[generationProceedNo]
+
+                                                      nSelInitOPV[nSelInitOPV < nSel] <- nSel[nSelInitOPV < nSel]
+
+                                                      return(nSelInitOPV)
+                                                    }, simplify = FALSE)
+      }
+
+      names(nSelInitOPVList) <- 1:nGenerationProceed
+
+
+
 
       # nClusterList
       if (!is.null(nClusterList)) {
@@ -811,7 +887,10 @@ simBs <- R6::R6Class(
         nClusterList <- 5
         message(paste0("`nClusterList` is not specified. We substitute `nClusterList = list(",
                        nClusterList,")` instead."))
-        nClusterList <- list(nClusterList)
+        nClusterList <- sapply(X = nSelectionWaysVec,
+                               FUN = function(nSelectionWays) {
+                                 rep(nClusterList, nSelectionWays)
+                               }, simplify = FALSE)
       }
 
       if (!(length(nClusterList) %in% c(1, nGenerationProceed))) {
@@ -845,7 +924,10 @@ simBs <- R6::R6Class(
         nTopClusterList <- 5
         message(paste0("`nTopClusterList` is not specified. We substitute `nTopClusterList = list(",
                        nTopClusterList,")` instead."))
-        nTopClusterList <- list(nTopClusterList)
+        nTopClusterList <- sapply(X = nSelectionWaysVec,
+                                  FUN = function(nSelectionWays) {
+                                    rep(nTopClusterList, nSelectionWays)
+                                  }, simplify = FALSE)
       }
 
       if (!(length(nTopClusterList) %in% c(1, nGenerationProceed))) {
@@ -900,6 +982,81 @@ simBs <- R6::R6Class(
       stopifnot(all(unlist(lapply(nTopEachList, is.numeric))))
 
       names(nTopEachList) <- 1:nGenerationProceed
+
+
+      # multiTraitsEvalMethodList
+      if (!is.null(multiTraitsEvalMethodList)) {
+        if (!is.list(multiTraitsEvalMethodList)) {
+          multiTraitsEvalMethodList <- list(multiTraitsEvalMethodList)
+        }
+      } else {
+        multiTraitsEvalMethodList <- "sum"
+        message(paste0("`multiTraitsEvalMethodList` is not specified. We substitute `multiTraitsEvalMethodList = list(",
+                       multiTraitsEvalMethodList,")` instead."))
+        multiTraitsEvalMethodList <- sapply(X = nSelectionWaysVec,
+                                            FUN = function(nSelectionWays) {
+                                              rep(multiTraitsEvalMethodList, nSelectionWays)
+                                            }, simplify = FALSE)
+      }
+
+      if (!(length(multiTraitsEvalMethodList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(multiTraitsEvalMethodList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(multiTraitsEvalMethodList) == 1) {
+        multiTraitsEvalMethodList <- rep(multiTraitsEvalMethodList, nGenerationProceed)
+      }
+      names(multiTraitsEvalMethodList) <- 1:nGenerationProceed
+      stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, length)) == nSelectionWaysVec))
+      stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, function(x) all(x %in% multiTraitsEvalMethodsOffered)))))
+
+
+
+      # hSelList
+      if (!is.null(hSelList)) {
+        if (!is.list(hSelList)) {
+          hSelList <- sapply(nSelectionWaysVec,
+                             function (nSelectionWays) {
+                               hSelListNow <- rep(list(hSelList), nSelectionWays)
+
+                               return(hSelListNow)
+                             }, simplify = FALSE)
+        } else if (!is.list(hSelList[[1]])) {
+          hSelList <- sapply(nSelectionWaysVec,
+                             function (nSelectionWays) {
+                               hSelListNow <- rep(hSelList, nSelectionWays)
+
+                               return(hSelListNow)
+                             }, simplify = FALSE)
+        }
+      } else {
+        hSelList <- 1
+        message(paste0("`hSelList` is not specified. We substitute `hSelList = list(list(",
+                       hSelList,"))` instead."))
+        hSelList <- sapply(1:nGenerationProceed,
+                           function (generationProceedNo) {
+
+                             hSelListNow <- sapply(X = traitNoSelList[[generationProceedNo]],
+                                                   FUN = function (traitNoSelNow) {
+                                                     rep(hSelList, length(traitNoSelNow))
+                                                   }, simplify = FALSE)
+
+                             return(hSelListNow)
+                           }, simplify = FALSE)
+      }
+
+      if (!(length(hSelList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(hSelList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(hSelList) == 1) {
+        hSelList <- rep(hSelList, nGenerationProceed)
+      }
+      stopifnot(all(unlist(lapply(hSelList, is.list))))
+      stopifnot(all(unlist(lapply(hSelList, function(hSel) all(unlist(lapply(hSel, is.numeric)))))))
+      stopifnot(all(sapply(hSelList, function(hSel) all(unlist(lapply(hSel, function(x) all(x >= 0)))))))
+      stopifnot(all(unlist(lapply(hSelList, length)) == nSelectionWaysVec))
+
+      names(hSelList) <- 1:nGenerationProceed
+
+      stopifnot(all(unlist(lapply(X = hSelList, FUN = function(x) lapply(x, length))) ==
+                      unlist(lapply(X = traitNoSelList, FUN = function(x) lapply(x, length)))))
 
 
       # matingMethodVec
@@ -1007,7 +1164,14 @@ simBs <- R6::R6Class(
         hList <- 0.1
         message(paste0("`hList` is not specified. We substitute `hList = list(",
                        hList,")` instead."))
-        hList <- list(hList)
+        hList <- sapply(X = 1:nGenerationProceed,
+                        FUN = function(generationProceedNo) {
+                          hLenNow <- length(traitNoRAList[[generationProceedNo]]) *
+                            (length(weightedAllocationMethodList[[generationProceedNo]]) +
+                               includeGVPVec[generationProceedNo])
+
+                          return(rep(hList, hLenNow))
+                        }, simplify = FALSE)
       }
 
       if (!(length(hList) %in% c(1, nGenerationProceed))) {
@@ -1053,8 +1217,7 @@ simBs <- R6::R6Class(
       } else {
         nProgeniesEMBVVec <- round(2 * nNextPopVec / min(unlist(lapply(nSelList, sum)), nNextPopVec))
         if (any(unlist(lapply(selectionMethodList, function(selectionMethod) "selectEMBV" %in% selectionMethod)))) {
-          message(paste0("`nProgeniesEMBVVec` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nProgeniesEMBVVec = c(",
+          message(paste0("`nProgeniesEMBVVec` is not specified. We substitute `nProgeniesEMBVVec = c(",
                          paste(nProgeniesEMBVVec, collapse = ", "),
                          ")` instead."))
         }
@@ -1077,8 +1240,7 @@ simBs <- R6::R6Class(
       } else {
         nIterEMBV <- 10
         if (any(unlist(lapply(selectionMethodList, function(selectionMethod) "selectEMBV" %in% selectionMethod)))) {
-          message(paste0("`nIterEMBV` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
+          message(paste0("`nIterEMBV` is not specified. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
         }
       }
 
@@ -1279,6 +1441,7 @@ simBs <- R6::R6Class(
       self$blockSplitMethod <- blockSplitMethod
       self$nMrkInBlock <- nMrkInBlock
       self$minimumSegmentLength <- minimumSegmentLength
+      self$nSelInitOPVList <- nSelInitOPVList
       self$nIterOPV <- nIterOPV
       self$nProgeniesEMBVVec <- nProgeniesEMBVVec
       self$nIterEMBV <- nIterEMBV
@@ -1288,6 +1451,8 @@ simBs <- R6::R6Class(
       self$nTopClusterList <- nTopClusterList
       self$nTopEachList <- nTopEachList
       self$nSelList <- nSelList
+      self$multiTraitsEvalMethodList <- multiTraitsEvalMethodList
+      self$hSelList <- hSelList
       self$matingMethodVec <- matingMethodVec
       self$allocateMethodVec <- allocateMethodVec
       self$weightedAllocationMethodList <- weightedAllocationMethodList
@@ -1370,6 +1535,7 @@ simBs <- R6::R6Class(
       blockSplitMethod <- self$blockSplitMethod
       nMrkInBlock <- self$nMrkInBlock
       minimumSegmentLength <- self$minimumSegmentLength
+      nSelInitOPVList <- self$nSelInitOPVList
       nIterOPV <- self$nIterOPV
       nProgeniesEMBVVec <- self$nProgeniesEMBVVec
       nIterEMBV <- self$nIterEMBV
@@ -1379,6 +1545,8 @@ simBs <- R6::R6Class(
       nTopClusterList <- self$nTopClusterList
       nTopEachList <- self$nTopEachList
       nSelList <- self$nSelList
+      multiTraitsEvalMethodList <- self$multiTraitsEvalMethodList
+      hSelList <- self$hSelList
       matingMethodVec <- self$matingMethodVec
       allocateMethodVec <- self$allocateMethodVec
       weightedAllocationMethodList <- self$weightedAllocationMethodList
@@ -1440,6 +1608,10 @@ simBs <- R6::R6Class(
 
         if ("min" %in% returnMethod) {
           self$simBsRes[[simBsName]]$min <- c()
+        }
+
+        if ("var" %in% returnMethod) {
+          self$simBsRes[[simBsName]]$var <- c()
         }
       }
 
@@ -1515,6 +1687,7 @@ simBs <- R6::R6Class(
                                                              blockSplitMethod = blockSplitMethod,
                                                              nMrkInBlock = nMrkInBlock,
                                                              minimumSegmentLength = minimumSegmentLength,
+                                                             nSelInitOPV = nSelInitOPVList[[genProceedNo]],
                                                              nIterOPV = nIterOPV,
                                                              nProgeniesEMBV = nProgeniesEMBVVec[genProceedNo],
                                                              nIterEMBV = nIterEMBV,
@@ -1524,6 +1697,8 @@ simBs <- R6::R6Class(
                                                              nTopCluster = nTopClusterList[[genProceedNo]],
                                                              nTopEach = nTopEachList[[genProceedNo]],
                                                              nSel = nSelList[[genProceedNo]],
+                                                             multiTraitsEvalMethod = multiTraitsEvalMethodList[[genProceedNo]],
+                                                             hSel = hSelList[[genProceedNo]],
                                                              matingMethod = matingMethodVec[genProceedNo],
                                                              allocateMethod = allocateMethodVec[genProceedNo],
                                                              weightedAllocationMethod = weightedAllocationMethodList[[genProceedNo]],
@@ -1606,7 +1781,7 @@ simBs <- R6::R6Class(
               self$simBsRes[[simBsName]]$all[[iterName]] <- list(bsInfo = bsInfo,
                                                                  breederInfo = breederInfo)
             }
-            if (any(returnMethod %in% c("summary", "max", "mean", "median", "min"))) {
+            if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
               populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
               if (any(c("all", "summary") %in% returnMethod)) {
                 trueGVMat <- self$trueGVMatList[[iterName]][[populationNameNow]]
@@ -1661,6 +1836,10 @@ simBs <- R6::R6Class(
 
               if ("min" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$min[iterName] <- min(x = trueEvals)
+              }
+
+              if ("var" %in% returnMethod) {
+                self$simBsRes[[simBsName]]$var[iterName] <- var(x = trueEvals)
               }
             }
 
@@ -1743,6 +1922,10 @@ simBs <- R6::R6Class(
             self$simBsRes[[simBsName]]$min[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$min))
           }
 
+          if ("var" %in% returnMethod) {
+            self$simBsRes[[simBsName]]$var[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$var))
+          }
+
           trueGVMatListNow <- lapply(simResAll, function(x) x$trueGVMatList)
           self$trueGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
                                                                       function(iterName) {
@@ -1822,7 +2005,7 @@ simBs <- R6::R6Class(
 
       trueGVSummaryArray <- do.call(what = abind::abind,
                                     args = trueGVSummaryArrayList)
-      dimnames(trueGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min"),
+      dimnames(trueGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                        Population = names(trueGVMatList[[1]]),
                                                        Iteration = names(trueGVMatList))
 
@@ -1837,7 +2020,7 @@ simBs <- R6::R6Class(
 
       estimatedGVSummaryArray <- do.call(what = abind::abind,
                                          args = estimatedGVSummaryArrayList)
-      dimnames(estimatedGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min"),
+      dimnames(estimatedGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                             Population = names(estimatedGVMatList[[1]]),
                                                             Iteration = names(estimatedGVMatList))
 
@@ -2120,6 +2303,7 @@ simBs <- R6::R6Class(
       blockSplitMethod <- self$blockSplitMethod
       nMrkInBlock <- self$nMrkInBlock
       minimumSegmentLength <- self$minimumSegmentLength
+      nSelInitOPVList <- self$nSelInitOPVList
       nIterOPV <- self$nIterOPV
       nProgeniesEMBVVec <- self$nProgeniesEMBVVec
       nIterEMBV <- self$nIterEMBV
@@ -2129,6 +2313,8 @@ simBs <- R6::R6Class(
       nTopClusterList <- self$nTopClusterList
       nTopEachList <- self$nTopEachList
       nSelList <- self$nSelList
+      multiTraitsEvalMethodList <- self$multiTraitsEvalMethodList
+      hSelList <- self$hSelList
       matingMethodVec <- self$matingMethodVec
       allocateMethodVec <- self$allocateMethodVec
       weightedAllocationMethodList <- self$weightedAllocationMethodList
@@ -2183,6 +2369,7 @@ simBs <- R6::R6Class(
                                                        blockSplitMethod = blockSplitMethod,
                                                        nMrkInBlock = nMrkInBlock,
                                                        minimumSegmentLength = minimumSegmentLength,
+                                                       nSelInitOPV = nSelInitOPVList[[genProceedNo]],
                                                        nIterOPV = nIterOPV,
                                                        nProgeniesEMBV = nProgeniesEMBVVec[genProceedNo],
                                                        nIterEMBV = nIterEMBV,
@@ -2192,6 +2379,8 @@ simBs <- R6::R6Class(
                                                        nTopCluster = nTopClusterList[[genProceedNo]],
                                                        nTopEach = nTopEachList[[genProceedNo]],
                                                        nSel = nSelList[[genProceedNo]],
+                                                       multiTraitsEvalMethod = multiTraitsEvalMethodList[[genProceedNo]],
+                                                       hSel = hSelList[[genProceedNo]],
                                                        matingMethod = matingMethodVec[genProceedNo],
                                                        allocateMethod = allocateMethodVec[genProceedNo],
                                                        weightedAllocationMethod = weightedAllocationMethodList[[genProceedNo]],
@@ -2274,7 +2463,7 @@ simBs <- R6::R6Class(
         simRes$all <- list(bsInfo = bsInfo,
                            breederInfo = breederInfo)
       }
-      if (any(returnMethod %in% c("summary", "max", "mean", "median", "min"))) {
+      if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
         populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
         if (any(c("all", "summary") %in% returnMethod)) {
           trueGVMat <- simRes$trueGVMatList[[populationNameNow]]
@@ -2329,6 +2518,10 @@ simBs <- R6::R6Class(
 
         if ("min" %in% returnMethod) {
           simRes$min <- min(x = trueEvals)
+        }
+
+        if ("var" %in% returnMethod) {
+          simRes$var <- var(x = trueEvals)
         }
       }
 
@@ -2466,7 +2659,8 @@ simBs <- R6::R6Class(
                                                                              trueGVSummaryEachPopEachTrait <- c(max(trueGVMatEachPopEachTrait),
                                                                                                                 mean(trueGVMatEachPopEachTrait),
                                                                                                                 median(trueGVMatEachPopEachTrait),
-                                                                                                                min(trueGVMatEachPopEachTrait))
+                                                                                                                min(trueGVMatEachPopEachTrait),
+                                                                                                                var(trueGVMatEachPopEachTrait))
 
                                                                              return(trueGVSummaryEachPopEachTrait)
                                                                            })
@@ -2500,7 +2694,8 @@ simBs <- R6::R6Class(
                                                                                        estimatedGVSummaryEachPopEachTrait <- c(max(estimatedGVMatEachPopEachTrait),
                                                                                                                                mean(estimatedGVMatEachPopEachTrait),
                                                                                                                                median(estimatedGVMatEachPopEachTrait),
-                                                                                                                               min(estimatedGVMatEachPopEachTrait))
+                                                                                                                               min(estimatedGVMatEachPopEachTrait),
+                                                                                                                               var(estimatedGVMatEachPopEachTrait))
 
                                                                                        return(estimatedGVSummaryEachPopEachTrait)
                                                                                      })

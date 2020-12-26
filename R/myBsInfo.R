@@ -754,6 +754,7 @@ bsInfo <- R6::R6Class(
       traitInfo <- self$traitInfo
       nLoci <- lociInfo$nLoci()
       lociNames <- lociInfo$genoMap$lociNames
+      lociNames <- stringr::str_sort(x = lociNames, numeric = TRUE)
       nTraits <- traitInfo$nTraits
       traitNames <- traitInfo$traitNames
 

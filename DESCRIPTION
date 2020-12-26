@@ -1,8 +1,8 @@
 Type: Package
 Package: myBreedSimulatR
-Title: R Breeding Simulator
-Version: 0.1.2
-Date: 2020-11-06
+Title: R Breeding Simulator for K.Hamazaki
+Version: 0.2.1
+Date: 2020-12-21
 Authors@R: 
     c(person(given = "Julien",
              family = "Diot",
@@ -41,7 +41,8 @@ Imports:
     Rfast,
     here,
     OOR,
-    abind
+    abind,
+    readr
 Suggests:
     covr,
     devtools,

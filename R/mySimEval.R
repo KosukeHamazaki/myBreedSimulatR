@@ -236,6 +236,12 @@ simEval <- R6::R6Class(
       }
 
 
+      # plotTarget
+      plotTargetsOffered <- c("all", "summary", "max", "mean", "median", "min", "var")
+
+      stopifnot(length(plotTarget) == 1)
+      stopifnot(plotTarget %in% plotTargetsOffered)
+
       # plotGVMethod
       if (!is.null(plotGVMethod)) {
         if (!(plotGVMethod %in% lociEffMethodsOffered)) {

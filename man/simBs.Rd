@@ -135,6 +135,8 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 
 \item{\code{minimumSegmentLength}}{[numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.}
 
+\item{\code{nSelInitOPVList}}{[list] (list of) Number of selected candiates for first screening before selecting parent candidates by OPV for each generation}
+
 \item{\code{nIterOPV}}{[numeric] Number of iterations for computation of OPV}
 
 \item{\code{nProgeniesEMBVVec}}{[numeric] Number of progenies of double haploids produced when computing EMBV for each generation}
@@ -152,6 +154,11 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 \item{\code{nTopEachList}}{[list] (list of) Number of selected individuals in each cluster for each generation}
 
 \item{\code{nSelList}}{[list] (list of) Number of selection candidates for each generation}
+
+\item{\code{multiTraitsEvalMethodList}}{[list] (list of) When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)}
+
+\item{\code{hSelList}}{[list] (list of) Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits for each generation}
 
 \item{\code{matingMethodVec}}{[character] Mating method for each generation}
 
@@ -249,6 +256,7 @@ Create a new specie object.
   blockSplitMethod = NULL,
   nMrkInBlock = NULL,
   minimumSegmentLength = NULL,
+  nSelInitOPVList = NULL,
   nIterOPV = NULL,
   nProgeniesEMBVVec = NULL,
   nIterEMBV = NULL,
@@ -258,6 +266,8 @@ Create a new specie object.
   nTopClusterList = NULL,
   nTopEachList = NULL,
   nSelList = NULL,
+  multiTraitsEvalMethodList = NULL,
+  hSelList = NULL,
   matingMethodVec = NULL,
   allocateMethodVec = NULL,
   weightedAllocationMethodList = NULL,
@@ -338,6 +348,8 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 
 \item{\code{minimumSegmentLength}}{[numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.}
 
+\item{\code{nSelInitOPVList}}{[list] (list of) Number of selected candiates for first screening before selecting parent candidates by OPV for each generation}
+
 \item{\code{nIterOPV}}{[numeric] Number of iterations for computation of OPV}
 
 \item{\code{nProgeniesEMBVVec}}{[numeric] Number of progenies of double haploids produced when computing EMBV for each generation}
@@ -355,6 +367,11 @@ You can define the number of markers in each block (`nMrkInBlock`) or the minimu
 \item{\code{nTopEachList}}{[list] (list of) Number of selected individuals in each cluster for each generation}
 
 \item{\code{nSelList}}{[list] (list of) Number of selection candidates for each generation}
+
+\item{\code{multiTraitsEvalMethodList}}{[list] (list of) When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)}
+
+\item{\code{hSelList}}{[list] (list of) Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits for each generation}
 
 \item{\code{matingMethodVec}}{[character] Mating method for each generation}
 

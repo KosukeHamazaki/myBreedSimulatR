@@ -2224,6 +2224,7 @@ breederInfo <- R6::R6Class(
       traitInfo <- bsInfo$traitInfo
       nLoci <- lociInfo$nLoci()
       lociNames <- lociInfo$genoMap$lociNames
+      lociNames <- stringr::str_sort(x = lociNames, numeric = TRUE)
       nTraits <- traitInfo$nTraits
       traitNames <- traitInfo$traitNames
       populationsFB <- self$populationsFB

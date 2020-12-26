@@ -4,7 +4,7 @@
 \name{myBreedSimulatR-package}
 \alias{myBreedSimulatR}
 \alias{myBreedSimulatR-package}
-\title{myBreedSimulatR: R Breeding Simulator}
+\title{myBreedSimulatR: R Breeding Simulator for K.Hamazaki}
 \description{
 R package providing classes and functions to
     simulate breeding schemes.

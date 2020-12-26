@@ -39,6 +39,8 @@ crossInfo <- R6::R6Class(
     nMrkInBlock = NULL,
     #' @field minimumSegmentLength [numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.
     minimumSegmentLength = NULL,
+    #' @field nSelInitOPV [numeric] Number of selected candiates for first screening before selecting parent candidates by OPV
+    nSelInitOPV = NULL,
     #' @field nIterOPV [numeric] Number of iterations for computation of OPV
     nIterOPV = NULL,
     #' @field nProgeniesEMBV [numeric] Number of progenies of double haploids produced when computing EMBV
@@ -57,6 +59,11 @@ crossInfo <- R6::R6Class(
     nTopEach = NULL,
     #' @field nSel [numeric] Number of selection candidates
     nSel = NULL,
+    #' @field multiTraitsEvalMethod [character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+    #' One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)
+    multiTraitsEvalMethod = NULL,
+    #' @field hSel [numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.
+    hSel = NULL,
     #' @field matingMethod [character] Mating method
     matingMethod = NULL,
     #' @field allocateMethod [character] Allocation method
@@ -119,6 +126,7 @@ crossInfo <- R6::R6Class(
     #' You can define the number of markers in each block (`nMrkInBlock`) or the minimum length of each segment (`minimumSegmentLength`).
     #' @param nMrkInBlock [numeric] Number of markers in each block. This will be used for the computation of OHV.
     #' @param minimumSegmentLength [numeric] Minimum length of each segment [cM]. This will be used for the computation of OHV.
+    #' @param nSelInitOPV [numeric] Number of selected candiates for first screening before selecting parent candidates by OPV
     #' @param nIterOPV [numeric] Number of iterations for computation of OPV
     #' @param nProgeniesEMBV [numeric] Number of progenies of double haploids produced when computing EMBV
     #' @param nIterEMBV [numeric] Number of iterations to estimate EMBV
@@ -128,6 +136,9 @@ crossInfo <- R6::R6Class(
     #' @param nTopCluster [numeric] Number of top clusters used for selection
     #' @param nTopEach [numeric] Number of selected individuals in each cluster
     #' @param nSel [numeric] Number of selection candidates
+    #' @param multiTraitsEvalMethod [character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+    #' One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)
+    #' @param hSel [numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.
     #' @param matingMethod [character] Mating method
     #' @param allocateMethod [character] Allocation method
     #' @param weightedAllocationMethod [character] Which selection index will be used for weighted resource allocation
@@ -204,6 +215,7 @@ crossInfo <- R6::R6Class(
                           blockSplitMethod = NULL,
                           nMrkInBlock = NULL,
                           minimumSegmentLength = NULL,
+                          nSelInitOPV = NULL,
                           nIterOPV = NULL,
                           nProgeniesEMBV = NULL,
                           nIterEMBV = NULL,
@@ -213,6 +225,8 @@ crossInfo <- R6::R6Class(
                           nTopCluster = NULL,
                           nTopEach = NULL,
                           nSel = NULL,
+                          multiTraitsEvalMethod = NULL,
+                          hSel = NULL,
                           matingMethod = "randomMate",
                           allocateMethod = "equalAllocation",
                           weightedAllocationMethod = NULL,
@@ -240,6 +254,8 @@ crossInfo <- R6::R6Class(
       allocateMethodsOffered <- c("equalAllocation", "weightedAllocation", "userSpecific")
       nameMethodsOffered <- c("pairBase", "individualBase")
       blockSplitMethodsOffered <- c("nMrkInBlock", "minimumSegmentLength")
+      multiTraitsEvalMethodsOffered <- c("sum", "prod")
+
 
       nIndNow <- parentPopulation$nInd
       nTraits <- parentPopulation$traitInfo$nTraits
@@ -342,17 +358,20 @@ crossInfo <- R6::R6Class(
           message("You do not specify the weighted allocation method. User selection indices will be used for weighted resource allocation")
         }
       }
-      if (!is.null(weightedAllocationMethod)) {
-        if ("userSI" %in% weightedAllocationMethod) {
-          if (is.null(userSI)) {
-            stop("You must specify `userSI` argument if you use user-defined selection indices!!")
-          }
-        } else if (any(weightedAllocationMethod %in% selectionMethodsWithMrkEff)) {
-          if (is.null(lociEffects)) {
-            stop("You must specify `lociEffects` argument if you use marker-based selection indices!!")
+      if (allocateMethod == "weightedAllocation") {
+        if (!is.null(weightedAllocationMethod)) {
+          if ("userSI" %in% weightedAllocationMethod) {
+            if (is.null(userSI)) {
+              stop("You must specify `userSI` argument if you use user-defined selection indices!!")
+            }
+          } else if (any(weightedAllocationMethod %in% selectionMethodsWithMrkEff)) {
+            if (is.null(lociEffects)) {
+              stop("You must specify `lociEffects` argument if you use marker-based selection indices!!")
+            }
           }
         }
       }
+
 
 
       if (matingMethod == "makeDH") {
@@ -401,8 +420,7 @@ crossInfo <- R6::R6Class(
         }
       } else {
         traitNoSel <- 1
-        message(paste0("`traitNoSel` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `traitNoSel = ", traitNoSel,"` instead."))
+        message(paste0("`traitNoSel` is not specified. We substitute `traitNoSel = ", traitNoSel,"` instead."))
         traitNoSel <- rep(list(traitNoSel), nSelectionWays)
         traitNoSel[!whereSelection] <- rep(list(NA), sum(!whereSelection))
       }
@@ -416,8 +434,7 @@ crossInfo <- R6::R6Class(
       } else {
         if (allocateMethod == "weightedAllocation"){
           traitNoRA <- 1
-          message(paste0("`traitNoRA` is not specified even though you choose ", allocateMethod,
-                         " method. We substitute `traitNoRA = ", traitNoRA,"` instead."))
+          message(paste0("`traitNoRA` is not specified. We substitute `traitNoRA = ", traitNoRA,"` instead."))
         } else {
           traitNoRA <- NA
         }
@@ -436,8 +453,7 @@ crossInfo <- R6::R6Class(
         stopifnot(all(nSel <= nIndNow))
       } else {
         nSel <- nIndNow %/% 10
-        message(paste0("`nSel` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `nSel = ", nSel,"` instead."))
+        message(paste0("`nSel` is not specified. We substitute `nSel = ", nSel,"` instead."))
         nSel <- rep(nSel, nSelectionWays)
       }
       nSel[!whereSelection] <- nIndNow
@@ -464,8 +480,7 @@ crossInfo <- R6::R6Class(
       } else {
         nMrkInBlock <- min(parentPopulation$specie$nLoci) %/% 10
         if (any(c("selectOHV", "selectOPV") %in% selectionMethod)) {
-          message(paste0("`nMrkInBlock` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
+          message(paste0("`nMrkInBlock` is not specified. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
         }
       }
 
@@ -479,11 +494,36 @@ crossInfo <- R6::R6Class(
       } else {
         minimumSegmentLength <- 6.25
         if (any(c("selectOHV", "selectOPV") %in% selectionMethod)) {
-          message(paste0("`minimumSegmentLength` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `minimumSegmentLength = ", minimumSegmentLength,"` instead."))
+          message(paste0("`minimumSegmentLength` is not specified. We substitute `minimumSegmentLength = ", minimumSegmentLength,"` instead."))
         }
       }
 
+
+      # nSelInitOPV
+      if (!is.null(nSelInitOPV)) {
+        if (!(length(nSelInitOPV) %in% c(1, nSelectionWays))) {
+          stop(paste("length(nSelInitOPV) must be equal to 1 or equal to nSelectionWays."))
+        } else if (length(nSelInitOPV) == 1) {
+          nSelInitOPV <- rep(nSelInitOPV, nSelectionWays)
+        }
+
+        stopifnot(is.numeric(nSelInitOPV))
+        nSelInitOPV <- floor(nSelInitOPV)
+        stopifnot(all(nSelInitOPV <= nIndNow))
+      } else {
+        nSelInitOPV <- nIndNow %/% 2
+        if ("selectOPV" %in% selectionMethod) {
+          message(paste0("`nSelInitOPV` is not specified. We substitute `nSelInitOPV = ", nSelInitOPV,"` instead."))
+        }
+        nSelInitOPV <- rep(nSelInitOPV, nSelectionWays)
+      }
+
+      if (any(nSelInitOPV < nSel)) {
+        nSelInitOPV[nSelInitOPV < nSel] <- nSel[nSelInitOPV < nSel]
+        if ("selectOPV" %in% selectionMethod) {
+          message("`nSelInitOPV` should be larger than `nSel`. We substitute `nSelInitOPV` by `nSel` when `nSelInitOPV` is smaller than `nSel`.")
+        }
+      }
 
 
       # nIterOPV
@@ -494,8 +534,7 @@ crossInfo <- R6::R6Class(
       } else {
         nIterOPV <- 5000
         if ("selectOPV" %in% selectionMethod) {
-          message(paste0("`nIterOPV` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nIterOPV = ", nIterOPV,"` instead."))
+          message(paste0("`nIterOPV` is not specified. We substitute `nIterOPV = ", nIterOPV,"` instead."))
         }
       }
 
@@ -511,14 +550,15 @@ crossInfo <- R6::R6Class(
         stopifnot(is.logical(clusteringForSel))
       } else {
         clusteringForSel <- FALSE
-        message(paste0("`clusteringForSel` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `clusteringForSel = ", clusteringForSel,"` instead."))
+        message(paste0("`clusteringForSel` is not specified. We substitute `clusteringForSel = ", clusteringForSel,"` instead."))
         clusteringForSel <- rep(clusteringForSel, nSelectionWays)
       }
 
       if ("selectOPV" %in% selectionMethod) {
+        if (any(clusteringForSel[selectionMethod %in% "selectOPV"])) {
+          message("When you use `selectOPV` for selection method, you cannot perform selection with clustering methods.")
+        }
         clusteringForSel[selectionMethod %in% "selectOPV"] <- FALSE
-        message("When you use `selectOPV` for selection method, you cannot perform selection with clustering methods.")
       }
 
 
@@ -533,8 +573,7 @@ crossInfo <- R6::R6Class(
         nCluster <- floor(nCluster)
       } else {
         nCluster <- ifelse(clusteringForSel, 10, 1)
-        message(paste0("`nCluster` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `nCluster = ", nCluster,"` instead."))
+        message(paste0("`nCluster` is not specified. We substitute `nCluster = ", nCluster,"` instead."))
         nCluster <- rep(nCluster, nSelectionWays)
       }
       nCluster[!whereSelection] <- NA
@@ -551,8 +590,7 @@ crossInfo <- R6::R6Class(
         nTopCluster <- floor(nTopCluster)
       } else {
         nTopCluster <- ifelse(clusteringForSel, 5, 1)
-        message(paste0("`nTopCluster` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `nTopCluster = ", nTopCluster,"` instead."))
+        message(paste0("`nTopCluster` is not specified. We substitute `nTopCluster = ", nTopCluster,"` instead."))
         nTopCluster <- rep(nTopCluster, nSelectionWays)
       }
       nTopCluster[!whereSelection] <- NA
@@ -576,11 +614,75 @@ crossInfo <- R6::R6Class(
         nTopEach <- floor(nTopEach)
       } else {
         nTopEach <- ifelse(clusteringForSel, nSel %/% nTopCluster, nSel)
-        message(paste0("`nTopEach` is not specified even though you choose ", selectionMethod,
-                       " method. We substitute `nTopEach = ", nTopEach,"` instead."))
+        message(paste0("`nTopEach` is not specified. We substitute `nTopEach = ", nTopEach,"` instead."))
         nTopEach <- rep(nTopEach, nSelectionWays)
       }
       nTopEach[!whereSelection] <- NA
+
+
+      # multiTraitsEvalMethod
+      if (!is.null(multiTraitsEvalMethod)) {
+        if (!all(multiTraitsEvalMethod %in% multiTraitsEvalMethodsOffered)) {
+          stop(paste0("We only offer the following selection methods: ",
+                      paste(multiTraitsEvalMethodsOffered, collapse = "; ")))
+        }
+      } else {
+        multiTraitsEvalMethod <- "sum"
+        message("You do not specify the way to evaluate multiple traits. Weighted sum of traits will be used for selection.")
+      }
+
+      if (!(length(multiTraitsEvalMethod) %in% c(1, nSelectionWays))) {
+        stop(paste("length(multiTraitsEvalMethod) must be equal to 1 or equal to nSelectionWays."))
+      } else if (length(multiTraitsEvalMethod) == 1) {
+        multiTraitsEvalMethod <- rep(multiTraitsEvalMethod, nSelectionWays)
+      }
+
+
+
+
+      # hSel
+      if (!is.null(hSel)) {
+        if (is.numeric(hSel)) {
+          stopifnot(is.numeric(hSel))
+          stopifnot(all(hSel >= 0))
+          if (length(hSel) == 1) {
+            hSel <- lapply(X = traitNoSel,
+                           FUN = function(traitNoSelNow) {
+                             hSelNow <- rep(hSel, length(traitNoSelNow))
+                             names(hSelNow) <- traitNoSelNow
+
+                             return(hSelNow)
+                           })
+          } else {
+            hSel <- rep(list(hSel), nSelectionWays)
+          }
+        } else if (is.list(hSel)) {
+          if (!(length(hSel) %in% c(1, nSelectionWays))) {
+            stop(paste("length(hSel) must be equal to 1 or equal to nSelectionWays."))
+          } else if (length(hSel) == 1) {
+            hSel <- rep(hSel, nSelectionWays)
+          }
+          stopifnot(all(unlist(lapply(hSel, is.numeric))))
+          stopifnot(all(unlist(lapply(hSel, function(x) all(x >= 0)))))
+        }
+      } else {
+        hSel <- 1
+        if (any(multiTraitsEvalMethod == "sum")) {
+          message(paste0("`hSel` is not specified. We substitute `hSel = ", hSel,"` instead."))
+        }
+
+        hSel <- lapply(X = traitNoSel,
+                       FUN = function(traitNoSelNow) {
+                         hSelNow <- rep(hSel, length(traitNoSelNow))
+                         names(hSelNow) <- traitNoSelNow
+
+                         return(hSelNow)
+                       })
+      }
+      stopifnot(all(unlist(lapply(X = hSel, FUN = length)) ==
+                      unlist(lapply(X = traitNoSel, FUN = length))))
+
+
 
 
       if (!is.null(nNextPop)) {
@@ -861,8 +963,7 @@ crossInfo <- R6::R6Class(
       } else {
         nProgeniesEMBV <- round(2 * nNextPop / min(sum(nSel), parentPopulation$nInd))
         if ("selectEMBV" %in% selectionMethod) {
-          message(paste0("`nProgeniesEMBV` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nProgeniesEMBV = ", nProgeniesEMBV,"` instead."))
+          message(paste0("`nProgeniesEMBV` is not specified. We substitute `nProgeniesEMBV = ", nProgeniesEMBV,"` instead."))
         }
       }
 
@@ -875,8 +976,7 @@ crossInfo <- R6::R6Class(
       } else {
         nIterEMBV <- 10
         if ("selectEMBV" %in% selectionMethod) {
-          message(paste0("`nIterEMBV` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
+          message(paste0("`nIterEMBV` is not specified. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
         }
       }
 
@@ -907,12 +1007,15 @@ crossInfo <- R6::R6Class(
       self$blockSplitMethod <- blockSplitMethod
       self$nMrkInBlock <- nMrkInBlock
       self$minimumSegmentLength <- minimumSegmentLength
+      self$nSelInitOPV <- nSelInitOPV
       self$nIterOPV <- nIterOPV
       self$clusteringForSel <- clusteringForSel
       self$nCluster <- nCluster
       self$nTopCluster <- nTopCluster
       self$nTopEach <- nTopEach
       self$nSel <- nSel
+      self$multiTraitsEvalMethod <- multiTraitsEvalMethod
+      self$hSel <- hSel
       self$matingMethod <- matingMethod
       self$allocateMethod <- allocateMethod
       self$weightedAllocationMethod <- weightedAllocationMethod
@@ -973,11 +1076,15 @@ crossInfo <- R6::R6Class(
     #' @param nSelectionWaysPlus [numeric] Number of selection ways when you want to add candidates
     #' @param selectionMethod [character] Selection method when you want to add candidates
     #' @param traitNoSel [numeric / list] (list of) number of trait No of your interest for selection when you want to add candidates
+    #' @param nSelInitOPV [numeric] Number of selected candiates for first screening before selecting parent candidates by OPV
     #' @param clusteringForSel [logical] Apply clustering results of marker genotype to selection or not when you want to add candidates
     #' @param nCluster [numeric] Number of clusters when you want to add candidates
     #' @param nTopCluster [numeric] Number of top clusters used for selection when you want to add candidates
     #' @param nTopEach [numeric] Number of selected individuals in each cluster when you want to add candidates
     #' @param nSel [numeric] Number of selection candidates when you want to add candidates
+    #' @param multiTraitsEvalMethod [character] When evaluating multiple traits, you can choose how to evaluate these traits simultaneously.
+    #' One method is to take a weighted sum of these traits, and the other is to compute a product of these traits (adjusted to be positive values in advance.)
+    #' @param hSel [numeric] Hyperparameter which determines which trait is weighted when selecting parent candidates for multiple traits.
     #' @param parentCands [character] Names of selection candidates to be added
     #' @param addCands [logical] If you set `addCands = TRUE`, you can add selection candidates by setting each parameter.
     #' In other words, the parameters above does not make sense.
@@ -986,11 +1093,14 @@ crossInfo <- R6::R6Class(
     selectParentCands = function(nSelectionWaysPlus = NA,
                                  selectionMethod = NULL,
                                  traitNoSel = NULL,
+                                 nSelInitOPV = NULL,
                                  clusteringForSel = NULL,
                                  nCluster = NULL,
                                  nTopCluster = NULL,
                                  nTopEach = NULL,
                                  nSel = NULL,
+                                 multiTraitsEvalMethod = NULL,
+                                 hSel = NULL,
                                  parentCands = NULL,
                                  addCands = FALSE) {
       selectionMethodsOffered <- c("nonSelection", "selectBV", "selectWBV", "selectOHV",
@@ -1013,7 +1123,10 @@ crossInfo <- R6::R6Class(
         nTopCluster <- self$nTopCluster
         nTopEach <- self$nTopEach
         nSel <- self$nSel
+        nSelInitOPV <- self$nSelInitOPV
         traitNoSel <- self$traitNoSel
+        multiTraitsEvalMethod <- self$multiTraitsEvalMethod
+        hSel <- self$hSel
       } else {
         ### check
         if (!is.na(nSelectionWaysPlus)) {
@@ -1086,8 +1199,7 @@ crossInfo <- R6::R6Class(
           }
         } else {
           traitNoSel <- 1
-          message(paste0("`traitNoSel` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `traitNoSel = ", traitNoSel,"` instead."))
+          message(paste0("`traitNoSel` is not specified. We substitute `traitNoSel = ", traitNoSel,"` instead."))
           traitNoSel <- rep(list(traitNoSel), nSelectionWaysPlus)
           traitNoSel[!whereSelection] <- rep(list(NA), sum(!whereSelection))
         }
@@ -1105,8 +1217,7 @@ crossInfo <- R6::R6Class(
           stopifnot(all(nSel <= nIndNow))
         } else {
           nSel <- nIndNow %/% 10
-          message(paste0("`nSel` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nSel = ", nSel,"` instead."))
+          message(paste0("`nSel` is not specified. We substitute `nSel = ", nSel,"` instead."))
           nSel <- rep(nSel, nSelectionWaysPlus)
         }
         nSel[!whereSelection] <- nIndNow
@@ -1122,14 +1233,15 @@ crossInfo <- R6::R6Class(
           stopifnot(is.logical(clusteringForSel))
         } else {
           clusteringForSel <- FALSE
-          message(paste0("`clusteringForSel` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `clusteringForSel = ", clusteringForSel,"` instead."))
+          message(paste0("`clusteringForSel` is not specified. We substitute `clusteringForSel = ", clusteringForSel,"` instead."))
           clusteringForSel <- rep(clusteringForSel, nSelectionWays)
         }
 
         if ("selectOPV" %in% selectionMethod) {
+          if (any(clusteringForSel[selectionMethod %in% "selectOPV"])) {
+            message("When you use `selectOPV` for selection method, you cannot perform selection with clustering methods.")
+          }
           clusteringForSel[selectionMethod %in% "selectOPV"] <- FALSE
-          message("When you use `selectOPV` for selection method, you cannot perform selection with clustering methods.")
         }
 
 
@@ -1144,8 +1256,7 @@ crossInfo <- R6::R6Class(
           nCluster <- floor(nCluster)
         } else {
           nCluster <- ifelse(clusteringForSel, 10, 1)
-          message(paste0("`nCluster` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nCluster = ", nCluster,"` instead."))
+          message(paste0("`nCluster` is not specified. We substitute `nCluster = ", nCluster,"` instead."))
           nCluster <- rep(nCluster, nSelectionWaysPlus)
         }
         nCluster[!whereSelection] <- NA
@@ -1162,8 +1273,7 @@ crossInfo <- R6::R6Class(
           nTopCluster <- floor(nTopCluster)
         } else {
           nTopCluster <- ifelse(clusteringForSel, 5, 1)
-          message(paste0("`nTopCluster` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nTopCluster = ", nTopCluster,"` instead."))
+          message(paste0("`nTopCluster` is not specified. We substitute `nTopCluster = ", nTopCluster,"` instead."))
           nTopCluster <- rep(nTopCluster, nSelectionWaysPlus)
         }
         nTopCluster[!whereSelection] <- NA
@@ -1187,11 +1297,95 @@ crossInfo <- R6::R6Class(
           nTopEach <- floor(nTopEach)
         } else {
           nTopEach <- ifelse(clusteringForSel, nSel %/% nTopCluster, nSel)
-          message(paste0("`nTopEach` is not specified even though you choose ", selectionMethod,
-                         " method. We substitute `nTopEach = ", nTopEach,"` instead."))
+          message(paste0("`nTopEach` is not specified. We substitute `nTopEach = ", nTopEach,"` instead."))
           nTopEach <- rep(nTopEach, nSelectionWaysPlus)
         }
         nTopEach[!whereSelection] <- NA
+
+
+        # nSelInitOPV
+        if (!is.null(nSelInitOPV)) {
+          if (!(length(nSelInitOPV) %in% c(1, nSelectionWays))) {
+            stop(paste("length(nSelInitOPV) must be equal to 1 or equal to nSelectionWays."))
+          } else if (length(nSelInitOPV) == 1) {
+            nSelInitOPV <- rep(nSelInitOPV, nSelectionWays)
+          }
+
+          stopifnot(is.numeric(nSelInitOPV))
+          nSelInitOPV <- floor(nSelInitOPV)
+          stopifnot(all(nSelInitOPV <= nIndNow))
+        } else {
+          nSelInitOPV <- nIndNow %/% 2
+          message(paste0("`nSelInitOPV` is not specified. We substitute `nSelInitOPV = ", nSelInitOPV,"` instead."))
+          nSelInitOPV <- rep(nSelInitOPV, nSelectionWays)
+        }
+        stopifnot(all(nSelInitOPV >= nSel))
+
+
+        # multiTraitsEvalMethod
+        if (!is.null(multiTraitsEvalMethod)) {
+          if (!all(multiTraitsEvalMethod %in% multiTraitsEvalMethodsOffered)) {
+            stop(paste0("We only offer the following selection methods: ",
+                        paste(multiTraitsEvalMethodsOffered, collapse = "; ")))
+          }
+        } else {
+          multiTraitsEvalMethod <- "sum"
+          message("You do not specify the way to evaluate multiple traits. Weighted sum of traits will be used for selection.")
+        }
+
+        if (!(length(multiTraitsEvalMethod) %in% c(1, nSelectionWays))) {
+          stop(paste("length(multiTraitsEvalMethod) must be equal to 1 or equal to nSelectionWays."))
+        } else if (length(multiTraitsEvalMethod) == 1) {
+          multiTraitsEvalMethod <- rep(multiTraitsEvalMethod, nSelectionWays)
+        }
+
+
+
+
+        # hSel
+        if (!is.null(hSel)) {
+          if (is.numeric(hSel)) {
+            stopifnot(is.numeric(hSel))
+            stopifnot(all(hSel >= 0))
+            if (length(hSel) == 1) {
+              hSel <- lapply(X = traitNoSel,
+                             FUN = function(traitNoSelNow) {
+                               hSelNow <- rep(hSel, length(traitNoSelNow))
+                               names(hSelNow) <- traitNoSelNow
+
+                               return(hSelNow)
+                             })
+            } else {
+              hSel <- rep(list(hSel), nSelectionWays)
+            }
+          } else if (is.list(hSel)) {
+            if (!(length(hSel) %in% c(1, nSelectionWays))) {
+              stop(paste("length(hSel) must be equal to 1 or equal to nSelectionWays."))
+            } else if (length(hSel) == 1) {
+              hSel <- rep(hSel, nSelectionWays)
+            }
+            stopifnot(all(unlist(lapply(hSel, is.numeric))))
+            stopifnot(all(unlist(lapply(hSel, function(x) all(x >= 0)))))
+          }
+        } else {
+          hSel <- 1
+          if (any(multiTraitsEvalMethod == "sum")) {
+            message(paste0("`hSel` is not specified. We substitute `hSel = ", hSel,"` instead."))
+          }
+
+          hSel <- lapply(X = traitNoSel,
+                         FUN = function(traitNoSelNow) {
+                           hSelNow <- rep(hSel, length(traitNoSelNow))
+                           names(hSelNow) <- traitNoSelNow
+
+                           return(hSelNow)
+                         })
+        }
+        stopifnot(all(unlist(lapply(X = hSel, FUN = length)) ==
+                        unlist(lapply(X = traitNoSel, FUN = length))))
+
+
+
 
         nSelectionWays <- nSelectionWaysPlus
         self$selectionMethod <- c(self$selectionMethod, selectionMethod)
@@ -1200,7 +1394,10 @@ crossInfo <- R6::R6Class(
         self$nTopCluster <- c(self$nTopCluster, nTopCluster)
         self$nTopEach <- c(self$nTopEach, nTopEach)
         self$nSel <- c(self$nSel, nSel)
+        self$nSelInitOPV <- c(self$nSelInitOPV, nSelInitOPV)
         self$traitNoSel <- c(self$traitNoSel, traitNoSel)
+        self$multiTraitsEvalMethod <- multiTraitsEvalMethod
+        self$hSel <- c(self$hSel, hSel)
       }
 
 
@@ -1210,20 +1407,22 @@ crossInfo <- R6::R6Class(
           if (selectionMethod[selectionWayNo] == "nonSelection") {
             parentCands <- names(self$parentPopulation$inds)
           } else if (selectionMethod[selectionWayNo] == "selectOPV") {
-            indNamesAll <- names(self$parentPopulation$inds)
+            if (is.null(self$BV)) {
+              BV <- self$computeBV
+            } else {
+              BV <- self$BV
+            }
+            BVNow <- BV[, traitNoSel[[selectionWayNo]], drop = FALSE]
 
-            # if (is.null(self$BV)) {
-            #   BV <- self$computeBV
-            # } else {
-            #   BV <- self$BV
-            # }
-            # BVNow <- BV[, traitNoSel[[selectionWayNo]], drop = FALSE]
-            # BVPositive <- t(t(BVNow) - apply(BVNow, 2, min))
-            # BVSel <- apply(X = BVPositive, MARGIN = 1, FUN = prod)
-            #
-            # indNamesCands <- names(private$extractTopN(v = BVSel, n = nSel[selectionWayNo]))
-
-            indNamesCands <- sample(x = indNamesAll, size = nSel[selectionWayNo])
+            if (multiTraitsEvalMethod[selectionWayNo] == "prod") {
+              BVPositive <- t(t(BVNow) - apply(BVNow, 2, min))
+              BVSel <- apply(X = BVPositive, MARGIN = 1, FUN = prod)
+            } else {
+              BVSel <- as.numeric(BVNow %*% as.matrix(hSel[[selectionWayNo]]))
+              names(BVSel) <- rownames(BVNow)
+            }
+            indNamesCandsInitAll <- names(private$extractTopN(v = BVSel, n = nSelInitOPV[selectionWayNo]))
+            indNamesCands <- sample(x = indNamesCandsInitAll, size = nSel[selectionWayNo])
 
             OPVNow <- private$computeOPV(indNamesCands = indNamesCands)[traitNoSel[[selectionWayNo]]]
             OPVSelNow <- sum(OPVNow)
@@ -1231,7 +1430,7 @@ crossInfo <- R6::R6Class(
             countOPV <- 0
             thresOPV <- self$nIterOPV %/% 3
             for (iterOPVNo in 1:self$nIterOPV) {
-              indNamesNonCands <- indNamesAll[!(indNamesAll %in% indNamesCands)]
+              indNamesNonCands <- indNamesCandsInitAll[!(indNamesCandsInitAll %in% indNamesCands)]
               # swapNos <- sample(1:max(1, nSel %/% 5), 1)
               # indNamesCandsCand <- c(sample(indNamesCands, nSel - swapNos), sample(indNamesNonCands, swapNos))
               indNamesCandsCand <- c(sample(indNamesCands, nSel - 1), sample(indNamesNonCands, 1))
@@ -1282,8 +1481,13 @@ crossInfo <- R6::R6Class(
             }
 
             BVNow <- BV[, traitNoSel[[selectionWayNo]], drop = FALSE]
-            BVPositive <- t(t(BVNow) - apply(BVNow, 2, min))
-            BVSel <- apply(X = BVPositive, MARGIN = 1, FUN = prod)
+            if (multiTraitsEvalMethod[selectionWayNo] == "prod") {
+              BVPositive <- t(t(BVNow) - apply(BVNow, 2, min))
+              BVSel <- apply(X = BVPositive, MARGIN = 1, FUN = prod)
+            } else {
+              BVSel <- as.numeric(BVNow %*% as.matrix(hSel[[selectionWayNo]]))
+              names(BVSel) <- rownames(BVNow)
+            }
 
 
             if (clusteringForSel) {

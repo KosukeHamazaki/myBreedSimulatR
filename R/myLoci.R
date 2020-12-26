@@ -253,7 +253,13 @@ lociInfo <- R6::R6Class(
 
       # sort position in increasing order (needed for the function
       # "findInterval" in individual's generateGametes method)
-      genoMap <- genoMap[order(genoMap$chr, genoMap$pos), ]
+      if (is.numeric(genoMap$chr)) {
+        chrNos <- genoMap$chr
+      } else {
+        chrChars <- as.character(genoMap$chr)
+        chrNos <- readr::parse_number(chrChars)
+      }
+      genoMap <- genoMap[order(chrNos, genoMap$pos), ]
 
 
       self$genoMap <- genoMap
