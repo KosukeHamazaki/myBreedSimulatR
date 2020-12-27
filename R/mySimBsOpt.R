@@ -2671,7 +2671,7 @@ simBsOpt <- R6::R6Class(
         hList <- sapply(X = self$hLens,
                         FUN = function (hLen) {
                           hVec[1:hLen]
-                        })
+                        }, simplify = FALSE)
       } else {
         hList <- split(x = hVec, f = rep(1:self$nGenerationProceedSimulation, self$hLens))
       }
