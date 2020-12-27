@@ -1885,7 +1885,7 @@ simBsOpt <- R6::R6Class(
           hListOpt <- sapply(X = hLens,
                              FUN = function (hLen) {
                                hVecOpt[1:hLen]
-                             })
+                             }, simplify = FALSE)
         } else {
           hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
         }
@@ -2055,7 +2055,7 @@ simBsOpt <- R6::R6Class(
                   hListOpt <- sapply(X = hLens,
                                      FUN = function (hLen) {
                                        hVecOpt[1:hLen]
-                                     })
+                                     }, simplify = FALSE)
                 } else {
                   hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
                 }
@@ -2873,7 +2873,7 @@ simBsOpt <- R6::R6Class(
           hListOpt <- sapply(X = hLens,
                              FUN = function (hLen) {
                                hVecOpt[1:hLen]
-                             })
+                             }, simplify = FALSE)
         } else {
           hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
         }
