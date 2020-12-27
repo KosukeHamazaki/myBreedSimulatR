@@ -1613,7 +1613,14 @@ crossInfo <- R6::R6Class(
         }
 
 
-        BVScaled <- scale(BVAll)
+        BVScaled <- apply(X = BVAll, MARGIN = 2,
+                          FUN = function(BV) {
+                           return(scale(x = BV, center = TRUE,
+                                        scale = as.logical(sd(BV))))
+                          })
+        rownames(BVScaled) <- rownames(BVAll)
+        colnames(BVScaled) <- colnames(BVAll)
+
         if (self$matingMethod != "makeDH") {
           BVEachPair <- (BVScaled[crosses0[, 1], , drop = FALSE] +
                            BVScaled[crosses0[, 2], , drop = FALSE]) / 2
@@ -2436,7 +2443,13 @@ crossInfo <- R6::R6Class(
       rownames(genVarProgenies) <- 1:nrow(crosses0)
       colnames(genVarProgenies) <- colnames(lociEffects)
 
-      genVarProgeniesScaled <- scale(genVarProgenies)
+      genVarProgeniesScaled <- apply(X = genVarProgenies, MARGIN = 2,
+                        FUN = function(genVarProgeniesEach) {
+                          return(scale(x = genVarProgeniesEach, center = TRUE,
+                                       scale = as.logical(sd(genVarProgeniesEach))))
+                        })
+      rownames(genVarProgeniesScaled) <- rownames(genVarProgenies)
+      colnames(genVarProgeniesScaled) <- colnames(genVarProgenies)
 
       return(genVarProgeniesScaled)
     },

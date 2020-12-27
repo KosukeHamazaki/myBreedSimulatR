@@ -1819,7 +1819,14 @@ simBs <- R6::R6Class(
                 trueGVMatNow <- estimatedGVMat
               }
 
-              trueGVMatScaled <- scale(trueGVMatNow)
+              trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
+                                FUN = function(trueGV) {
+                                  return(scale(x = trueGV, center = TRUE,
+                                               scale = as.logical(sd(trueGV))))
+                                })
+              rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
+              colnames(trueGVMatScaled) <- colnames(trueGVMatNowVAll)
+
               trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
               if ("max" %in% returnMethod) {
@@ -2501,7 +2508,14 @@ simBs <- R6::R6Class(
           trueGVMatNow <- estimatedGVMat
         }
 
-        trueGVMatScaled <- scale(trueGVMatNow)
+        trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
+                                 FUN = function(trueGV) {
+                                   return(scale(x = trueGV, center = TRUE,
+                                                scale = as.logical(sd(trueGV))))
+                                 })
+        rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
+        colnames(trueGVMatScaled) <- colnames(trueGVMatNowVAll)
+
         trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
         if ("max" %in% returnMethod) {
