@@ -1900,6 +1900,7 @@ crossInfo <- R6::R6Class(
     #' G3 (Bethesda). 8(4): 1173-1181.
     computeEMBV = function(){
       parentPopulation <- self$parentPopulation
+      lociEffects <- self$lociEffects
       nProgeniesEMBV <- self$nProgeniesEMBV
       nIterEMBV <- self$nIterEMBV
       nCoresEMBV <- self$nCoresEMBV
@@ -1922,7 +1923,13 @@ crossInfo <- R6::R6Class(
                                                                               traitInfo = parentPopulation$traitInfo,
                                                                               inds = newIndsEMBV,
                                                                               verbose = FALSE)
-                                                 trueGVMatAll <- newPopEMBV$trueGVMat
+                                                 # trueGVMatAll <- newPopEMBV$trueGVMat
+
+                                                 genoMatAll <- newPopEMBV$genoMat
+                                                 XAll <- cbind(Intercept = rep(1, nrow(genoMatAll)),
+                                                            genoMatAll)
+                                                 trueGVMatAll <- XAll %*% lociEffects
+
                                                  EMBVNow <- apply(X = trueGVMatAll,
                                                                   MARGIN = 2,
                                                                   FUN = function (trueGVEach) {
@@ -1956,7 +1963,13 @@ crossInfo <- R6::R6Class(
                                                                            traitInfo = parentPopulation$traitInfo,
                                                                            inds = newIndsEMBV,
                                                                            verbose = FALSE)
-                                              trueGVMatAll <- newPopEMBV$trueGVMat
+                                              # trueGVMatAll <- newPopEMBV$trueGVMat
+
+                                              genoMatAll <- newPopEMBV$genoMat
+                                              XAll <- cbind(Intercept = rep(1, nrow(genoMatAll)),
+                                                            genoMatAll)
+                                              trueGVMatAll <- XAll %*% lociEffects
+
                                               EMBVNow <- apply(X = trueGVMatAll,
                                                                MARGIN = 2,
                                                                FUN = function (trueGVEach) {
