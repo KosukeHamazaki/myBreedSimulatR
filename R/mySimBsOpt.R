@@ -2204,7 +2204,7 @@ simBsOpt <- R6::R6Class(
                                                         scale = as.logical(sd(trueGV))))
                                          })
                 rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
-                colnames(trueGVMatScaled) <- colnames(trueGVMatNowVAll)
+                colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
 
                 trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
@@ -3033,7 +3033,7 @@ simBsOpt <- R6::R6Class(
                                                 scale = as.logical(sd(trueGV))))
                                  })
         rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
-        colnames(trueGVMatScaled) <- colnames(trueGVMatNowVAll)
+        colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
 
         trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
