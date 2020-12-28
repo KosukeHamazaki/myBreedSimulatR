@@ -62,6 +62,10 @@ simBsOpt <- R6::R6Class(
     nIterSimulationPerEvaluation = NULL,
     #' @field nIterOptimization [numeric] Number of iterations required for one optimization
     nIterOptimization = NULL,
+    #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
+    #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
+    #' Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.
+    rewardWeightVec = NULL,
     #' @field digitsEval [numeric] When you evaluate each hyperparameter, you can round the average of evaluates (`eval`) with `round(eval, digitsEval)`.
     digitsEval = NULL,
     #' @field nRefreshMemoryEvery [numeric] Every `nRefreshMemoryEvery` iterations, we refresh memory used for simulations by `gc(reset = TRUE)`.
@@ -214,6 +218,9 @@ simBsOpt <- R6::R6Class(
     #' @param nTotalIterForOneOptimization [numeric] Number of total iterations that can be assigned for one optimization process
     #' @param nIterSimulationPerEvaluation [numeric] Number of simulations per one evaluation of the hyperparameter set of your interest
     #' @param nIterOptimization [numeric] Number of iterations required for one optimization
+    #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
+    #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
+    #' Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.
     #' @param digitsEval [numeric] When you evaluate each hyperparameter, you can round the average of evaluates (`eval`) with `round(eval, digitsEval)`.
     #' @param nRefreshMemoryEvery [numeric] Every `nRefreshMemoryEvery` iterations, we refresh memory used for simulations by `gc(reset = TRUE)`.
     #' @param updateBreederInfo [logical] Update breederInfo or not for each generation
@@ -360,6 +367,7 @@ simBsOpt <- R6::R6Class(
                           nTotalIterForOneOptimization = NULL,
                           nIterSimulationPerEvaluation = NULL,
                           nIterOptimization = NULL,
+                          rewardWeightVec = NULL,
                           digitsEval = NULL,
                           nRefreshMemoryEvery = NULL,
                           updateBreederInfo = TRUE,
@@ -578,6 +586,25 @@ simBsOpt <- R6::R6Class(
         message((paste0("We substitute `nTotalIterForOneOptimization = ",
                         nTotalIterForOneOptimization,"` instead.")))
       }
+
+
+      # rewardWeightVec
+      if (!is.null(rewardWeightVec)) {
+        stopifnot(is.numeric(rewardWeightVec))
+        rewardWeightVec <- floor(rewardWeightVec)
+        stopifnot(all(rewardWeightVec >= 0))
+      } else {
+        rewardWeightVec <- c(rep(0, nGenerationProceedSimulation - 1), 1)
+        message(paste0("`rewardWeightVec` is not specified. Instead, we substitute `rewardWeightVec = c(",
+                       paste(rewardWeightVec, collapse = ", "), ")`."))
+      }
+
+      if (!(length(rewardWeightVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(rewardWeightVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      } else if (length(rewardWeightVec) == 1) {
+        rewardWeightVec <- rep(rewardWeightVec, nGenerationProceedSimulation)
+      }
+      names(rewardWeightVec) <- 1:nGenerationProceedSimulation
 
 
       # digitsEval
@@ -1772,6 +1799,7 @@ simBsOpt <- R6::R6Class(
       nTotalIterForOneOptimization <- self$nTotalIterForOneOptimization
       nIterSimulationPerEvaluation <- self$nIterSimulationPerEvaluation
       nIterOptimization <- self$nIterOptimization
+      rewardWeightVec <- self$rewardWeightVec
       digitsEval <- self$digitsEval
       nRefreshMemoryEvery <- self$nRefreshMemoryEvery
       hLens <- self$hLens
@@ -2682,62 +2710,162 @@ simBsOpt <- R6::R6Class(
       } else {
         hList <- split(x = hVec, f = rep(1:self$nGenerationProceedSimulation, self$hLens))
       }
+      rewardWeightVec <- self$rewardWeightVec[(self$nGenerationProceedSimulation - nGenerationProceedSimulation + 1):self$nGenerationProceedSimulation]
+      rewardWeightVec <- rewardWeightVec / sum(rewardWeightVec)
+
+      nonZeroWeight <- rewardWeightVec != 0
 
 
-      simBsNow <- myBreedSimulatR::simBs$new(simBsName = self$simBsName,
-                                             bsInfoInit = self$bsInfoInit,
-                                             breederInfoInit = self$breederInfoInit,
-                                             lociEffMethod = self$lociEffMethod,
-                                             methodMLRInit = self$methodMLRInit,
-                                             multiTraitInit = self$multiTraitInit,
-                                             nIterSimulation = self$nIterSimulationPerEvaluation,
-                                             nGenerationProceed = nGenerationProceedSimulation,
-                                             nRefreshMemoryEvery = self$nRefreshMemoryEvery,
-                                             updateBreederInfo = self$updateBreederInfo[1:nGenerationProceedSimulation],
-                                             phenotypingInds = self$phenotypingInds[1:nGenerationProceedSimulation],
-                                             nRepForPhenoInit = self$nRepForPhenoInit,
-                                             nRepForPheno = self$nRepForPheno[1:nGenerationProceedSimulation],
-                                             updateModels = self$updateModels[1:nGenerationProceedSimulation],
-                                             methodMLR = self$methodMLR,
-                                             multiTrait = self$multiTrait,
-                                             nSelectionWaysVec = self$nSelectionWaysVec[1:nGenerationProceedSimulation],
-                                             selectionMethodList = self$selectionMethodList[1:nGenerationProceedSimulation],
-                                             traitNoSelList = self$traitNoSelList[1:nGenerationProceedSimulation],
-                                             blockSplitMethod = self$blockSplitMethod,
-                                             nMrkInBlock = self$nMrkInBlock,
-                                             minimumSegmentLength = self$minimumSegmentLength,
-                                             nSelInitOPVList = self$nSelInitOPVList[1:nGenerationProceedSimulation],
-                                             nIterOPV = self$nIterOPV,
-                                             nProgeniesEMBVVec = self$nProgeniesEMBVVec[1:nGenerationProceedSimulation],
-                                             nIterEMBV = self$nIterEMBV,
-                                             nCoresEMBV = self$nCoresEMBV,
-                                             clusteringForSelList = self$clusteringForSelList[1:nGenerationProceedSimulation],
-                                             nClusterList = self$nClusterList[1:nGenerationProceedSimulation],
-                                             nTopClusterList = self$nTopClusterList[1:nGenerationProceedSimulation],
-                                             nTopEachList = self$nTopEachList[1:nGenerationProceedSimulation],
-                                             nSelList = self$nSelList[1:nGenerationProceedSimulation],
-                                             multiTraitsEvalMethodList = self$multiTraitsEvalMethodList[1:nGenerationProceedSimulation],
-                                             hSelList = self$hSelList[1:nGenerationProceedSimulation],
-                                             matingMethodVec = self$matingMethodVec[1:nGenerationProceedSimulation],
-                                             allocateMethodVec = self$allocateMethodVec[1:nGenerationProceedSimulation],
-                                             weightedAllocationMethodList = self$weightedAllocationMethodList[1:nGenerationProceedSimulation],
-                                             includeGVPVec = self$includeGVPVec[1:nGenerationProceedSimulation],
-                                             traitNoRAList = self$traitNoRAList[1:nGenerationProceedSimulation],
-                                             hList = hList[1:nGenerationProceedSimulation],
-                                             nNextPopVec = self$nNextPopVec[1:nGenerationProceedSimulation],
-                                             nameMethod = self$nameMethod,
-                                             nCores = self$nCoresPerOptimization,
-                                             overWriteRes = self$overWriteRes,
-                                             showProgress = FALSE,
-                                             returnMethod = "max",
-                                             saveAllResAt = NULL,
-                                             evaluateGVMethod = "estimated",
-                                             traitNoEval = self$traitNoEval,
-                                             hEval = self$hEval,
-                                             summaryAllResAt = NULL,
-                                             verbose = FALSE)
-      simBsNow$startSimulation()
-      maxEval <- round(mean(simBsNow$simBsRes[[simBsNow$simBsName]]$max), digits = self$digitsEval)
+      if ((!any(nonZeroWeight[1:(nGenerationProceedSimulation - 1)])) & nonZeroWeight[nGenerationProceedSimulation]) {
+        simBsNow <- myBreedSimulatR::simBs$new(simBsName = self$simBsName,
+                                               bsInfoInit = self$bsInfoInit,
+                                               breederInfoInit = self$breederInfoInit,
+                                               lociEffMethod = self$lociEffMethod,
+                                               methodMLRInit = self$methodMLRInit,
+                                               multiTraitInit = self$multiTraitInit,
+                                               nIterSimulation = self$nIterSimulationPerEvaluation,
+                                               nGenerationProceed = nGenerationProceedSimulation,
+                                               nRefreshMemoryEvery = self$nRefreshMemoryEvery,
+                                               updateBreederInfo = self$updateBreederInfo[1:nGenerationProceedSimulation],
+                                               phenotypingInds = self$phenotypingInds[1:nGenerationProceedSimulation],
+                                               nRepForPhenoInit = self$nRepForPhenoInit,
+                                               nRepForPheno = self$nRepForPheno[1:nGenerationProceedSimulation],
+                                               updateModels = self$updateModels[1:nGenerationProceedSimulation],
+                                               methodMLR = self$methodMLR,
+                                               multiTrait = self$multiTrait,
+                                               nSelectionWaysVec = self$nSelectionWaysVec[1:nGenerationProceedSimulation],
+                                               selectionMethodList = self$selectionMethodList[1:nGenerationProceedSimulation],
+                                               traitNoSelList = self$traitNoSelList[1:nGenerationProceedSimulation],
+                                               blockSplitMethod = self$blockSplitMethod,
+                                               nMrkInBlock = self$nMrkInBlock,
+                                               minimumSegmentLength = self$minimumSegmentLength,
+                                               nSelInitOPVList = self$nSelInitOPVList[1:nGenerationProceedSimulation],
+                                               nIterOPV = self$nIterOPV,
+                                               nProgeniesEMBVVec = self$nProgeniesEMBVVec[1:nGenerationProceedSimulation],
+                                               nIterEMBV = self$nIterEMBV,
+                                               nCoresEMBV = self$nCoresEMBV,
+                                               clusteringForSelList = self$clusteringForSelList[1:nGenerationProceedSimulation],
+                                               nClusterList = self$nClusterList[1:nGenerationProceedSimulation],
+                                               nTopClusterList = self$nTopClusterList[1:nGenerationProceedSimulation],
+                                               nTopEachList = self$nTopEachList[1:nGenerationProceedSimulation],
+                                               nSelList = self$nSelList[1:nGenerationProceedSimulation],
+                                               multiTraitsEvalMethodList = self$multiTraitsEvalMethodList[1:nGenerationProceedSimulation],
+                                               hSelList = self$hSelList[1:nGenerationProceedSimulation],
+                                               matingMethodVec = self$matingMethodVec[1:nGenerationProceedSimulation],
+                                               allocateMethodVec = self$allocateMethodVec[1:nGenerationProceedSimulation],
+                                               weightedAllocationMethodList = self$weightedAllocationMethodList[1:nGenerationProceedSimulation],
+                                               includeGVPVec = self$includeGVPVec[1:nGenerationProceedSimulation],
+                                               traitNoRAList = self$traitNoRAList[1:nGenerationProceedSimulation],
+                                               hList = hList[1:nGenerationProceedSimulation],
+                                               nNextPopVec = self$nNextPopVec[1:nGenerationProceedSimulation],
+                                               nameMethod = self$nameMethod,
+                                               nCores = self$nCoresPerOptimization,
+                                               overWriteRes = self$overWriteRes,
+                                               showProgress = FALSE,
+                                               returnMethod = "max",
+                                               saveAllResAt = NULL,
+                                               evaluateGVMethod = "estimated",
+                                               traitNoEval = self$traitNoEval,
+                                               hEval = self$hEval,
+                                               summaryAllResAt = NULL,
+                                               verbose = FALSE)
+        simBsNow$startSimulation()
+        maxEval <- mean(simBsNow$simBsRes[[simBsNow$simBsName]]$max, na.rm = TRUE)
+      } else {
+        simBsNow <- myBreedSimulatR::simBs$new(simBsName = self$simBsName,
+                                               bsInfoInit = self$bsInfoInit,
+                                               breederInfoInit = self$breederInfoInit,
+                                               lociEffMethod = self$lociEffMethod,
+                                               methodMLRInit = self$methodMLRInit,
+                                               multiTraitInit = self$multiTraitInit,
+                                               nIterSimulation = self$nIterSimulationPerEvaluation,
+                                               nGenerationProceed = nGenerationProceedSimulation,
+                                               nRefreshMemoryEvery = self$nRefreshMemoryEvery,
+                                               updateBreederInfo = self$updateBreederInfo[1:nGenerationProceedSimulation],
+                                               phenotypingInds = self$phenotypingInds[1:nGenerationProceedSimulation],
+                                               nRepForPhenoInit = self$nRepForPhenoInit,
+                                               nRepForPheno = self$nRepForPheno[1:nGenerationProceedSimulation],
+                                               updateModels = self$updateModels[1:nGenerationProceedSimulation],
+                                               methodMLR = self$methodMLR,
+                                               multiTrait = self$multiTrait,
+                                               nSelectionWaysVec = self$nSelectionWaysVec[1:nGenerationProceedSimulation],
+                                               selectionMethodList = self$selectionMethodList[1:nGenerationProceedSimulation],
+                                               traitNoSelList = self$traitNoSelList[1:nGenerationProceedSimulation],
+                                               blockSplitMethod = self$blockSplitMethod,
+                                               nMrkInBlock = self$nMrkInBlock,
+                                               minimumSegmentLength = self$minimumSegmentLength,
+                                               nSelInitOPVList = self$nSelInitOPVList[1:nGenerationProceedSimulation],
+                                               nIterOPV = self$nIterOPV,
+                                               nProgeniesEMBVVec = self$nProgeniesEMBVVec[1:nGenerationProceedSimulation],
+                                               nIterEMBV = self$nIterEMBV,
+                                               nCoresEMBV = self$nCoresEMBV,
+                                               clusteringForSelList = self$clusteringForSelList[1:nGenerationProceedSimulation],
+                                               nClusterList = self$nClusterList[1:nGenerationProceedSimulation],
+                                               nTopClusterList = self$nTopClusterList[1:nGenerationProceedSimulation],
+                                               nTopEachList = self$nTopEachList[1:nGenerationProceedSimulation],
+                                               nSelList = self$nSelList[1:nGenerationProceedSimulation],
+                                               multiTraitsEvalMethodList = self$multiTraitsEvalMethodList[1:nGenerationProceedSimulation],
+                                               hSelList = self$hSelList[1:nGenerationProceedSimulation],
+                                               matingMethodVec = self$matingMethodVec[1:nGenerationProceedSimulation],
+                                               allocateMethodVec = self$allocateMethodVec[1:nGenerationProceedSimulation],
+                                               weightedAllocationMethodList = self$weightedAllocationMethodList[1:nGenerationProceedSimulation],
+                                               includeGVPVec = self$includeGVPVec[1:nGenerationProceedSimulation],
+                                               traitNoRAList = self$traitNoRAList[1:nGenerationProceedSimulation],
+                                               hList = hList[1:nGenerationProceedSimulation],
+                                               nNextPopVec = self$nNextPopVec[1:nGenerationProceedSimulation],
+                                               nameMethod = self$nameMethod,
+                                               nCores = self$nCoresPerOptimization,
+                                               overWriteRes = self$overWriteRes,
+                                               showProgress = FALSE,
+                                               returnMethod = "summary",
+                                               saveAllResAt = NULL,
+                                               evaluateGVMethod = "estimated",
+                                               traitNoEval = self$traitNoEval,
+                                               hEval = self$hEval,
+                                               summaryAllResAt = NULL,
+                                               verbose = FALSE)
+        simBsNow$startSimulation()
+        rewardEachIter <- lapply(X = simBsNow$estimatedGVMatList,
+                                 FUN = function(estimatedGVMatEachIter) {
+                                   estimatedGVMatMax <- try(do.call(what = rbind,
+                                                                    args = lapply(X = estimatedGVMatEachIter,
+                                                                                  FUN = function(estimatedGVMatEachPop) {
+                                                                                    apply(estimatedGVMatEachPop, 2, max)
+                                                                                  })
+                                   ), silent = TRUE)
+
+
+                                   if ("try-error" %in% class(estimatedGVMatMax)) {
+                                     reward <- NA
+                                   } else {
+                                     estimatedGVMaxEachPop <- try(estimatedGVMatMax[, self$traitNoEval, drop = FALSE] %*% as.matrix(self$hEval),
+                                                                  silent = TRUE)
+                                     if ("try-error" %in% class(estimatedGVMaxEachPop)) {
+                                       reward <- NA
+                                     } else {
+                                       reward <- try(sum(estimatedGVMaxEachPop[-1, 1] * rewardWeightVec),
+                                                     silent = TRUE)
+
+                                       if ("try-error" %in% class(reward)) {
+                                         reward <- NA
+                                       }
+                                     }
+                                   }
+
+                                   return(reward)
+                                 })
+
+
+        maxEval <- mean(unlist(rewardEachIter), na.rm = TRUE)
+      }
+
+      if (!is.na(maxEval)) {
+        maxEval <- round(maxEval,
+                         digits = self$digitsEval)
+      } else {
+        maxEval <- -Inf
+        message("Computation failed: maybe internal error occured !")
+      }
 
       return(maxEval)
     },

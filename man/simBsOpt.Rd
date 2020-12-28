@@ -121,6 +121,10 @@ The following methods are offered:
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
 
+\item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
+If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
+Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.}
+
 \item{\code{digitsEval}}{[numeric] When you evaluate each hyperparameter, you can round the average of evaluates (`eval`) with `round(eval, digitsEval)`.}
 
 \item{\code{nRefreshMemoryEvery}}{[numeric] Every `nRefreshMemoryEvery` iterations, we refresh memory used for simulations by `gc(reset = TRUE)`.}
@@ -282,6 +286,7 @@ Create a new specie object.
   nTotalIterForOneOptimization = NULL,
   nIterSimulationPerEvaluation = NULL,
   nIterOptimization = NULL,
+  rewardWeightVec = NULL,
   digitsEval = NULL,
   nRefreshMemoryEvery = NULL,
   updateBreederInfo = TRUE,
@@ -374,6 +379,10 @@ The following methods are offered:
 \item{\code{nIterSimulationPerEvaluation}}{[numeric] Number of simulations per one evaluation of the hyperparameter set of your interest}
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
+
+\item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
+If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
+Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.}
 
 \item{\code{digitsEval}}{[numeric] When you evaluate each hyperparameter, you can round the average of evaluates (`eval`) with `round(eval, digitsEval)`.}
 
