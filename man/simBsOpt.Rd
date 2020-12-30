@@ -140,6 +140,15 @@ Or if you want to evaluate just the final generation, you can achieve by `reward
 \item{\code{updateModels}}{[logical] Whether or not updating the model for each generation
 (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)}
 
+\item{\code{updateBreederInfoSimulation}}{[logical] Update breederInfo or not for each generation in simulations for optimization}
+
+\item{\code{phenotypingIndsSimulation}}{[logical] Phenotyping individuals or not for each generation in simulations for optimization}
+
+\item{\code{nRepForPhenoSimulation}}{[numeric] Number of replications to be phenotyped for each generation in simulations for optimization}
+
+\item{\code{updateModelsSimulation}}{[logical] Whether or not updating the model for each generation in simulations for optimization
+(If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)}
+
 \item{\code{methodMLR}}{[character] Methods for estimating marker effects.
 The following methods are offered:
 
@@ -294,6 +303,10 @@ Create a new specie object.
   nRepForPhenoInit = NULL,
   nRepForPheno = NULL,
   updateModels = FALSE,
+  updateBreederInfoSimulation = TRUE,
+  phenotypingIndsSimulation = FALSE,
+  nRepForPhenoSimulation = NULL,
+  updateModelsSimulation = FALSE,
   methodMLR = NULL,
   multiTrait = FALSE,
   nSelectionWaysVec = NULL,
@@ -397,6 +410,15 @@ Or if you want to evaluate just the final generation, you can achieve by `reward
 \item{\code{nRepForPheno}}{[numeric] Number of replications to be phenotyped for each generation}
 
 \item{\code{updateModels}}{[logical] Whether or not updating the model for each generation
+(If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)}
+
+\item{\code{updateBreederInfoSimulation}}{[logical] Update breederInfo or not for each generation in simulations for optimization}
+
+\item{\code{phenotypingIndsSimulation}}{[logical] Phenotyping individuals or not for each generation in simulations for optimization}
+
+\item{\code{nRepForPhenoSimulation}}{[numeric] Number of replications to be phenotyped for each generation in simulations for optimization}
+
+\item{\code{updateModelsSimulation}}{[logical] Whether or not updating the model for each generation in simulations for optimization
 (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)}
 
 \item{\code{methodMLR}}{[character] Methods for estimating marker effects.

@@ -1612,27 +1612,35 @@ crossInfo <- R6::R6Class(
           BVAll <- cbind(BVAll, BVNow)
         }
 
+        if (is.null(BVAll)) {
+          BVScaled <- apply(X = BVAll, MARGIN = 2,
+                            FUN = function(BV) {
+                              return(scale(x = BV, center = TRUE,
+                                           scale = as.logical(sd(BV))))
+                            })
+          rownames(BVScaled) <- rownames(BVAll)
+          colnames(BVScaled) <- colnames(BVAll)
+        } else {
+          BVScaled <- NULL
+        }
 
-        BVScaled <- apply(X = BVAll, MARGIN = 2,
-                          FUN = function(BV) {
-                           return(scale(x = BV, center = TRUE,
-                                        scale = as.logical(sd(BV))))
-                          })
-        rownames(BVScaled) <- rownames(BVAll)
-        colnames(BVScaled) <- colnames(BVAll)
 
         if (self$matingMethod != "makeDH") {
-          BVEachPair <- (BVScaled[crosses0[, 1], , drop = FALSE] +
-                           BVScaled[crosses0[, 2], , drop = FALSE]) / 2
+          if (!is.null(BVScaled)) {
+            BVEachPair <- (BVScaled[crosses0[, 1], , drop = FALSE] +
+                             BVScaled[crosses0[, 2], , drop = FALSE]) / 2
+          } else {
+            BVEachPair <- NULL
+          }
 
           if ("selectOPV" %in% weightedAllocationMethod) {
             OPVNow <- t(apply(X = crosses0, MARGIN = 1, private$computeOPV))
-            BVEachPair <- cbind(BVEachPair, OPVNow[, self$traitNoRA])
+            BVEachPair <- cbind(BVEachPair, OPVNow[, self$traitNoRA, drop = FALSE])
           }
 
           if (self$includeGVP) {
             genVarProgenies <- private$computeGVP(crosses0 = crosses0)
-            BVEachPair <- cbind(BVEachPair, genVarProgenies[, self$traitNoRA])
+            BVEachPair <- cbind(BVEachPair, genVarProgenies[, self$traitNoRA, drop = FALSE])
           }
         } else {
           BVEachPair <- BVScaled
@@ -1934,7 +1942,7 @@ crossInfo <- R6::R6Class(
 
                                                  genoMatAll <- newPopEMBV$genoMat
                                                  XAll <- cbind(Intercept = rep(1, nrow(genoMatAll)),
-                                                            genoMatAll)
+                                                               genoMatAll)
                                                  trueGVMatAll <- XAll %*% lociEffects
 
                                                  EMBVNow <- apply(X = trueGVMatAll,
@@ -2427,27 +2435,29 @@ crossInfo <- R6::R6Class(
       lociEffects <- self$lociEffects
       lociEffectsSquare <- (lociEffects ^ 2)[-1, , drop = FALSE]
 
-      genVarProgenies <- t(apply(X = crosses0,
-                                 MARGIN = 1,
-                                 FUN = function (eachPair) {
-                                   diffGenoMat <- genoMat[eachPair[1], ] - genoMat[eachPair[2], ]
-                                   genVarEachMrk <- abs(diffGenoMat)
-                                   genVarEachMrk[genVarEachMrk == 1] <- 1 / 4
-                                   genVarEachMrk[genVarEachMrk == 2] <- 1 / 2
+      genVarProgenies <- matrix(c(apply(X = crosses0,
+                                        MARGIN = 1,
+                                        FUN = function (eachPair) {
+                                          diffGenoMat <- genoMat[eachPair[1], ] - genoMat[eachPair[2], ]
+                                          genVarEachMrk <- abs(diffGenoMat)
+                                          genVarEachMrk[genVarEachMrk == 1] <- 1 / 4
+                                          genVarEachMrk[genVarEachMrk == 2] <- 1 / 2
 
-                                   genVarProgeniesEachPair <- crossprod(lociEffectsSquare,
-                                                                        as.matrix(genVarEachMrk))
+                                          genVarProgeniesEachPair <- crossprod(lociEffectsSquare,
+                                                                               as.matrix(genVarEachMrk))
 
-                                   return(genVarProgeniesEachPair)
-                                 }))
+                                          return(genVarProgeniesEachPair)
+                                        })),
+                                nrow = nrow(crosses0), ncol = ncol(lociEffects),
+                                byrow = TRUE)
       rownames(genVarProgenies) <- 1:nrow(crosses0)
       colnames(genVarProgenies) <- colnames(lociEffects)
 
       genVarProgeniesScaled <- apply(X = genVarProgenies, MARGIN = 2,
-                        FUN = function(genVarProgeniesEach) {
-                          return(scale(x = genVarProgeniesEach, center = TRUE,
-                                       scale = as.logical(sd(genVarProgeniesEach))))
-                        })
+                                     FUN = function(genVarProgeniesEach) {
+                                       return(scale(x = genVarProgeniesEach, center = TRUE,
+                                                    scale = as.logical(sd(genVarProgeniesEach))))
+                                     })
       rownames(genVarProgeniesScaled) <- rownames(genVarProgenies)
       colnames(genVarProgeniesScaled) <- colnames(genVarProgenies)
 

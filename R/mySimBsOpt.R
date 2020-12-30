@@ -81,6 +81,15 @@ simBsOpt <- R6::R6Class(
     #' @field updateModels [logical] Whether or not updating the model for each generation
     #' (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)
     updateModels = NULL,
+    #' @field updateBreederInfoSimulation [logical] Update breederInfo or not for each generation in simulations for optimization
+    updateBreederInfoSimulation = NULL,
+    #' @field phenotypingIndsSimulation [logical] Phenotyping individuals or not for each generation in simulations for optimization
+    phenotypingIndsSimulation = NULL,
+    #' @field nRepForPhenoSimulation [numeric] Number of replications to be phenotyped for each generation in simulations for optimization
+    nRepForPhenoSimulation = NULL,
+    #' @field updateModelsSimulation [logical] Whether or not updating the model for each generation in simulations for optimization
+    #' (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)
+    updateModelsSimulation = NULL,
     #' @field methodMLR [character] Methods for estimating marker effects.
     #' The following methods are offered:
     #'
@@ -229,6 +238,11 @@ simBsOpt <- R6::R6Class(
     #' @param nRepForPheno [numeric] Number of replications to be phenotyped for each generation
     #' @param updateModels [logical] Whether or not updating the model for each generation
     #' (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)
+    #' @param updateBreederInfoSimulation [logical] Update breederInfo or not for each generation in simulations for optimization
+    #' @param phenotypingIndsSimulation [logical] Phenotyping individuals or not for each generation in simulations for optimization
+    #' @param nRepForPhenoSimulation [numeric] Number of replications to be phenotyped for each generation in simulations for optimization
+    #' @param updateModelsSimulation [logical] Whether or not updating the model for each generation in simulations for optimization
+    #' (If `phenotypingInds = FALSE` for generation of your interest, `updateModels` will be automatically `FALSE` for that generation.)
     #' @param methodMLR [character] Methods for estimating marker effects.
     #' The following methods are offered:
     #'
@@ -375,6 +389,10 @@ simBsOpt <- R6::R6Class(
                           nRepForPhenoInit = NULL,
                           nRepForPheno = NULL,
                           updateModels = FALSE,
+                          updateBreederInfoSimulation = TRUE,
+                          phenotypingIndsSimulation = FALSE,
+                          nRepForPhenoSimulation = NULL,
+                          updateModelsSimulation = FALSE,
                           methodMLR = NULL,
                           multiTrait = FALSE,
                           nSelectionWaysVec = NULL,
@@ -532,7 +550,7 @@ simBsOpt <- R6::R6Class(
           }
         }
       } else {
-        if ((nGenerationProceed == nGenerationProceed) | (!all(performOptimization[-1]))) {
+        if ((nGenerationProceed == nGenerationProceedSimulation) | (!all(performOptimization[-1]))) {
           useFirstOptimizedValue <- TRUE
         } else {
           useFirstOptimizedValue <- FALSE
@@ -591,7 +609,6 @@ simBsOpt <- R6::R6Class(
       # rewardWeightVec
       if (!is.null(rewardWeightVec)) {
         stopifnot(is.numeric(rewardWeightVec))
-        rewardWeightVec <- floor(rewardWeightVec)
         stopifnot(all(rewardWeightVec >= 0))
       } else {
         rewardWeightVec <- c(rep(0, nGenerationProceedSimulation - 1), 1)
@@ -631,23 +648,23 @@ simBsOpt <- R6::R6Class(
       # updateBreederInfo
       stopifnot(is.logical(updateBreederInfo))
 
-      if (!(length(updateBreederInfo) %in% c(1, nGenerationProceedSimulation))) {
-        stop(paste("length(updateBreederInfo) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      if (!(length(updateBreederInfo) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(updateBreederInfo) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateBreederInfo) == 1) {
-        updateBreederInfo <- rep(updateBreederInfo, nGenerationProceedSimulation)
+        updateBreederInfo <- rep(updateBreederInfo, nGenerationProceed)
       }
-      names(updateBreederInfo) <- 1:nGenerationProceedSimulation
+      names(updateBreederInfo) <- 1:nGenerationProceed
 
 
       # phenotypingInds
       stopifnot(is.logical(phenotypingInds))
 
-      if (!(length(phenotypingInds) %in% c(1, nGenerationProceedSimulation))) {
-        stop(paste("length(phenotypingInds) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      if (!(length(phenotypingInds) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(phenotypingInds) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(phenotypingInds) == 1) {
-        phenotypingInds <- rep(phenotypingInds, nGenerationProceedSimulation)
+        phenotypingInds <- rep(phenotypingInds, nGenerationProceed)
       }
-      names(phenotypingInds) <- 1:nGenerationProceedSimulation
+      names(phenotypingInds) <- 1:nGenerationProceed
       phenotypingInds[!updateBreederInfo] <- FALSE
 
 
@@ -674,14 +691,60 @@ simBsOpt <- R6::R6Class(
                        nRepForPheno,"` instead."))
       }
 
-      if (!(length(nRepForPheno) %in% c(1, nGenerationProceedSimulation))) {
-        stop(paste("length(nRepForPheno) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      if (!(length(nRepForPheno) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(nRepForPheno) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nRepForPheno) == 1) {
-        nRepForPheno <- rep(nRepForPheno, nGenerationProceedSimulation)
+        nRepForPheno <- rep(nRepForPheno, nGenerationProceed)
       }
-      names(nRepForPheno) <- 1:nGenerationProceedSimulation
+      names(nRepForPheno) <- 1:nGenerationProceed
 
       nRepForPheno[!phenotypingInds] <- 0
+
+
+      # updateBreederInfoSimulation
+      stopifnot(is.logical(updateBreederInfoSimulation))
+
+      if (!(length(updateBreederInfoSimulation) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(updateBreederInfoSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      } else if (length(updateBreederInfoSimulation) == 1) {
+        updateBreederInfoSimulation <- rep(updateBreederInfoSimulation, nGenerationProceedSimulation)
+      }
+      names(updateBreederInfoSimulation) <- 1:nGenerationProceedSimulation
+
+
+      # phenotypingIndsSimulation
+      stopifnot(is.logical(phenotypingIndsSimulation))
+
+      if (!(length(phenotypingIndsSimulation) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(phenotypingIndsSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      } else if (length(phenotypingIndsSimulation) == 1) {
+        phenotypingIndsSimulation <- rep(phenotypingIndsSimulation, nGenerationProceedSimulation)
+      }
+      names(phenotypingIndsSimulation) <- 1:nGenerationProceedSimulation
+      phenotypingIndsSimulation[!updateBreederInfoSimulation] <- FALSE
+
+
+
+
+      # nRepForPhenoSimulation
+      if (!is.null(nRepForPhenoSimulation)) {
+        stopifnot(is.numeric(nRepForPhenoSimulation))
+        nRepForPhenoSimulation <- floor(nRepForPhenoSimulation)
+        stopifnot(all(nRepForPhenoSimulation >= 0))
+      } else {
+        nRepForPhenoSimulation <- 1
+        message(paste0("`nRepForPhenoSimulation` is not specified. We substitute `nRepForPhenoSimulation = ",
+                       nRepForPhenoSimulation,"` instead."))
+      }
+
+      if (!(length(nRepForPhenoSimulation) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(nRepForPhenoSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      } else if (length(nRepForPhenoSimulation) == 1) {
+        nRepForPhenoSimulation <- rep(nRepForPhenoSimulation, nGenerationProceedSimulation)
+      }
+      names(nRepForPhenoSimulation) <- 1:nGenerationProceedSimulation
+
+      nRepForPhenoSimulation[!phenotypingIndsSimulation] <- 0
 
 
       # lociEffMethod
@@ -741,14 +804,27 @@ simBsOpt <- R6::R6Class(
       # updateModels
       stopifnot(is.logical(updateModels))
 
-      if (!(length(updateModels) %in% c(1, nGenerationProceedSimulation))) {
-        stop(paste("length(updateModels) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      if (!(length(updateModels) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(updateModels) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateModels) == 1) {
-        updateModels <- rep(updateModels, nGenerationProceedSimulation)
+        updateModels <- rep(updateModels, nGenerationProceed)
       }
-      names(updateModels) <- 1:nGenerationProceedSimulation
+      names(updateModels) <- 1:nGenerationProceed
 
       updateModels[!phenotypingInds] <- FALSE
+
+
+      # updateModelsSimulation
+      stopifnot(is.logical(updateModelsSimulation))
+
+      if (!(length(updateModelsSimulation) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(updateModelsSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
+      } else if (length(updateModelsSimulation) == 1) {
+        updateModelsSimulation <- rep(updateModelsSimulation, nGenerationProceedSimulation)
+      }
+      names(updateModelsSimulation) <- 1:nGenerationProceedSimulation
+
+      updateModelsSimulation[!phenotypingIndsSimulation] <- FALSE
 
 
       # multiTrait
@@ -1042,7 +1118,7 @@ simBsOpt <- R6::R6Class(
                                   }, simplify = FALSE)
       }
 
-      if (!(length(nSelInitOPVList) %in% c(1, nGenerationProceed))) {
+      if (!(length(nSelInitOPVList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nSelInitOPVList) must be equal to 1 or equal to nGenerationProceedSimulation"))
       } else if (length(nSelInitOPVList) == 1) {
         nSelInitOPVList <- rep(nSelInitOPVList, nGenerationProceedSimulation)
@@ -1062,7 +1138,7 @@ simBsOpt <- R6::R6Class(
           message("`nSelInitOPV` should be larger than `nSel`. We substitute `nSelInitOPV` by `nSel` when `nSelInitOPV` is smaller than `nSel`.")
         }
 
-        nSelInitOPVList[whereNSelSatisfy] <- sapply(X = (1:nGenerationProceed)[whereNSelSatisfy],
+        nSelInitOPVList[whereNSelSatisfy] <- sapply(X = (1:nGenerationProceedSimulation)[whereNSelSatisfy],
                                                     FUN = function(generationProceedNo) {
                                                       nSelInitOPV <- nSelInitOPVList[generationProceedNo]
                                                       nSel <- nSelList[generationProceedNo]
@@ -1459,12 +1535,12 @@ simBsOpt <- R6::R6Class(
       }
 
 
-      if (!(length(nProgeniesEMBVVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(nProgeniesEMBVVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(nProgeniesEMBVVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(nProgeniesEMBVVec) must be equal to 1 or equal to nGenerationProceedSimulation"))
       } else if (length(nProgeniesEMBVVec) == 1) {
-        nProgeniesEMBVVec <- rep(nProgeniesEMBVVec, nGenerationProceed)
+        nProgeniesEMBVVec <- rep(nProgeniesEMBVVec, nGenerationProceedSimulation)
       }
-      names(nProgeniesEMBVVec) <- 1:nGenerationProceed
+      names(nProgeniesEMBVVec) <- 1:nGenerationProceedSimulation
 
 
       # nIterEMBV
@@ -1686,6 +1762,7 @@ simBsOpt <- R6::R6Class(
       self$nTotalIterForOneOptimization <- nTotalIterForOneOptimization
       self$nIterSimulationPerEvaluation <- nIterSimulationPerEvaluation
       self$nIterOptimization <- nIterOptimization
+      self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
       self$nRefreshMemoryEvery <- nRefreshMemoryEvery
       self$hLens <- hLens
@@ -1695,6 +1772,10 @@ simBsOpt <- R6::R6Class(
       self$nRepForPhenoInit <- nRepForPhenoInit
       self$nRepForPheno <- nRepForPheno
       self$updateModels <- updateModels
+      self$updateBreederInfoSimulation <- updateBreederInfoSimulation
+      self$phenotypingIndsSimulation <- phenotypingIndsSimulation
+      self$nRepForPhenoSimulation <- nRepForPhenoSimulation
+      self$updateModelsSimulation <- updateModelsSimulation
       self$methodMLR <- methodMLR
       self$multiTrait <- multiTrait
       self$nSelectionWaysVec <- nSelectionWaysVec
@@ -1809,6 +1890,10 @@ simBsOpt <- R6::R6Class(
       nRepForPhenoInit <- self$nRepForPhenoInit
       nRepForPheno <- self$nRepForPheno
       updateModels <- self$updateModels
+      updateBreederInfoSimulation <- self$updateBreederInfoSimulation
+      phenotypingIndsSimulation <- self$phenotypingIndsSimulation
+      nRepForPhenoSimulation <- self$nRepForPhenoSimulation
+      updateModelsSimulation <- self$updateModelsSimulation
       methodMLR <- self$methodMLR
       multiTrait <- self$multiTrait
       nSelectionWaysVec <- self$nSelectionWaysVec
@@ -1893,7 +1978,7 @@ simBsOpt <- R6::R6Class(
           self$simBsRes[[simBsName]]$min <- c()
         }
 
-        if ("varmin" %in% returnMethod) {
+        if ("var" %in% returnMethod) {
           self$simBsRes[[simBsName]]$var <- c()
         }
       }
@@ -1928,7 +2013,7 @@ simBsOpt <- R6::R6Class(
                                                multiTraitInit = multiTraitInit,
                                                nIterSimulation = nIterSimulation,
                                                nGenerationProceed = nGenerationProceed,
-                                               nRefreshMemoryEvery = self$nRefreshMemoryEvery,
+                                               nRefreshMemoryEvery = nRefreshMemoryEvery,
                                                updateBreederInfo = updateBreederInfo,
                                                phenotypingInds = phenotypingInds,
                                                nRepForPhenoInit = nRepForPhenoInit,
@@ -2726,11 +2811,11 @@ simBsOpt <- R6::R6Class(
                                                nIterSimulation = self$nIterSimulationPerEvaluation,
                                                nGenerationProceed = nGenerationProceedSimulation,
                                                nRefreshMemoryEvery = self$nRefreshMemoryEvery,
-                                               updateBreederInfo = self$updateBreederInfo[1:nGenerationProceedSimulation],
-                                               phenotypingInds = self$phenotypingInds[1:nGenerationProceedSimulation],
+                                               updateBreederInfo = self$updateBreederInfoSimulation[1:nGenerationProceedSimulation],
+                                               phenotypingInds = self$phenotypingIndsSimulation[1:nGenerationProceedSimulation],
                                                nRepForPhenoInit = self$nRepForPhenoInit,
-                                               nRepForPheno = self$nRepForPheno[1:nGenerationProceedSimulation],
-                                               updateModels = self$updateModels[1:nGenerationProceedSimulation],
+                                               nRepForPheno = self$nRepForPhenoSimulation[1:nGenerationProceedSimulation],
+                                               updateModels = self$updateModelsSimulation[1:nGenerationProceedSimulation],
                                                methodMLR = self$methodMLR,
                                                multiTrait = self$multiTrait,
                                                nSelectionWaysVec = self$nSelectionWaysVec[1:nGenerationProceedSimulation],
@@ -2781,11 +2866,11 @@ simBsOpt <- R6::R6Class(
                                                nIterSimulation = self$nIterSimulationPerEvaluation,
                                                nGenerationProceed = nGenerationProceedSimulation,
                                                nRefreshMemoryEvery = self$nRefreshMemoryEvery,
-                                               updateBreederInfo = self$updateBreederInfo[1:nGenerationProceedSimulation],
-                                               phenotypingInds = self$phenotypingInds[1:nGenerationProceedSimulation],
+                                               updateBreederInfo = self$updateBreederInfoSimulation[1:nGenerationProceedSimulation],
+                                               phenotypingInds = self$phenotypingIndsSimulation[1:nGenerationProceedSimulation],
                                                nRepForPhenoInit = self$nRepForPhenoInit,
-                                               nRepForPheno = self$nRepForPheno[1:nGenerationProceedSimulation],
-                                               updateModels = self$updateModels[1:nGenerationProceedSimulation],
+                                               nRepForPheno = self$nRepForPhenoSimulation[1:nGenerationProceedSimulation],
+                                               updateModels = self$updateModelsSimulation[1:nGenerationProceedSimulation],
                                                methodMLR = self$methodMLR,
                                                multiTrait = self$multiTrait,
                                                nSelectionWaysVec = self$nSelectionWaysVec[1:nGenerationProceedSimulation],
@@ -2905,6 +2990,10 @@ simBsOpt <- R6::R6Class(
       nRepForPhenoInit <- self$nRepForPhenoInit
       nRepForPheno <- self$nRepForPheno
       updateModels <- self$updateModels
+      updateBreederInfoSimulation <- self$updateBreederInfoSimulation
+      phenotypingIndsSimulation <- self$phenotypingIndsSimulation
+      nRepForPhenoSimulation <- self$nRepForPhenoSimulation
+      updateModelsSimulation <- self$updateModelsSimulation
       methodMLR <- self$methodMLR
       multiTrait <- self$multiTrait
       nSelectionWaysVec <- self$nSelectionWaysVec
