@@ -1985,10 +1985,14 @@ simBsOpt <- R6::R6Class(
 
 
       if (useFirstOptimizedValue) {
+        if (verbose) {
+          print("Perform oprimization of hyperparameters once.")
+        }
         soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                             nGenerationProceedSimulation = nGenerationProceedSimulation,
                             lower = hMin, upper = hMax,
-                            nb_iter = nIterOptimization, control = list(type = "sto", verbose = verbose, max = TRUE))
+                            nb_iter = nIterOptimization,
+                            control = list(type = "sto", verbose = showProgress, max = TRUE))
 
         self$solnInit <- soln
 
@@ -2005,6 +2009,9 @@ simBsOpt <- R6::R6Class(
 
 
         # save
+        if (verbose) {
+          print("Perform simulation based on optimized hyperparameters.")
+        }
         simBsOpt <- myBreedSimulatR::simBs$new(simBsName = simBsName,
                                                bsInfoInit = bsInfoInit,
                                                breederInfoInit = breederInfoInit,
@@ -2067,27 +2074,32 @@ simBsOpt <- R6::R6Class(
         } else {
           nGenerationProceedSimulationNow <- nGenerationProceedSimulation
         }
+        if (verbose) {
+          print(paste0("Iteration: ", "1-", nIterSimulation, ", Generation: ", 1,
+                       ";  Perform optimization of hyperparameters."))
+        }
         soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                             nGenerationProceedSimulation = nGenerationProceedSimulationNow,
                             lower = hMin, upper = hMax,
-                            nb_iter = nIterOptimization, control = list(type = "sto", verbose = verbose, max = TRUE))
+                            nb_iter = nIterOptimization,
+                            control = list(type = "sto", verbose = showProgress, max = TRUE))
 
         self$solnInit <- soln
         hVecOpt <- soln$par
         hVecOptList[["Initial"]] <- hVecOpt
 
         if (nCores == 1) {
-          if (showProgress) {
-            pb <- utils::txtProgressBar(min = 0, max = nIterSimulation, style = 3)
-          }
+          # if (showProgress) {
+          #   pb <- utils::txtProgressBar(min = 0, max = nIterSimulation, style = 3)
+          # }
 
 
 
           simulationCounts <- 0
           for (iterNo in 1:nIterSimulation) {
-            if (showProgress) {
-              utils::setTxtProgressBar(pb, iterNo)
-            }
+            # if (showProgress) {
+            #   utils::setTxtProgressBar(pb, iterNo)
+            # }
 
             iterName <- iterNames[iterNo]
             if (is.null(hVecOptList[[iterNames]])) {
@@ -2149,10 +2161,16 @@ simBsOpt <- R6::R6Class(
                 }
 
                 if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
+                  if (verbose) {
+                    print(paste0("Iteration: ", iterNo, ", Generation: ", genProceedNo,
+                                 ";  Perform optimization of hyperparameters."))
+                  }
+
                   soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                                       nGenerationProceedSimulation = nGenerationProceedSimulationNow,
                                       lower = hMin, upper = hMax,
-                                      nb_iter = nIterOptimization, control = list(type = "sto", verbose = 0, max = TRUE))
+                                      nb_iter = nIterOptimization,
+                                      control = list(type = "sto", verbose = showProgress, max = TRUE))
 
                   hVecOpt <- soln$par
                   hVecOptList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
@@ -3082,7 +3100,8 @@ simBsOpt <- R6::R6Class(
           soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                               nGenerationProceedSimulation = nGenerationProceedSimulationNow,
                               lower = hMin, upper = hMax,
-                              nb_iter = nIterOptimization, control = list(type = "sto", verbose = 0, max = TRUE))
+                              nb_iter = nIterOptimization,
+                              control = list(type = "sto", verbose = 0, max = TRUE))
 
           hVecOpt <- soln$par
           hVecOptList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
