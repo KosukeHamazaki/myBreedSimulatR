@@ -1612,7 +1612,7 @@ crossInfo <- R6::R6Class(
           BVAll <- cbind(BVAll, BVNow)
         }
 
-        if (is.null(BVAll)) {
+        if (!is.null(BVAll)) {
           BVScaled <- apply(X = BVAll, MARGIN = 2,
                             FUN = function(BV) {
                               return(scale(x = BV, center = TRUE,
