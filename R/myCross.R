@@ -1634,7 +1634,8 @@ crossInfo <- R6::R6Class(
           }
 
           if ("selectOPV" %in% weightedAllocationMethod) {
-            OPVNow <- t(apply(X = crosses0, MARGIN = 1, private$computeOPV))
+            OPVNow <- matrix(data = apply(X = crosses0, MARGIN = 1, private$computeOPV),
+                             nrow = nrow(crosses0), byrow = TRUE)
             BVEachPair <- cbind(BVEachPair, OPVNow[, self$traitNoRA, drop = FALSE])
           }
 
