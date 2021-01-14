@@ -240,7 +240,7 @@ traitInfo <- R6::R6Class(
         stopifnot(nTraits >= 1)
 
         if (is.null(traitNames)) {
-          traitNames <- paste0("Trait_", 1:nTraits)
+          traitNames <- .charSeq(paste0("Trait_"), seq(nTraits))
         }
 
         stopifnot(length(traitNames) == nTraits)

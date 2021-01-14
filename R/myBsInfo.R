@@ -341,17 +341,37 @@ bsInfo <- R6::R6Class(
       generation <- self$generation
       crossInfoList <- self$crossInfoList
 
-      if (generation == 1) {
-        warning(paste0("We cannot remove the initial population. ",
-                       "Please redefine the initial population with `self$initialize`!"))
+      if (length(populations) == 1) {
+        warning(paste0("We cannot remove all the populations. ",
+                       "Please remain at least 1 population or redefine the initial population with `self$initialize`!"))
       } else {
-        populations[[generation]] <- NULL
-        crossInfoList[[generation - 1]] <- NULL
+        populations[[length(populations)]] <- NULL
+        crossInfoList[[length(populations) - 1]] <- NULL
         generation <- generation - 1
       }
 
 
       self$generation <- generation
+      self$populations <- populations
+      self$crossInfoList <- crossInfoList
+    },
+
+
+    #' @description
+    #' remove initial population
+    removeInitialPop = function() {
+      populations <- self$populations
+      crossInfoList <- self$crossInfoList
+
+      if (length(populations) == 1) {
+        warning(paste0("We cannot remove all the populations. ",
+                       "Please remain at least 1 population or redefine the initial population with `self$initialize`!"))
+      } else {
+        populations[[1]] <- NULL
+        crossInfoList[[1]] <- NULL
+      }
+
+
       self$populations <- populations
       self$crossInfoList <- crossInfoList
     },

@@ -125,6 +125,7 @@ If `multiTraitsAsEnvs = FALSE`, envSpecificEffects will be 0 for all traits.}
 \item \href{#method-new}{\code{bsInfo$new()}}
 \item \href{#method-nextGeneration}{\code{bsInfo$nextGeneration()}}
 \item \href{#method-removeLatestPop}{\code{bsInfo$removeLatestPop()}}
+\item \href{#method-removeInitialPop}{\code{bsInfo$removeInitialPop()}}
 \item \href{#method-overGeneration}{\code{bsInfo$overGeneration()}}
 \item \href{#method-parentInd}{\code{bsInfo$parentInd()}}
 \item \href{#method-print}{\code{bsInfo$print()}}
@@ -295,6 +296,16 @@ create next population
 remove latest population
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{bsInfo$removeLatestPop()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-removeInitialPop"></a>}}
+\if{latex}{\out{\hypertarget{method-removeInitialPop}{}}}
+\subsection{Method \code{removeInitialPop()}}{
+remove initial population
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{bsInfo$removeInitialPop()}\if{html}{\out{</div>}}
 }
 
 }

@@ -276,7 +276,7 @@ trialInfo <- R6::R6Class(
                          dim = c(population$nInd, nTraits, nRep),
                          dimnames = list(indNames = names(population$inds),
                                          traitNames = traitNames,
-                                         repNames = paste0("Rep_", 1:nRep)))
+                                         repNames = .charSeq(paste0("Rep_"), seq(nRep))))
         } else {
           residCov <- residVar
           resid <- array(replicate(n = nRep,
@@ -285,7 +285,7 @@ trialInfo <- R6::R6Class(
                          dim = c(population$nInd, nTraits, nRep),
                          dimnames = list(indNames = names(population$inds),
                                          traitNames = traitNames,
-                                         repNames = paste0("Rep_", 1:nRep)))
+                                         repNames = .charSeq(paste0("Rep_"), seq(nRep))))
         }
 
         resid2 <- aperm(resid, perm = c(1, 3, 2))

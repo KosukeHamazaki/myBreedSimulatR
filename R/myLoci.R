@@ -153,11 +153,11 @@ lociInfo <- R6::R6Class(
         }
 
         if (is.null(lociNames)) {
-          lociNames <- paste0("Locus_", 1:sum(nLoci))
+          lociNames <- .charSeq(paste0("Locus_"), seq(sum(nLoci)))
         }
 
         if (is.null(founderNames)) {
-          founderNames <- paste0("Founder_", 1:effPopSizeHaplo)
+          founderNames <- .charSeq(paste0("Founder_"), seq(effPopSizeHaplo))
         }
 
 

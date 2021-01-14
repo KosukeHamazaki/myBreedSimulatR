@@ -91,6 +91,7 @@ whether or not calculate epistatic GRM}
 \item \href{#method-estimateGVByMLR}{\code{breederInfo$estimateGVByMLR()}}
 \item \href{#method-overGeneration}{\code{breederInfo$overGeneration()}}
 \item \href{#method-removeLatestPop}{\code{breederInfo$removeLatestPop()}}
+\item \href{#method-removeInitialPop}{\code{breederInfo$removeInitialPop()}}
 \item \href{#method-parentInd}{\code{breederInfo$parentInd()}}
 \item \href{#method-lociEffects}{\code{breederInfo$lociEffects()}}
 \item \href{#method-print}{\code{breederInfo$print()}}
@@ -441,6 +442,16 @@ If NULL, assemble all the populations}
 remove latest population
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{breederInfo$removeLatestPop()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-removeInitialPop"></a>}}
+\if{latex}{\out{\hypertarget{method-removeInitialPop}{}}}
+\subsection{Method \code{removeInitialPop()}}{
+remove initial population
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{breederInfo$removeInitialPop()}\if{html}{\out{</div>}}
 }
 
 }
