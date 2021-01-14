@@ -255,9 +255,9 @@ bsInfo <- R6::R6Class(
         haplo <- aperm(haplo, perm = c(3, 2, 1))
 
         if (founderIsInitPop) {
-          indNamesNow <- paste0("G1_", 1:nrow(haplo))
+          indNamesNow <- .charSeq(paste0("G", 1, "_"), seq(nrow(haplo)))
         } else {
-          indNamesNow <- paste0("G0_", 1:nrow(haplo))
+          indNamesNow <- .charSeq(paste0("G", 0, "_"), seq(nrow(haplo)))
         }
         dimnames(haplo) <- list(indNames = indNamesNow,
                                 lociNames = colnames(founderHaplo),

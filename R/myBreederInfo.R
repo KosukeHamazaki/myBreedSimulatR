@@ -591,10 +591,17 @@ breederInfo <- R6::R6Class(
         }))))
 
         return(whichPop)
-      })
+      }, simplify = FALSE)
 
-      whichPopNames <- totalPopName[whichPops]
-      totalIndNamesList <- split(x = totalIndNames, f = factor(whichPopNames))
+      totalIndNamesList <- list()
+      for (indNo in 1:length(whichPops)) {
+        whichPopList <- whichPops[indNo]
+        indName <- names(whichPopList)
+
+        for(popNameNow in names(whichPopList[[1]])) {
+          totalIndNamesList[[popNameNow]] <- c(totalIndNamesList[[popNameNow]], indName)
+        }
+      }
 
       totalEstimatedGVByGRMList <- lapply(totalIndNamesList,
                                           function (totalIndNamesEach) {
@@ -715,6 +722,7 @@ breederInfo <- R6::R6Class(
     #' @description
     #' estimate marker effects based on multiple linear regression (machine learning)
     #' @param trainingPop [character / numeric] training population names or No.s (not generations!!)
+    #' @param trainingIndNames [character] names of training individuals
     #' @param methodMLR [character] methods for estimating marker effects.
     #' The following methods are offered:
     #'
@@ -738,6 +746,7 @@ breederInfo <- R6::R6Class(
     #'
 
     estimateMrkEff = function(trainingPop = NULL,
+                              trainingIndNames = NULL,
                               methodMLR = "Ridge",
                               multiTrait = FALSE,
                               alpha = 0.5,
@@ -787,8 +796,15 @@ breederInfo <- R6::R6Class(
       trainingPopName <- names(trainingPopulationsFB)
       trainingPopNo <- unlist(lapply(trainingPopulationsFB,
                                      function(popFB) popFB$generation))
-      trainingIndNames <- unlist(lapply(trainingPopulationsFB,
+      trainingIndNamesAll <- unlist(lapply(trainingPopulationsFB,
                                         function(popFB) popFB$indNames))
+      if (is.null(trainingIndNames)) {
+        trainingIndNames <- trainingIndNamesAll
+      } else {
+        trainingIndNames <- trainingIndNames[trainingIndNames %in% trainingIndNamesAll]
+        stopifnot(is.character(trainingIndNames))
+        stopifnot(length(trainingIndNames) >= 1)
+      }
       nTrainingInds <- length(trainingIndNames)
 
       if (length(trainingPop) >= 2) {
@@ -1211,6 +1227,7 @@ breederInfo <- R6::R6Class(
     #' @description
     #' estimate genotypic values based on GBLUP
     #' @param trainingPop [character / numeric] training population names or No.s (not generations!!)
+    #' @param trainingIndNames [character] names of training individuals
     #' @param testingPop [character / numeric] testing population names or No.s (not generations!!)
     #' @param testingIndNames [character] names of testing individuals
     #' @param methodMLR [character] methods for estimating marker effects.
@@ -1232,6 +1249,7 @@ breederInfo <- R6::R6Class(
     #' (only when `methodMLR = 'GBLUP'`, this argument is valid.)
     #'
     estimateGVByMLR = function(trainingPop = NULL,
+                               trainingIndNames = NULL,
                                testingPop = NULL,
                                testingIndNames = NULL,
                                methodMLR = "Ridge",
@@ -1298,8 +1316,15 @@ breederInfo <- R6::R6Class(
       trainingPopName <- names(trainingPopulationsFB)
       trainingPopNo <- unlist(lapply(trainingPopulationsFB,
                                      function(popFB) popFB$generation))
-      trainingIndNames <- unlist(lapply(trainingPopulationsFB,
-                                        function(popFB) popFB$indNames))
+      trainingIndNamesAll <- unlist(lapply(trainingPopulationsFB,
+                                           function(popFB) popFB$indNames))
+      if (is.null(trainingIndNames)) {
+        trainingIndNames <- trainingIndNamesAll
+      } else {
+        trainingIndNames <- trainingIndNames[trainingIndNames %in% trainingIndNamesAll]
+        stopifnot(is.character(trainingIndNames))
+        stopifnot(length(trainingIndNames) >= 1)
+      }
 
       infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
 
@@ -1390,7 +1415,7 @@ breederInfo <- R6::R6Class(
       }
 
       totalPopOGGenoMat <- totalPopOG$genoMat
-
+      totalPopOGGenoMat <- totalPopOGGenoMat[rownames(totalEstimatedGVByRepForPlt), ]
       totalEstimatedGVByMLR <- cbind(Intercept = rep(1, nrow(totalPopOGGenoMat)),
                                      totalPopOGGenoMat)[, rownames(mrkEffMat)] %*% mrkEffMat
 
@@ -1404,10 +1429,17 @@ breederInfo <- R6::R6Class(
         }))))
 
         return(whichPop)
-      })
+      }, simplify = FALSE)
 
-      whichPopNames <- totalPopName[whichPops]
-      totalIndNamesList <- split(x = totalIndNames, f = factor(whichPopNames))
+      totalIndNamesList <- list()
+      for (indNo in 1:length(whichPops)) {
+        whichPopList <- whichPops[indNo]
+        indName <- names(whichPopList)
+
+        for(popNameNow in names(whichPopList[[1]])) {
+          totalIndNamesList[[popNameNow]] <- c(totalIndNamesList[[popNameNow]], indName)
+        }
+      }
 
       totalEstimatedGVByMLRList <- lapply(totalIndNamesList,
                                           function (totalIndNamesEach) {

@@ -182,7 +182,7 @@ population <- R6::R6Class(
                      'crossInfo object see: ?crossInfo'))
         }
 
-        if (is.null(crossInfo$crosses)) {
+        if (is.null(crossInfo$crosses) & (crossInfo$matingMethod != "nonCross")) {
           crossInfo$designResourceAllocation()
         }
         inds <- crossInfo$makeCrosses
@@ -1347,7 +1347,7 @@ createPop <- function(geno = NULL,
       if (founderIsInitPop) {
         indNames <- rownames(geno)
       } else {
-        indNames <- paste0("G1_", 1:nrow(haplo))
+        indNames <- .charSeq(paste0("G", 1, "_"), seq(nrow(haplo)))
       }
     }
   } else if (length(indNames) == 1) {
@@ -1369,7 +1369,7 @@ createPop <- function(geno = NULL,
     }
 
     if (is.null(rownames(geno))) {
-      rownames(geno) <- rownames(haplo) <- paste0("G0_", 1:nrow(haplo))
+      rownames(geno) <- rownames(haplo) <- .charSeq(paste0("G", 0, "_"), seq(nrow(haplo)))
     }
   } else {
     if (is.null(rownames(geno))) {

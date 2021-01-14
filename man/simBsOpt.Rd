@@ -89,6 +89,13 @@ myBsInfo$plot(plotTarget = "trueAGV",
 
 \item{\code{lociEffMethod}}{[character] How to compute loci effects (use true QTL effects ("true") or estimated marker effects ("estimated"))}
 
+\item{\code{trainingPopType}}{[character] Training population consists of all populations created in the breeding scheme for `trainingPopType = "all"`,
+or consists of the latest population in breeding scheme for `trainingPopType = "latest"`.}
+
+\item{\code{trainingPopInit}}{[character / numeric] Training population names or No.s (not generations!!) for initial population}
+
+\item{\code{trainingIndNamesInit}}{[character] Names of training individuals for initia; population}
+
 \item{\code{methodMLRInit}}{[character] Methods for estimating marker effects for initial population.
 The following methods are offered:
 
@@ -120,6 +127,8 @@ The following methods are offered:
 \item{\code{nIterSimulationPerEvaluation}}{[numeric] Number of simulations per one evaluation of the hyperparameter set of your interest}
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
+
+\item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 
 \item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
 If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -223,6 +232,8 @@ One method is to take a weighted sum of these traits, and the other is to comput
 
 \item{\code{evaluateGVMethod}}{[character] Which type of GV (true GV or estimated GV) will be used for evaluation of the simulation results.}
 
+\item{\code{nTopEval}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min}
+
 \item{\code{traitNoEval}}{[numeric] Trait No of your interest for evaluation of the method}
 
 \item{\code{hEval}}{[numeric] Hyperparameter which determines which BV is emphasized when evaluating simulation results of each method}
@@ -281,6 +292,9 @@ Create a new specie object.
   bsInfoInit,
   breederInfoInit = NULL,
   lociEffMethod = NULL,
+  trainingPopType = NULL,
+  trainingPopInit = NULL,
+  trainingIndNamesInit = NULL,
   methodMLRInit = NULL,
   multiTraitInit = FALSE,
   nIterSimulation = NULL,
@@ -295,6 +309,7 @@ Create a new specie object.
   nTotalIterForOneOptimization = NULL,
   nIterSimulationPerEvaluation = NULL,
   nIterOptimization = NULL,
+  nTopEvalForOpt = NULL,
   rewardWeightVec = NULL,
   digitsEval = NULL,
   nRefreshMemoryEvery = NULL,
@@ -341,6 +356,7 @@ Create a new specie object.
   returnMethod = "all",
   saveAllResAt = NULL,
   evaluateGVMethod = "true",
+  nTopEval = NULL,
   traitNoEval = NULL,
   hEval = NULL,
   summaryAllResAt = NULL,
@@ -360,6 +376,13 @@ Create a new specie object.
 (see:\link[myBreedSimulatR]{breederInfo})}
 
 \item{\code{lociEffMethod}}{[character] How to compute loci effects (use true QTL effects ("true") or estimated marker effects ("estimated"))}
+
+\item{\code{trainingPopType}}{[character] Training population consists of all populations created in the breeding scheme for `trainingPopType = "all"`,
+or consists of the latest population in breeding scheme for `trainingPopType = "latest"`.}
+
+\item{\code{trainingPopInit}}{[character / numeric] Training population names or No.s (not generations!!) for initial population}
+
+\item{\code{trainingIndNamesInit}}{[character] Names of training individuals for initia; population}
 
 \item{\code{methodMLRInit}}{[character] Methods for estimating marker effects for initial population.
 The following methods are offered:
@@ -392,6 +415,8 @@ The following methods are offered:
 \item{\code{nIterSimulationPerEvaluation}}{[numeric] Number of simulations per one evaluation of the hyperparameter set of your interest}
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
+
+\item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 
 \item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
 If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -494,6 +519,8 @@ One method is to take a weighted sum of these traits, and the other is to comput
 \item{\code{saveAllResAt}}{[character] If NULL, we won't save the simulation results. Else, we will save bsInfo and breederInfo for each iteration in the directory defined by `saveAllResAt` path.}
 
 \item{\code{evaluateGVMethod}}{[character] Which type of GV (true GV or estimated GV) will be used for evaluation of the simulation results}
+
+\item{\code{nTopEval}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min#'}
 
 \item{\code{traitNoEval}}{[numeric] Trait No of your interest for evaluation of the method}
 

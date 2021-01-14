@@ -300,6 +300,7 @@ estimate marker effects based on multiple linear regression (machine learning)
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{breederInfo$estimateMrkEff(
   trainingPop = NULL,
+  trainingIndNames = NULL,
   methodMLR = "Ridge",
   multiTrait = FALSE,
   alpha = 0.5,
@@ -317,6 +318,8 @@ estimate marker effects based on multiple linear regression (machine learning)
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{trainingPop}}{[character / numeric] training population names or No.s (not generations!!)}
+
+\item{\code{trainingIndNames}}{[character] names of training individuals}
 
 \item{\code{methodMLR}}{[character] methods for estimating marker effects.
 The following methods are offered:
@@ -359,6 +362,7 @@ estimate genotypic values based on GBLUP
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{breederInfo$estimateGVByMLR(
   trainingPop = NULL,
+  trainingIndNames = NULL,
   testingPop = NULL,
   testingIndNames = NULL,
   methodMLR = "Ridge",
@@ -375,6 +379,8 @@ estimate genotypic values based on GBLUP
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{trainingPop}}{[character / numeric] training population names or No.s (not generations!!)}
+
+\item{\code{trainingIndNames}}{[character] names of training individuals}
 
 \item{\code{testingPop}}{[character / numeric] testing population names or No.s (not generations!!)}
 

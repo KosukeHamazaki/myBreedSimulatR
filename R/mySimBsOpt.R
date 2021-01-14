@@ -30,6 +30,13 @@ simBsOpt <- R6::R6Class(
     breederInfoInit = NULL,
     #' @field lociEffMethod [character] How to compute loci effects (use true QTL effects ("true") or estimated marker effects ("estimated"))
     lociEffMethod = NULL,
+    #' @field trainingPopType [character] Training population consists of all populations created in the breeding scheme for `trainingPopType = "all"`,
+    #' or consists of the latest population in breeding scheme for `trainingPopType = "latest"`.
+    trainingPopType = NULL,
+    #' @field trainingPopInit [character / numeric] Training population names or No.s (not generations!!) for initial population
+    trainingPopInit = NULL,
+    #' @field trainingIndNamesInit [character] Names of training individuals for initia; population
+    trainingIndNamesInit = NULL,
     #' @field methodMLRInit [character] Methods for estimating marker effects for initial population.
     #' The following methods are offered:
     #'
@@ -62,6 +69,8 @@ simBsOpt <- R6::R6Class(
     nIterSimulationPerEvaluation = NULL,
     #' @field nIterOptimization [numeric] Number of iterations required for one optimization
     nIterOptimization = NULL,
+    #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
+    nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
     #' Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.
@@ -164,6 +173,8 @@ simBsOpt <- R6::R6Class(
     saveAllResAt = NULL,
     #' @field evaluateGVMethod [character] Which type of GV (true GV or estimated GV) will be used for evaluation of the simulation results.
     evaluateGVMethod = NULL,
+    #' @field nTopEval [numeric] Number of individuals to be evaluated when evaluating population max or population min
+    nTopEval = NULL,
     #' @field traitNoEval [numeric] Trait No of your interest for evaluation of the method
     traitNoEval = NULL,
     #' @field hEval [numeric] Hyperparameter which determines which BV is emphasized when evaluating simulation results of each method
@@ -209,6 +220,10 @@ simBsOpt <- R6::R6Class(
     #' @param breederInfoInit [breederInfo] breeder info
     #'   (see:\link[myBreedSimulatR]{breederInfo})
     #' @param lociEffMethod [character] How to compute loci effects (use true QTL effects ("true") or estimated marker effects ("estimated"))
+    #' @param trainingPopType [character] Training population consists of all populations created in the breeding scheme for `trainingPopType = "all"`,
+    #' or consists of the latest population in breeding scheme for `trainingPopType = "latest"`.
+    #' @param trainingPopInit [character / numeric] Training population names or No.s (not generations!!) for initial population
+    #' @param trainingIndNamesInit [character] Names of training individuals for initia; population
     #' @param methodMLRInit [character] Methods for estimating marker effects for initial population.
     #' The following methods are offered:
     #'
@@ -227,6 +242,7 @@ simBsOpt <- R6::R6Class(
     #' @param nTotalIterForOneOptimization [numeric] Number of total iterations that can be assigned for one optimization process
     #' @param nIterSimulationPerEvaluation [numeric] Number of simulations per one evaluation of the hyperparameter set of your interest
     #' @param nIterOptimization [numeric] Number of iterations required for one optimization
+    #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
     #' Or if you want to evaluate just the final generation, you can achieve by `rewardWeightVec = c(rep(0, nGenerationProceedSimulation - 1), 1)`.
@@ -283,6 +299,7 @@ simBsOpt <- R6::R6Class(
     #' @param returnMethod [character] Which type of results will be returned (saved) in the object
     #' @param saveAllResAt [character] If NULL, we won't save the simulation results. Else, we will save bsInfo and breederInfo for each iteration in the directory defined by `saveAllResAt` path.
     #' @param evaluateGVMethod [character] Which type of GV (true GV or estimated GV) will be used for evaluation of the simulation results
+    #' @param nTopEval [numeric] Number of individuals to be evaluated when evaluating population max or population min#'
     #' @param traitNoEval [numeric] Trait No of your interest for evaluation of the method
     #' @param hEval [numeric] Hyperparameter which determines which BV is emphasized when evaluating simulation results of each method
     #' @param summaryAllResAt [character] If NULL, we will summary the simulation results in `self$trueGVMatList` and `self$estimatedGVMatList`.
@@ -367,6 +384,9 @@ simBsOpt <- R6::R6Class(
                           bsInfoInit,
                           breederInfoInit = NULL,
                           lociEffMethod = NULL,
+                          trainingPopType = NULL,
+                          trainingPopInit = NULL,
+                          trainingIndNamesInit = NULL,
                           methodMLRInit = NULL,
                           multiTraitInit = FALSE,
                           nIterSimulation = NULL,
@@ -381,6 +401,7 @@ simBsOpt <- R6::R6Class(
                           nTotalIterForOneOptimization = NULL,
                           nIterSimulationPerEvaluation = NULL,
                           nIterOptimization = NULL,
+                          nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
                           nRefreshMemoryEvery = NULL,
@@ -427,6 +448,7 @@ simBsOpt <- R6::R6Class(
                           returnMethod = "all",
                           saveAllResAt = NULL,
                           evaluateGVMethod = "true",
+                          nTopEval = NULL,
                           traitNoEval = NULL,
                           hEval = NULL,
                           summaryAllResAt = NULL,
@@ -434,6 +456,7 @@ simBsOpt <- R6::R6Class(
 
       # define some methods
       lociEffMethodsOffered <- c("true", "estimated")
+      trainingPopTypesOffered <- c("all", "latest")
       supportedMethodsMLR <- c("Ridge", "LASSO", "ElasticNet", "RR-BLUP", "GBLUP",
                                "BayesA", "BayesB", "BayesC", "BRR", "BL", "SpikeSlab")
       supportedMethodsGlmnet <- c("Ridge", "LASSO", "ElasticNet")
@@ -441,10 +464,10 @@ simBsOpt <- R6::R6Class(
       selectionMethodsOffered <- c("nonSelection", "selectBV", "selectWBV", "selectOHV",
                                    "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithSelection <- c("selectBV", "selectWBV", "selectOHV",
-                                         "selectEMBV", "selectOPV", "userSI")
+                                         "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithMrkEff <- c("selectBV", "selectWBV", "selectOHV", "selectEMBV", "selectOPV")
       matingMethodsOffered <- c("randomMate", "roundRobin", "diallel", "diallelWithSelfing",
-                                "selfing", "maxGenDist", "userSpecific")
+                                "selfing", "maxGenDist", "makeDH", "nonCross", "userSpecific")
       allocateMethodsOffered <- c("equalAllocation", "weightedAllocation", "userSpecific")
       blockSplitMethodsOffered <- c("nMrkInBlock", "minimumSegmentLength")
       multiTraitsEvalMethodsOffered <- c("sum", "prod")
@@ -757,6 +780,20 @@ simBsOpt <- R6::R6Class(
         lociEffMethod <- "estimated"
         message(paste0("`lociEffMethod` is not specified. We substitute `lociEffMethod = ",
                        lociEffMethod,"` instead."))
+      }
+
+
+
+      # trainingPopType
+      if (!is.null(trainingPopType)) {
+        if (!(trainingPopType %in% trainingPopTypesOffered)) {
+          stop(paste0("We only offer the following methods for naming individuals: ",
+                      paste(trainingPopTypesOffered, collapse = "; ")))
+        }
+      } else {
+        trainingPopType <- "latest"
+        message(paste0("`trainingPopType` is not specified. We substitute `trainingPopType = ",
+                       trainingPopType,"` instead."))
       }
 
 
@@ -1607,6 +1644,32 @@ simBsOpt <- R6::R6Class(
       }
 
 
+
+      # nTopEvalForOpt
+      if (!is.null(nTopEvalForOpt)) {
+        stopifnot(is.numeric(nTopEvalForOpt))
+        nTopEvalForOpt <- floor(nTopEvalForOpt)
+        stopifnot(nTopEvalForOpt >= 1)
+        stopifnot(nTopEvalForOpt <= min(nNextPopVec))
+      } else {
+        nTopEvalForOpt <- 1
+        message(paste0("`nTopEvalForOpt` is not specified. We substitute `nTopEvalForOpt = ",
+                       nTopEvalForOpt,"` instead."))
+      }
+
+
+      # nTopEval
+      if (!is.null(nTopEval)) {
+        stopifnot(is.numeric(nTopEval))
+        nTopEval <- floor(nTopEval)
+        stopifnot(nTopEval >= 1)
+        stopifnot(nTopEval <= min(nNextPopVec))
+      } else {
+        nTopEval <- 1
+        message(paste0("`nTopEval` is not specified. We substitute `nTopEval = ",
+                       nTopEval,"` instead."))
+      }
+
       # traitNoEval
       if (!is.null(traitNoEval)) {
         stopifnot(is.numeric(traitNoEval))
@@ -1671,36 +1734,33 @@ simBsOpt <- R6::R6Class(
 
 
 
-      # trueGVMatList
-      trueGVMatInit <- list(bsInfoInit$populations[[bsInfoInit$generation]]$trueGVMat)
-      names(trueGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
-      trueGVMatInitList <- rep(list(trueGVMatInit), nIterSimulation)
-      names(trueGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
 
-      self$trueGVMatInit <- trueGVMatInit[[1]]
-      self$trueGVMatList <- trueGVMatInitList
+      estimatedGVInitExist <- !is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]])
+      if (!estimatedGVInitExist) {
+        # trainingPopInit
+        if (is.null(trainingPopInit)) {
+          if (trainingPopType == "all") {
+            trainingPopInit <- 1:length(breederInfoInit$populationsFB)
+          } else {
+            trainingPopInit <- length(breederInfoInit$populationsFB)
+          }
+        } else {
+          stopifnot(is.numeric(trainingPopInit))
+          trainingPopInit <- floor(trainingPopInit)
+          if (!all(trainingPopInit %in% (1:bsInfoInit$generation))) {
+            message(paste0("The following population cannot be used for initial training population; ",
+                           paste(trainingPopInit[!(trainingPopInit %in% (1:bsInfoInit$generation))], collapse = ", ")))
+            trainingPopInit <- trainingPopInit[trainingPopInit %in% (1:bsInfoInit$generation)]
+          }
+        }
 
-
-      # estimatedGVMatList
-      if (is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]])) {
-        breederInfoInit$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
-                                        testingPop = length(breederInfoInit$populationsFB),
-                                        methodMLR = methodMLRInit,
-                                        multiTrait = multiTraitInit,
-                                        alpha = 0.5,
-                                        nIter = 12000,
-                                        burnIn = 3000,
-                                        thin = 5,
-                                        bayesian = TRUE)
+        # trainingIndNamesInit
+        if (!is.null(trainingIndNamesInit)) {
+          stopifnot(is.character(trainingIndNamesInit))
+          stopifnot(length(trainingIndNamesInit) >= 1)
+        }
       }
 
-      estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]]$testingEstimatedGVByMLR)
-      names(estimatedGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
-      estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
-      names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
-
-      self$estimatedGVMatInit <- estimatedGVMatInit[[1]]
-      self$estimatedGVMatList <- estimatedGVMatInitList
 
 
       # saveAllResAt
@@ -1748,6 +1808,9 @@ simBsOpt <- R6::R6Class(
       self$bsInfoInit <- bsInfoInit
       self$breederInfoInit <- breederInfoInit
       self$lociEffMethod <- lociEffMethod
+      self$trainingPopType <- trainingPopType
+      self$trainingPopInit <- trainingPopInit
+      self$trainingIndNamesInit <- trainingIndNamesInit
       self$methodMLRInit <- methodMLRInit
       self$multiTraitInit <- multiTraitInit
       self$nIterSimulation <- nIterSimulation
@@ -1762,6 +1825,7 @@ simBsOpt <- R6::R6Class(
       self$nTotalIterForOneOptimization <- nTotalIterForOneOptimization
       self$nIterSimulationPerEvaluation <- nIterSimulationPerEvaluation
       self$nIterOptimization <- nIterOptimization
+      self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
       self$nRefreshMemoryEvery <- nRefreshMemoryEvery
@@ -1810,10 +1874,46 @@ simBsOpt <- R6::R6Class(
       self$returnMethod <- returnMethod
       self$saveAllResAt <- saveAllResAt
       self$evaluateGVMethod <- evaluateGVMethod
+      self$nTopEval <- nTopEval
       self$traitNoEval <- traitNoEval
       self$hEval <- hEval
       self$summaryAllResAt <- summaryAllResAt
       self$verbose <- verbose
+
+
+
+      # trueGVMatList
+      trueGVMatInit <- list(bsInfoInit$populations[[bsInfoInit$generation]]$trueGVMat)
+      names(trueGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
+      trueGVMatInitList <- rep(list(trueGVMatInit), nIterSimulation)
+      names(trueGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
+
+      self$trueGVMatInit <- trueGVMatInit[[1]]
+      self$trueGVMatList <- trueGVMatInitList
+
+
+      # estimatedGVMatList
+      if (!estimatedGVInitExist) {
+        self$computeLociEffInit()
+        breederInfoInit$estimateGVByMLR(trainingPop = trainingPopInit,
+                                        trainingIndNames = trainingIndNamesInit,
+                                        testingPop = length(breederInfoInit$populationsFB),
+                                        methodMLR = methodMLRInit,
+                                        multiTrait = multiTraitInit,
+                                        alpha = 0.5,
+                                        nIter = 12000,
+                                        burnIn = 3000,
+                                        thin = 5,
+                                        bayesian = TRUE)
+      }
+
+      estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]]$testingEstimatedGVByMLR)
+      names(estimatedGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
+      estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
+      names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
+
+      self$estimatedGVMatInit <- estimatedGVMatInit[[1]]
+      self$estimatedGVMatList <- estimatedGVMatInitList
     },
 
 
@@ -1824,6 +1924,9 @@ simBsOpt <- R6::R6Class(
       bsInfoInit <- self$bsInfoInit
       breederInfoInit <- self$breederInfoInit
       lociEffMethod <- self$lociEffMethod
+      trainingPopType <- self$trainingPopType
+      trainingPopInit <- self$trainingPopInit
+      trainingIndNamesInit <- self$trainingIndNamesInit
       methodMLRInit <- self$methodMLRInit
       multiTraitInit <- self$multiTraitInit
       verbose <- self$verbose
@@ -1833,11 +1936,12 @@ simBsOpt <- R6::R6Class(
       if (lociEffMethod == "true") {
         lociEffectsInit <- bsInfoInit$lociEffects
       } else if (lociEffMethod == "estimated") {
-        trainingPopName <- names(breederInfoInit$populationsFB)
-        estimatedMrkEffName <- paste0(trainingPopName, "_", methodMLRInit)
+        trainingPopName <- names(breederInfoInit$populationsFB)[trainingPopInit]
+        estimatedMrkEffName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLRInit)
 
         if (is.null(breederInfoInit$estimatedMrkEffInfo[[estimatedMrkEffName]])) {
-          breederInfoInit$estimateMrkEff(trainingPop = NULL,
+          breederInfoInit$estimateMrkEff(trainingPop = trainingPopInit,
+                                         trainingIndNames = trainingIndNamesInit,
                                          methodMLR = methodMLRInit,
                                          multiTrait = multiTraitInit,
                                          alpha = 0.5,
@@ -1847,7 +1951,7 @@ simBsOpt <- R6::R6Class(
                                          bayesian = TRUE)
         }
         lociEffectsInit <- breederInfoInit$lociEffects(bsInfo = bsInfoInit,
-                                                       trainingPop = NULL,
+                                                       trainingPop = trainingPopInit,
                                                        methodMLR = methodMLRInit)
       }
 
@@ -1880,6 +1984,7 @@ simBsOpt <- R6::R6Class(
       nTotalIterForOneOptimization <- self$nTotalIterForOneOptimization
       nIterSimulationPerEvaluation <- self$nIterSimulationPerEvaluation
       nIterOptimization <- self$nIterOptimization
+      nTopEvalForOpt <- self$nTopEvalForOpt
       rewardWeightVec <- self$rewardWeightVec
       digitsEval <- self$digitsEval
       nRefreshMemoryEvery <- self$nRefreshMemoryEvery
@@ -1927,6 +2032,7 @@ simBsOpt <- R6::R6Class(
       returnMethod <- self$returnMethod
       saveAllResAt <- self$saveAllResAt
       evaluateGVMethod <- self$evaluateGVMethod
+      nTopEval <- self$nTopEval
       traitNoEval <- self$traitNoEval
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
@@ -1986,7 +2092,7 @@ simBsOpt <- R6::R6Class(
 
       if (useFirstOptimizedValue) {
         if (verbose) {
-          print("Perform oprimization of hyperparameters once.")
+          print("Perform optimization of hyperparameters once.")
         }
         soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                             nGenerationProceedSimulation = nGenerationProceedSimulation,
@@ -2016,6 +2122,9 @@ simBsOpt <- R6::R6Class(
                                                bsInfoInit = bsInfoInit,
                                                breederInfoInit = breederInfoInit,
                                                lociEffMethod = lociEffMethod,
+                                               trainingPopType = trainingPopType,
+                                               trainingPopInit = trainingPopInit,
+                                               trainingIndNamesInit = trainingIndNamesInit,
                                                methodMLRInit = methodMLRInit,
                                                multiTraitInit = multiTraitInit,
                                                nIterSimulation = nIterSimulation,
@@ -2060,6 +2169,7 @@ simBsOpt <- R6::R6Class(
                                                returnMethod = returnMethod,
                                                saveAllResAt = saveAllResAt,
                                                evaluateGVMethod = evaluateGVMethod,
+                                               nTopEval = nTopEval,
                                                traitNoEval = traitNoEval,
                                                hEval = hEval,
                                                summaryAllResAt = summaryAllResAt,
@@ -2263,7 +2373,8 @@ simBsOpt <- R6::R6Class(
                                                  genotypedIndNames = NULL)
                   }
                   if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-                    breederInfo$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
+                    breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                                                trainingIndNames = self$trainingIndNamesInit,
                                                 testingPop = length(breederInfo$populationsFB),
                                                 methodMLR = self$methodMLRInit,
                                                 multiTrait = self$multiTraitInit,
@@ -2308,7 +2419,8 @@ simBsOpt <- R6::R6Class(
                   }
 
                   if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-                    breederInfo$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
+                    breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                                                trainingIndNames = self$trainingIndNamesInit,
                                                 testingPop = length(breederInfo$populationsFB),
                                                 methodMLR = self$methodMLRInit,
                                                 multiTrait = self$multiTraitInit,
@@ -2340,7 +2452,7 @@ simBsOpt <- R6::R6Class(
                 trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
                 if ("max" %in% returnMethod) {
-                  self$simBsRes[[simBsName]]$max[iterName] <- max(x = trueEvals)
+                  self$simBsRes[[simBsName]]$max[iterName] <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
                 }
 
                 if ("mean" %in% returnMethod) {
@@ -2352,7 +2464,7 @@ simBsOpt <- R6::R6Class(
                 }
 
                 if ("min" %in% returnMethod) {
-                  self$simBsRes[[simBsName]]$min[iterName] <- min(x = trueEvals)
+                  self$simBsRes[[simBsName]]$min[iterName] <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
                 }
 
                 if ("varmin" %in% returnMethod) {
@@ -2475,6 +2587,7 @@ simBsOpt <- R6::R6Class(
       bsInfoInit <- self$bsInfoInit
       showProgress <- self$showProgress
       evaluateGVMethod <- self$evaluateGVMethod
+      nTopEval <- self$nTopEval
       simBsRes <- self$simBsRes
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
@@ -2771,6 +2884,7 @@ simBsOpt <- R6::R6Class(
                             bayesian = FALSE) {
       # Read arguments from `self`
       lociEffMethod <- self$lociEffMethod
+      trainingPopType <- self$trainingPopType
       methodMLR <- self$methodMLR
       multiTrait <- self$multiTrait
       verbose <- self$verbose
@@ -2783,8 +2897,14 @@ simBsOpt <- R6::R6Class(
         trainingPopName <- names(breederInfo$populationsFB)
         infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
 
+        if (trainingPopType == "all") {
+          trainingPop <- 1:length(breederInfo$populationsFB)
+        } else {
+          trainingPop <- length(breederInfo$populationsFB)
+        }
+
         if (is.null(breederInfo$estimatedMrkEffInfo[[infoName]])) {
-          breederInfo$estimateMrkEff(trainingPop = NULL,
+          breederInfo$estimateMrkEff(trainingPop = trainingPop,
                                      methodMLR = methodMLR,
                                      multiTrait = multiTrait,
                                      alpha = alpha,
@@ -2794,7 +2914,7 @@ simBsOpt <- R6::R6Class(
                                      bayesian = bayesian)
         }
         lociEffects <- breederInfo$lociEffects(bsInfo = bsInfo,
-                                               trainingPop = NULL,
+                                               trainingPop = trainingPop,
                                                methodMLR = methodMLR)
       }
 
@@ -2824,6 +2944,9 @@ simBsOpt <- R6::R6Class(
                                                bsInfoInit = self$bsInfoInit,
                                                breederInfoInit = self$breederInfoInit,
                                                lociEffMethod = self$lociEffMethod,
+                                               trainingPopType = self$trainingPopType,
+                                               trainingPopInit = self$trainingPopInit,
+                                               trainingIndNamesInit = self$trainingIndNamesInit,
                                                methodMLRInit = self$methodMLRInit,
                                                multiTraitInit = self$multiTraitInit,
                                                nIterSimulation = self$nIterSimulationPerEvaluation,
@@ -2868,6 +2991,7 @@ simBsOpt <- R6::R6Class(
                                                returnMethod = "max",
                                                saveAllResAt = NULL,
                                                evaluateGVMethod = "estimated",
+                                               nTopEval = self$nTopEvalForOpt,
                                                traitNoEval = self$traitNoEval,
                                                hEval = self$hEval,
                                                summaryAllResAt = NULL,
@@ -2879,6 +3003,9 @@ simBsOpt <- R6::R6Class(
                                                bsInfoInit = self$bsInfoInit,
                                                breederInfoInit = self$breederInfoInit,
                                                lociEffMethod = self$lociEffMethod,
+                                               trainingPopType = self$trainingPopType,
+                                               trainingPopInit = self$trainingPopInit,
+                                               trainingIndNamesInit = self$trainingIndNamesInit,
                                                methodMLRInit = self$methodMLRInit,
                                                multiTraitInit = self$multiTraitInit,
                                                nIterSimulation = self$nIterSimulationPerEvaluation,
@@ -2923,6 +3050,7 @@ simBsOpt <- R6::R6Class(
                                                returnMethod = "summary",
                                                saveAllResAt = NULL,
                                                evaluateGVMethod = "estimated",
+                                               nTopEval = self$nTopEvalForOpt,
                                                traitNoEval = self$traitNoEval,
                                                hEval = self$hEval,
                                                summaryAllResAt = NULL,
@@ -2999,6 +3127,7 @@ simBsOpt <- R6::R6Class(
       nTotalIterForOneOptimization <- self$nTotalIterForOneOptimization
       nIterSimulationPerEvaluation <- self$nIterSimulationPerEvaluation
       nIterOptimization <- self$nIterOptimization
+      nTopEvalForOpt <- self$nTopEvalForOpt
       digitsEval <- self$digitsEval
       nRefreshMemoryEvery <- self$nRefreshMemoryEvery
       hLens <- self$hLens
@@ -3045,6 +3174,7 @@ simBsOpt <- R6::R6Class(
       returnMethod <- self$returnMethod
       saveAllResAt <- self$saveAllResAt
       evaluateGVMethod <- self$evaluateGVMethod
+      nTopEval <- self$nTopEval
       traitNoEval <- self$traitNoEval
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
@@ -3195,7 +3325,8 @@ simBsOpt <- R6::R6Class(
           }
 
           if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-            breederInfo$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
+            breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                                        trainingIndNames = self$trainingIndNamesInit,
                                         testingPop = length(breederInfo$populationsFB),
                                         methodMLR = self$methodMLRInit,
                                         multiTrait = self$multiTraitInit,
@@ -3242,7 +3373,8 @@ simBsOpt <- R6::R6Class(
           }
 
           if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-            breederInfo$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
+            breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                                        trainingIndNames = self$trainingIndNamesInit,
                                         testingPop = length(breederInfo$populationsFB),
                                         methodMLR = self$methodMLRInit,
                                         multiTrait = self$multiTraitInit,
@@ -3274,7 +3406,7 @@ simBsOpt <- R6::R6Class(
         trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
 
         if ("max" %in% returnMethod) {
-          simRes$max <- max(x = trueEvals)
+          simRes$max <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
         }
 
         if ("mean" %in% returnMethod) {
@@ -3286,7 +3418,7 @@ simBsOpt <- R6::R6Class(
         }
 
         if ("min" %in% returnMethod) {
-          simRes$min <- min(x = trueEvals)
+          simRes$min <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
         }
 
         if ("var" %in% returnMethod) {
@@ -3348,6 +3480,7 @@ simBsOpt <- R6::R6Class(
       bsInfoInit <- self$bsInfoInit
       showProgress <- self$showProgress
       evaluateGVMethod <- self$evaluateGVMethod
+      nTopEval <- self$nTopEval
       simBsRes <- self$simBsRes
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
@@ -3390,7 +3523,8 @@ simBsOpt <- R6::R6Class(
         for (generationNow in 1:length(breederInfoEach$populationsFB)) {
           eachPop <- breederInfoEach$populationsFB[[generationNow]]
           if (is.null(breederInfoEach$estimatedGVByMLRInfo[[eachPop$name]])) {
-            breederInfoEach$estimateGVByMLR(trainingPop = 1:bsInfoInit$generation,
+            breederInfoEach$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                                            trainingIndNames = self$trainingIndNamesInit,
                                             testingPop = generationNow,
                                             methodMLR = self$methodMLRInit,
                                             multiTrait = self$multiTraitInit,
@@ -3420,15 +3554,17 @@ simBsOpt <- R6::R6Class(
     #
     # @param trueGVMatListEach [list] Each list of true GV matrix
     extractTrueSummaryRes = function (trueGVMatListEach) {
+      nTopEval <- self$nTopEval
+
       trueGVSummaryArrayEachList <- lapply(X = trueGVMatListEach,
                                            FUN = function(trueGVMatEachPop) {
                                              trueGVSummaryEachPop <- apply(X = trueGVMatEachPop,
                                                                            MARGIN = 2,
                                                                            FUN = function(trueGVMatEachPopEachTrait) {
-                                                                             trueGVSummaryEachPopEachTrait <- c(max(trueGVMatEachPopEachTrait),
+                                                                             trueGVSummaryEachPopEachTrait <- c(mean(x = sort(x = trueGVMatEachPopEachTrait, decreasing = TRUE)[1:nTopEval]),
                                                                                                                 mean(trueGVMatEachPopEachTrait),
                                                                                                                 median(trueGVMatEachPopEachTrait),
-                                                                                                                min(trueGVMatEachPopEachTrait),
+                                                                                                                mean(x = sort(x = trueGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                 var(trueGVMatEachPopEachTrait))
 
                                                                              return(trueGVSummaryEachPopEachTrait)
@@ -3455,15 +3591,17 @@ simBsOpt <- R6::R6Class(
     #
     # @param estimatedGVMatListEach [list] Each list of estimated GV matrix
     extractEstimatedSummaryRes = function (estimatedGVMatListEach) {
+      nTopEval <- self$nTopEval
+
       estimatedGVSummaryArrayEachList <- lapply(X = estimatedGVMatListEach,
                                                 FUN = function(estimatedGVMatEachPop) {
                                                   estimatedGVSummaryEachPop <- apply(X = estimatedGVMatEachPop,
                                                                                      MARGIN = 2,
                                                                                      FUN = function(estimatedGVMatEachPopEachTrait) {
-                                                                                       estimatedGVSummaryEachPopEachTrait <- c(max(estimatedGVMatEachPopEachTrait),
+                                                                                       estimatedGVSummaryEachPopEachTrait <- c(mean(x = sort(x = estimatedGVMatEachPopEachTrait, decreasing = TRUE)[1:nTopEval]),
                                                                                                                                mean(estimatedGVMatEachPopEachTrait),
                                                                                                                                median(estimatedGVMatEachPopEachTrait),
-                                                                                                                               min(estimatedGVMatEachPopEachTrait),
+                                                                                                                               mean(x = sort(x = estimatedGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                                var(estimatedGVMatEachPopEachTrait))
 
                                                                                        return(estimatedGVSummaryEachPopEachTrait)

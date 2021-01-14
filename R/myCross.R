@@ -247,10 +247,10 @@ crossInfo <- R6::R6Class(
       selectionMethodsOffered <- c("nonSelection", "selectBV", "selectWBV", "selectOHV",
                                    "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithSelection <- c("selectBV", "selectWBV", "selectOHV",
-                                         "selectEMBV", "selectOPV", "userSI")
+                                         "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithMrkEff <- c("selectBV", "selectWBV", "selectOHV", "selectEMBV", "selectOPV")
       matingMethodsOffered <- c("randomMate", "roundRobin", "diallel", "diallelWithSelfing",
-                                "selfing", "maxGenDist", "makeDH", "userSpecific")
+                                "selfing", "maxGenDist", "makeDH", "nonCross", "userSpecific")
       allocateMethodsOffered <- c("equalAllocation", "weightedAllocation", "userSpecific")
       nameMethodsOffered <- c("pairBase", "individualBase")
       blockSplitMethodsOffered <- c("nMrkInBlock", "minimumSegmentLength")
@@ -1106,7 +1106,7 @@ crossInfo <- R6::R6Class(
       selectionMethodsOffered <- c("nonSelection", "selectBV", "selectWBV", "selectOHV",
                                    "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithSelection <- c("selectBV", "selectWBV", "selectOHV",
-                                         "selectEMBV", "selectOPV", "userSI")
+                                         "selectEMBV", "selectOPV", "userSI", "userSpecific")
       selectionMethodsWithMrkEff <- c("selectBV", "selectWBV", "selectOHV", "selectEMBV", "selectOPV")
       nIndNow <- self$parentPopulation$nInd
       nTraits <- self$parentPopulation$traitInfo$nTraits
@@ -2177,7 +2177,7 @@ crossInfo <- R6::R6Class(
 
     #' @field makeCrosses [list] return a list of new individuals
     makeCrosses = function() {
-      if (self$matingMethod != "makeDH") {
+      if (!(self$matingMethod %in% c("makeDH", "nonCross"))) {
         crosses <- self$crosses
         pop <- self$parentPopulation
         seed <- self$seedSimMC
@@ -2244,9 +2244,24 @@ crossInfo <- R6::R6Class(
             '"'
           ))
         }
-      } else {
+      } else if (self$matingMethod == "makeDH") {
         newInds <- self$makeDHs
+      } else if (self$matingMethod == "nonCross") {
+        parentPopulation <- self$parentPopulation
+        selCands <- self$selCands
+
+        newInds <- parentPopulation$inds[selCands]
+        if (length(self$indNames) == 1) {
+          indNames <- .charSeq(paste0(self$indNames, "_"), seq(nNextPop))
+        } else if (length(self$indNames) == length(newInds)) {
+          indNames <- self$indNames
+        } else {
+          indNames <- .charSeq(paste0("G", parentPopulation$generation + 1, "_"), seq(nNextPop))
+        }
+
+        names(newInds) <- indNames
       }
+
       return(newInds)
     },
 
