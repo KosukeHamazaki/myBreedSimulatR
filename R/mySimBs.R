@@ -408,7 +408,7 @@ simBs <- R6::R6Class(
 
 
       # define some variables
-      nIndNow <- bsInfoInit$populations[[bsInfoInit$generation]]$nInd
+      nIndNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$nInd
       nTraits <- bsInfoInit$traitInfo$nTraits
 
 
@@ -1387,7 +1387,7 @@ simBs <- R6::R6Class(
       }
 
 
-      estimatedGVInitExist <- !is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]])
+      estimatedGVInitExist <- !is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]])
       if (!estimatedGVInitExist) {
         # trainingPopInit
         if (is.null(trainingPopInit)) {
@@ -1517,8 +1517,8 @@ simBs <- R6::R6Class(
 
 
       # trueGVMatList
-      trueGVMatInit <- list(bsInfoInit$populations[[bsInfoInit$generation]]$trueGVMat)
-      names(trueGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
+      trueGVMatInit <- list(bsInfoInit$populations[[length(bsInfoInit$populations)]]$trueGVMat)
+      names(trueGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       trueGVMatInitList <- rep(list(trueGVMatInit), nIterSimulation)
       names(trueGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
 
@@ -1527,23 +1527,31 @@ simBs <- R6::R6Class(
 
 
       # estimatedGVMatList
-      if (!estimatedGVInitExist) {
-        self$computeLociEffInit()
-        breederInfoInit$estimateGVByMLR(trainingPop = trainingPopInit,
-                                        trainingIndNames = trainingIndNamesInit,
-                                        testingPop = length(breederInfoInit$populationsFB),
-                                        methodMLR = methodMLRInit,
-                                        multiTrait = multiTraitInit,
-                                        alpha = 0.5,
-                                        nIter = 12000,
-                                        burnIn = 3000,
-                                        thin = 5,
-                                        bayesian = TRUE)
-      }
+      # if (!estimatedGVInitExist) {
+      #   self$computeLociEffInit()
+      #   breederInfoInit$estimateGVByMLR(trainingPop = trainingPopInit,
+      #                                   trainingIndNames = trainingIndNamesInit,
+      #                                   testingPop = length(breederInfoInit$populationsFB),
+      #                                   methodMLR = methodMLRInit,
+      #                                   multiTrait = multiTraitInit,
+      #                                   alpha = 0.5,
+      #                                   nIter = 12000,
+      #                                   burnIn = 3000,
+      #                                   thin = 5,
+      #                                   bayesian = TRUE)
+      # }
+      #
+      #
+      # estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]]$testingEstimatedGVByMLR)
 
+      self$computeLociEffInit()
+      lociEffectsInit <- self$lociEffectsInit
+      genoMatNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$genoMat
+      genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                 genoMatNow)
 
-      estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[bsInfoInit$generation])]]$testingEstimatedGVByMLR)
-      names(estimatedGVMatInit) <- bsInfoInit$populations[[bsInfoInit$generation]]$name
+      estimatedGVMatInit <- list(genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit)
+      names(estimatedGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
       names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
 
@@ -1648,8 +1656,9 @@ simBs <- R6::R6Class(
       hEval <- self$hEval
       verbose <- self$verbose
 
+      lociEffectsInit <- self$lociEffectsInit
 
-      populationNameInit <- names(bsInfoInit$populations[bsInfoInit$generation])
+      populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
 
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
 
@@ -1761,7 +1770,7 @@ simBs <- R6::R6Class(
             }
 
             for (genProceedNo in 1:nGenerationProceed) {
-              crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[bsInfo$generation]],
+              crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                              nSelectionWays = nSelectionWaysVec[genProceedNo],
                                                              selectionMethod = selectionMethodList[[genProceedNo]],
                                                              traitNoSel = traitNoSelList[[genProceedNo]],
@@ -1822,30 +1831,37 @@ simBs <- R6::R6Class(
 
 
               if (any(c("all", "summary") %in% returnMethod)) {
-                populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
-                trueGVMat <- bsInfo$populations[[bsInfo$generation]]$trueGVMat
+                populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
+                trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                 self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
 
-                if (breederInfo$generation < bsInfo$generation) {
-                  breederInfo$getNewPopulation(bsInfo = bsInfo,
-                                               generationNew = bsInfo$generation,
-                                               genotyping = TRUE,
-                                               genotypedIndNames = NULL)
-                }
+                # if (breederInfo$generation < bsInfo$generation) {
+                #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+                #                                generationNew = bsInfo$generation,
+                #                                genotyping = TRUE,
+                #                                genotypedIndNames = NULL)
+                # }
 
-                if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-                  breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-                                              trainingIndNames = self$trainingIndNamesInit,
-                                              testingPop = length(breederInfo$populationsFB),
-                                              methodMLR = self$methodMLRInit,
-                                              multiTrait = self$multiTraitInit,
-                                              alpha = 0.5,
-                                              nIter = 12000,
-                                              burnIn = 3000,
-                                              thin = 5,
-                                              bayesian = TRUE)
-                }
-                estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]]$testingEstimatedGVByMLR
+                # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+                #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                #                               trainingIndNames = self$trainingIndNamesInit,
+                #                               testingPop = length(breederInfo$populationsFB),
+                #                               methodMLR = self$methodMLRInit,
+                #                               multiTrait = self$multiTraitInit,
+                #                               alpha = 0.5,
+                #                               nIter = 12000,
+                #                               burnIn = 3000,
+                #                               thin = 5,
+                #                               bayesian = TRUE)
+                # }
+                # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
+
+
+                genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+                genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                           genoMatNow)
+
+                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
             }
@@ -1866,34 +1882,40 @@ simBs <- R6::R6Class(
                                                                  breederInfo = breederInfo)
             }
             if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
-              populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
+              populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
               if (any(c("all", "summary") %in% returnMethod)) {
                 trueGVMat <- self$trueGVMatList[[iterName]][[populationNameNow]]
                 estimatedGVMat <- self$estimatedGVMatList[[iterName]][[populationNameNow]]
               } else {
-                trueGVMat <- bsInfo$populations[[bsInfo$generation]]$trueGVMat
+                trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                 self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
 
-                if (breederInfo$generation < bsInfo$generation) {
-                  breederInfo$getNewPopulation(bsInfo = bsInfo,
-                                               generationNew = bsInfo$generation,
-                                               genotyping = TRUE,
-                                               genotypedIndNames = NULL)
-                }
+                # if (breederInfo$generation < bsInfo$generation) {
+                #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+                #                                generationNew = bsInfo$generation,
+                #                                genotyping = TRUE,
+                #                                genotypedIndNames = NULL)
+                # }
+                #
+                # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+                #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+                #                               trainingIndNames = self$trainingIndNamesInit,
+                #                               testingPop = length(breederInfo$populationsFB),
+                #                               methodMLR = self$methodMLRInit,
+                #                               multiTrait = self$multiTraitInit,
+                #                               alpha = 0.5,
+                #                               nIter = 12000,
+                #                               burnIn = 3000,
+                #                               thin = 5,
+                #                               bayesian = TRUE)
+                # }
+                # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
 
-                if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-                  breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-                                              trainingIndNames = self$trainingIndNamesInit,
-                                              testingPop = length(breederInfo$populationsFB),
-                                              methodMLR = self$methodMLRInit,
-                                              multiTrait = self$multiTraitInit,
-                                              alpha = 0.5,
-                                              nIter = 12000,
-                                              burnIn = 3000,
-                                              thin = 5,
-                                              bayesian = TRUE)
-                }
-                estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]]$testingEstimatedGVByMLR
+                genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+                genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                           genoMatNow)
+
+                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
 
@@ -2434,7 +2456,9 @@ simBs <- R6::R6Class(
       hEval <- self$hEval
       verbose <- self$verbose
 
-      populationNameInit <- names(bsInfoInit$populations[bsInfoInit$generation])
+      lociEffectsInit <- self$lociEffectsInit
+
+      populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
 
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       lociEffectsInit <- self$lociEffectsInit
@@ -2461,7 +2485,7 @@ simBs <- R6::R6Class(
 
 
       for (genProceedNo in 1:nGenerationProceed) {
-        crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[bsInfo$generation]],
+        crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                        nSelectionWays = nSelectionWaysVec[genProceedNo],
                                                        selectionMethod = selectionMethodList[[genProceedNo]],
                                                        traitNoSel = traitNoSelList[[genProceedNo]],
@@ -2522,30 +2546,36 @@ simBs <- R6::R6Class(
 
 
         if (any(c("all", "summary") %in% returnMethod)) {
-          populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
-          trueGVMat <- bsInfo$populations[[bsInfo$generation]]$trueGVMat
+          populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
+          trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
 
-          if (breederInfo$generation < bsInfo$generation) {
-            breederInfo$getNewPopulation(bsInfo = bsInfo,
-                                         generationNew = bsInfo$generation,
-                                         genotyping = TRUE,
-                                         genotypedIndNames = NULL)
-          }
+          # if (breederInfo$generation < bsInfo$generation) {
+          #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+          #                                generationNew = bsInfo$generation,
+          #                                genotyping = TRUE,
+          #                                genotypedIndNames = NULL)
+          # }
+          #
+          # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+          #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+          #                               trainingIndNames = self$trainingIndNamesInit,
+          #                               testingPop = length(breederInfo$populationsFB),
+          #                               methodMLR = self$methodMLRInit,
+          #                               multiTrait = self$multiTraitInit,
+          #                               alpha = 0.5,
+          #                               nIter = 12000,
+          #                               burnIn = 3000,
+          #                               thin = 5,
+          #                               bayesian = TRUE)
+          # }
+          # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
 
-          if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-            breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-                                        trainingIndNames = self$trainingIndNamesInit,
-                                        testingPop = length(breederInfo$populationsFB),
-                                        methodMLR = self$methodMLRInit,
-                                        multiTrait = self$multiTraitInit,
-                                        alpha = 0.5,
-                                        nIter = 12000,
-                                        burnIn = 3000,
-                                        thin = 5,
-                                        bayesian = TRUE)
-          }
-          estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]]$testingEstimatedGVByMLR
+          genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                     genoMatNow)
+
+          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
       }
@@ -2566,34 +2596,40 @@ simBs <- R6::R6Class(
                            breederInfo = breederInfo)
       }
       if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
-        populationNameNow <- names(bsInfo$populations)[bsInfo$generation]
+        populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
         if (any(c("all", "summary") %in% returnMethod)) {
           trueGVMat <- simRes$trueGVMatList[[populationNameNow]]
           estimatedGVMat <- simRes$estimatedGVMatList[[populationNameNow]]
         } else {
-          trueGVMat <- bsInfo$populations[[bsInfo$generation]]$trueGVMat
+          trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
 
-          if (breederInfo$generation < bsInfo$generation) {
-            breederInfo$getNewPopulation(bsInfo = bsInfo,
-                                         generationNew = bsInfo$generation,
-                                         genotyping = TRUE,
-                                         genotypedIndNames = NULL)
-          }
+          # if (breederInfo$generation < bsInfo$generation) {
+          #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+          #                                generationNew = bsInfo$generation,
+          #                                genotyping = TRUE,
+          #                                genotypedIndNames = NULL)
+          # }
+          #
+          # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+          #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+          #                               trainingIndNames = self$trainingIndNamesInit,
+          #                               testingPop = length(breederInfo$populationsFB),
+          #                               methodMLR = self$methodMLRInit,
+          #                               multiTrait = self$multiTraitInit,
+          #                               alpha = 0.5,
+          #                               nIter = 12000,
+          #                               burnIn = 3000,
+          #                               thin = 5,
+          #                               bayesian = TRUE)
+          # }
+          # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
 
-          if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]])) {
-            breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-                                        trainingIndNames = self$trainingIndNamesInit,
-                                        testingPop = length(breederInfo$populationsFB),
-                                        methodMLR = self$methodMLRInit,
-                                        multiTrait = self$multiTraitInit,
-                                        alpha = 0.5,
-                                        nIter = 12000,
-                                        burnIn = 3000,
-                                        thin = 5,
-                                        bayesian = TRUE)
-          }
-          estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[bsInfo$generation])]]$testingEstimatedGVByMLR
+          genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                     genoMatNow)
+
+          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
 
@@ -2657,7 +2693,7 @@ simBs <- R6::R6Class(
       iterName <- iterNames[iterNo]
 
       bsInfoInit <- self$bsInfoInit
-      populationNameInit <- names(bsInfoInit$populations[bsInfoInit$generation])
+      populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
 
       if ("try-error" %in% class(simRes)) {
         simRes <- list()
@@ -2693,6 +2729,8 @@ simBs <- R6::R6Class(
       simBsRes <- self$simBsRes
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
+      lociEffectsInit <- self$lociEffectsInit
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
 
       fileNameBsInfoRes0 <- here::here(summaryAllResAt,
@@ -2716,43 +2754,54 @@ simBs <- R6::R6Class(
       }
 
 
-      fileNameBreederInfoRes <- paste0(fileNameBreederInfoRes0,  iterName, ".rds")
-      breederInfoEach <- try(readRDS(file = fileNameBreederInfoRes), silent = TRUE)
+      # fileNameBreederInfoRes <- paste0(fileNameBreederInfoRes0,  iterName, ".rds")
+      # breederInfoEach <- try(readRDS(file = fileNameBreederInfoRes), silent = TRUE)
 
-      if (!("try-error" %in% class(breederInfoEach))) {
-        if (breederInfoEach$generation < bsInfoEach$generation) {
-          for (generationAdd in (breederInfoEach$generation + 1):bsInfoEach$generation) {
-            breederInfoEach$getNewPopulation(bsInfo = bsInfoEach,
-                                             generationNew = generationAdd,
-                                             genotyping = estimated,
-                                             genotypedIndNames = NULL)
-          }
-        }
+      # if (!("try-error" %in% class(breederInfoEach))) {
+      # if (breederInfoEach$generation < bsInfoEach$generation) {
+      #   for (generationAdd in (breederInfoEach$generation + 1):bsInfoEach$generation) {
+      #     breederInfoEach$getNewPopulation(bsInfo = bsInfoEach,
+      #                                      generationNew = generationAdd,
+      #                                      genotyping = estimated,
+      #                                      genotypedIndNames = NULL)
+      #   }
+      # }
+      #
+      # for (generationNow in 1:length(breederInfoEach$populationsFB)) {
+      #   eachPop <- breederInfoEach$populationsFB[[generationNow]]
+      #   if (is.null(breederInfoEach$estimatedGVByMLRInfo[[eachPop$name]])) {
+      #     breederInfoEach$estimateGVByMLR(trainingPop = self$trainingPopInit,
+      #                                     trainingIndNames = self$trainingIndNamesInit,
+      #                                     testingPop = generationNow,
+      #                                     methodMLR = self$methodMLRInit,
+      #                                     multiTrait = self$multiTraitInit,
+      #                                     alpha = 0.5,
+      #                                     nIter = 12000,
+      #                                     burnIn = 3000,
+      #                                     thin = 5,
+      #                                     bayesian = TRUE)
+      #   }
+      # }
+      # estimatedGVMatEachList <- lapply(X = breederInfoEach$populationsFB,
+      #                                  FUN = function(eachPop) {
+      #                                    estimatedGVMatEachPop <- breederInfoEach$estimatedGVByMLRInfo[[eachPop$name]]$testingEstimatedGVByMLR
+      #
+      #                                    return(estimatedGVMatEachPop)
+      #                                  })
+      #
+      #       } else {
+      #         estimatedGVMatEachList <- NULL
+      #       }
 
-        for (generationNow in 1:length(breederInfoEach$populationsFB)) {
-          eachPop <- breederInfoEach$populationsFB[[generationNow]]
-          if (is.null(breederInfoEach$estimatedGVByMLRInfo[[eachPop$name]])) {
-            breederInfoEach$estimateGVByMLR(trainingPop = self$trainingPopInit,
-                                            trainingIndNames = self$trainingIndNamesInit,
-                                            testingPop = generationNow,
-                                            methodMLR = self$methodMLRInit,
-                                            multiTrait = self$multiTraitInit,
-                                            alpha = 0.5,
-                                            nIter = 12000,
-                                            burnIn = 3000,
-                                            thin = 5,
-                                            bayesian = TRUE)
-          }
-        }
-        estimatedGVMatEachList <- lapply(X = breederInfoEach$populationsFB,
-                                         FUN = function(eachPop) {
-                                           estimatedGVMatEachPop <- breederInfoEach$estimatedGVByMLRInfo[[eachPop$name]]$testingEstimatedGVByMLR
+      estimatedGVMatEachList <- lapply(X = bsInfoEach$populations,
+                                       FUN = function(eachPop) {
+                                         genoMatNow <- eachPop$genoMat
+                                         genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                                                    genoMatNow)
+                                         estimatedGVMatEachPop <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
 
-                                           return(estimatedGVMatEachPop)
-                                         })
-      } else {
-        estimatedGVMatEachList <- NULL
-      }
+                                         return(estimatedGVMatEachPop)
+                                       })
 
       return(list(trueGVMatEachList = trueGVMatEachList,
                   estimatedGVMatEachList = estimatedGVMatEachList))

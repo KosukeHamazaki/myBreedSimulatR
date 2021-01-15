@@ -314,8 +314,6 @@ bsInfo <- R6::R6Class(
       generation <- self$generation
       crossInfoList <- self$crossInfoList
 
-      oldPop <- populations[[generation]]
-
       crossInfoName <- paste0(generation, "_to_", generation + 1)
 
       generation <- generation + 1
@@ -386,10 +384,10 @@ bsInfo <- R6::R6Class(
       generation <- self$generation
 
       if (is.null(targetPop)) {
-        targetPop <- 1:generation
+        targetPop <- 1:length(populations)
       }
 
-      targetPop <- targetPop[targetPop %in% (1:generation)]
+      targetPop <- targetPop[targetPop %in% (1:length(populations))]
       targetPopulations <- populations[targetPop]
 
       nTargetPop <- length(targetPop)

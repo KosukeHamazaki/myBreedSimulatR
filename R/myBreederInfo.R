@@ -202,13 +202,13 @@ breederInfo <- R6::R6Class(
         stopifnot(generationNew >= 1)
       }
 
-      if (length(populations) < generationNew) {
+      if (bsInfo$generation < generationNew) {
         stop("bsInfo object doesn't contain the information on new population!")
-      } else if (length(populations) > generationNew) {
+      } else if (bsInfo$generation > generationNew) {
         message("New population for breeder is not the latest population in bsInfo. OK?")
       }
 
-      newPopulation <- bsInfo$populations[[generationNew]]
+      newPopulation <- bsInfo$populations[[which(unlist(lapply(populations, function(pop) pop$generation)) %in% generationNew)]]
       newPopulationFB <- self$populationFB$new(
         population = newPopulation,
         genotyping = genotyping,
