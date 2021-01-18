@@ -95,6 +95,10 @@ SNPs (see:\link[breedSimulatR]{lociInfo})}
 
 \item{\code{founderIsInitPop}}{[logical] Founder haplotype will be regarded as first population or not.}
 
+\item{\code{seedSimRM}}{[numeric] Random seed for mate pairs}
+
+\item{\code{seedSimMC}}{[numeric] Random seed for make crosses}
+
 \item{\code{popNameBase}}{[character] base of population's name.}
 
 \item{\code{populations}}{[list] A list of population objects}
@@ -148,6 +152,8 @@ Create a new specie object.
   geno = NULL,
   haplo = NULL,
   founderIsInitPop = TRUE,
+  seedSimRM = NA,
+  seedSimMC = NA,
   popNameBase = "Population",
   initIndNames = NULL,
   herit = NULL,
@@ -180,6 +186,10 @@ If you use real data, you must specify `geno` or `haplo` argument.}
 \item{\code{haplo}}{[array] haplotype of the individuals scored with 0 and 1 (3-dimensional array).}
 
 \item{\code{founderIsInitPop}}{[logical] Founder haplotype will be regarded as first population or not.}
+
+\item{\code{seedSimRM}}{[numeric] Random seed for mate pairs}
+
+\item{\code{seedSimMC}}{[numeric] Random seed for make crosses}
 
 \item{\code{popNameBase}}{[character] base of population's name.}
 

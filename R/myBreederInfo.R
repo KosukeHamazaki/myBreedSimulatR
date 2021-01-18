@@ -53,6 +53,10 @@ breederInfo <- R6::R6Class(
     estimatedMrkEffInfo = NULL,
     #' @field estimatedGVByMLRInfo [list] A list of information on estimated GVs using MLR (multiple linear regression)
     estimatedGVByMLRInfo = NULL,
+    #' @field multiTraitsAsEnvs [logical] Treat multiple traits as multiple environments or not
+    multiTraitsAsEnvs = NULL,
+    #' @field includeIntercept [logical] Include intercept information when estimating genotypic values by replication
+    includeIntercept = NULL,
     #' @field verbose [boolean] display information
     verbose = NULL,
 
@@ -70,6 +74,8 @@ breederInfo <- R6::R6Class(
     #' @param methodsGRMBase [character] default methods to calculate GRM
     #' @param calcEpistasisBase [logical] when additive / dominance GRM has already been calulated,
     #'  whether or not calculate epistatic GRM
+    #' @param multiTraitsAsEnvs [logical] Treat multiple traits as multiple environments or not
+    #' @param includeIntercept [logical] Include intercept information when estimating genotypic values by replication
     #' @param verbose [logical] Display info (optional)
     #' @return A new `breederInfo` object.
     #' @examples
@@ -110,6 +116,8 @@ breederInfo <- R6::R6Class(
                           calculateGRMBase = TRUE,
                           methodsGRMBase = "addNOIA",
                           calcEpistasisBase = FALSE,
+                          multiTraitsAsEnvs = FALSE,
+                          includeIntercept = TRUE,
                           verbose = TRUE) {
 
       # bsInfo class
@@ -165,6 +173,9 @@ breederInfo <- R6::R6Class(
       popNameBase <- (stringr::str_split(string = initPopulationFB$name,
                                          pattern = "_")[[1]])[1]
 
+      if (traitInfoFB$nTraits == 1) {
+        multiTraitsAsEnvs <- FALSE
+      }
 
       self$breederName <- breederName
       self$simInfo <- simInfo
@@ -179,6 +190,8 @@ breederInfo <- R6::R6Class(
       self$methodsGRMBase <- methodsGRMBase
       self$calcEpistasisBase <- calcEpistasisBase
       self$estimatedGVByGRMInfo <- list()
+      self$multiTraitsAsEnvs <- multiTraitsAsEnvs
+      self$includeIntercept <- includeIntercept
       self$verbose <- verbose
     },
 
@@ -244,7 +257,6 @@ breederInfo <- R6::R6Class(
     phenotyper = function(bsInfo,
                           generationOfInterest = NULL,
                           nRep = 1,
-                          multiTraitsAsEnvs = FALSE,
                           phenotypedIndNames = NULL,
                           estimateGV = TRUE,
                           estimatedGVMethod = "lme4") {
@@ -261,9 +273,6 @@ breederInfo <- R6::R6Class(
       stopifnot(is.numeric(nRep))
       stopifnot(nRep >= 1)
 
-      if (self$traitInfoFB$nTraits == 1) {
-        multiTraitsAsEnvs <- FALSE
-      }
 
       if (length(populationsFB) < generationOfInterest) {
         stop(paste0("You haven't obtained the information of population of interest yet!! ",
@@ -285,13 +294,14 @@ breederInfo <- R6::R6Class(
       currentTrialInfo <- trialInfo$new(population = currentPopulation,
                                         herit = bsInfo$herit,
                                         nRep = nRep,
-                                        multiTraitsAsEnvs = multiTraitsAsEnvs,
+                                        multiTraitsAsEnvs = self$multiTraitsAsEnvs,
                                         envSpecificEffects = bsInfo$envSpecificEffects,
                                         residCor = bsInfo$residCor)
 
       currentPopulationFB$phenotyper(trialInfo = currentTrialInfo,
                                      estimateGV = estimateGV,
                                      estimatedGVMethod = estimatedGVMethod,
+                                     includeIntercept = self$includeIntercept,
                                      phenotypedIndNames = phenotypedIndNames)
       populationsFB[[currentPopulationFB$name]] <- currentPopulationFB
 
@@ -690,6 +700,17 @@ breederInfo <- R6::R6Class(
                         }, simplify = FALSE)
       names(pltList) <- colnames(totalEstimatedGVByRep)
 
+      if (self$multiTraitsAsEnvs) {
+        totalEstimatedGVByGRM <- matrix(data = rep(totalEstimatedGVByGRM, self$traitInfoFB$nTraits),
+                                        nrow = nrow(totalEstimatedGVByGRM), byrow = FALSE,
+                                        dimnames = list(rownames(totalEstimatedGVByGRM),
+                                                        self$traitInfoFB$traitNames))
+        testingEstimatedGVByGRM <- matrix(data = rep(testingEstimatedGVByGRM, self$traitInfoFB$nTraits),
+                                          nrow = nrow(testingEstimatedGVByGRM), byrow = FALSE,
+                                          dimnames = list(rownames(testingEstimatedGVByGRM),
+                                                          self$traitInfoFB$traitNames))
+      }
+
       estimatedGVByGRMInfoNow <- list(trainingPop = trainingPop,
                                       trainingPopName = trainingPopName,
                                       trainingPopNo = trainingPopNo,
@@ -797,7 +818,7 @@ breederInfo <- R6::R6Class(
       trainingPopNo <- unlist(lapply(trainingPopulationsFB,
                                      function(popFB) popFB$generation))
       trainingIndNamesAll <- unlist(lapply(trainingPopulationsFB,
-                                        function(popFB) popFB$indNames))
+                                           function(popFB) popFB$indNames))
       if (is.null(trainingIndNames)) {
         trainingIndNames <- trainingIndNamesAll
       } else {
@@ -1203,6 +1224,13 @@ breederInfo <- R6::R6Class(
                                          ": length =",
                                          c(ends, rep(0, length(ends)))))
 
+      if (self$multiTraitsAsEnvs) {
+        mrkEffMat <- matrix(data = rep(mrkEffMat, self$traitInfoFB$nTraits),
+                            nrow = nrow(mrkEffMat), byrow = FALSE,
+                            dimnames = list(rownames(mrkEffMat),
+                                            self$traitInfoFB$traitNames))
+      }
+
       estimatedMrkEffInfoNow <- list(trainingPop = trainingPop,
                                      trainingPopName = trainingPopName,
                                      trainingPopNo = trainingPopNo,
@@ -1600,6 +1628,7 @@ breederInfo <- R6::R6Class(
         residualsByRep = NULL,
         VarHeritByRep = NULL,
         estimatedGVMethod = NULL,
+        includeIntercept = NULL,
         estimatedEnvEffByRep = NULL,
         estimatedGVByGRM = NULL,
         estimatedGVByMLR = NULL,
@@ -1847,7 +1876,8 @@ breederInfo <- R6::R6Class(
         phenotyper = function(trialInfo,
                               phenotypedIndNames = NULL,
                               estimateGV = TRUE,
-                              estimatedGVMethod = "lme4") {
+                              estimatedGVMethod = "lme4",
+                              includeIntercept = TRUE) {
           population <- self$population
           indNames <- self$indNames
 
@@ -1877,12 +1907,14 @@ breederInfo <- R6::R6Class(
 
 
           if (estimateGV) {
-            self$estimateGVByRep(estimatedGVMethod = estimatedGVMethod)
+            self$estimateGVByRep(estimatedGVMethod = estimatedGVMethod,
+                                 includeIntercept = includeIntercept)
           }
         },
 
 
-        estimateGVByRep = function(estimatedGVMethod = "lme4") {
+        estimateGVByRep = function(estimatedGVMethod = "lme4",
+                                   includeIntercept = TRUE) {
           trialInfoFB <- self$trialInfoFB
           phenotypicValues <- self$phenotypicValues
           phenotypedIndNames <- self$trialInfoFB$phenotypedIndNames
@@ -2011,7 +2043,17 @@ breederInfo <- R6::R6Class(
                                                              heritLineByRep = heritLineByRep))
                                                   }))
 
-                estimatedEnvEffByRep <- NULL
+                estimatedEnvEffByRep <- unlist(lapply(X = lmerResList,
+                                                      FUN = function(lmerRes) lme4::fixef(lmerRes)),
+                                               use.names = FALSE)
+                names(estimatedEnvEffByRep) <- names(lmerResList)
+
+
+                if (includeIntercept) {
+                  estimatedGVByRep <- estimatedGVByRep +
+                    matrix(data = rep(estimatedEnvEffByRep, nrow(estimatedGVByRep)),
+                           nrow = nrow(estimatedGVByRep), byrow = TRUE)
+                }
               } else {
                 phenotypicValuesDataFrame <- data.frame(
                   Ind = rep(rownames(phenotypicValues),
@@ -2027,12 +2069,14 @@ breederInfo <- R6::R6Class(
                 lmerRes <- lme4::lmer(formula = Value ~ (1 | Ind) + Env,
                                       REML = TRUE,
                                       data = phenotypicValuesDataFrame)
+                lmerResList <- list(traitOfInterest = lmerRes)
 
                 estimatedGVByRep <- lme4::ranef(lmerRes)$Ind[phenotypedIndNames, ]
                 names(estimatedGVByRep) <- phenotypedIndNames
                 estimatedGVByRep <- as.matrix(estimatedGVByRep)
 
                 estimatedEnvEffByRep <- lme4::fixef(lmerRes)
+                estimatedEnvEffByRep[-1] <- estimatedEnvEffByRep[-1] + estimatedEnvEffByRep[1]
                 names(estimatedEnvEffByRep) <- colnames(phenotypicValues)
 
                 residualsByRep <- array(data = resid(lmerRes),
@@ -2076,6 +2120,7 @@ breederInfo <- R6::R6Class(
           self$VarHeritByRep <- VarHeritByRep
           self$estimatedEnvEffByRep <- estimatedEnvEffByRep
           self$estimateGV <- TRUE
+          self$includeIntercept <- includeIntercept
         },
 
 

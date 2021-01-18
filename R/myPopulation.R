@@ -1167,6 +1167,8 @@ population <- R6::R6Class(
 #' @param traitInfo [traitInfo class] Specific information of traits
 #'   (see:\link[myBreedSimulatR]{traitInfo})
 #' @param founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
+#' @param seedSimRM [numeric] Random seed for mate pairs
+#' @param seedSimMC [numeric] Random seed for make crosses
 #' @param indNames [character] NULL or character string vector specifying the individuals
 #'   names. If NULL, \code{rownames(geno)} will be used.
 #' @param popName [character] population's name.

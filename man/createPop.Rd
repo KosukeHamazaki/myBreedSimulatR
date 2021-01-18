@@ -31,6 +31,10 @@ SNPs (see:\link[breedSimulatR]{lociInfo})}
 
 \item{founderIsInitPop}{[logical] Founder haplotype will be regarded as first population or not.}
 
+\item{seedSimRM}{[numeric] Random seed for mate pairs}
+
+\item{seedSimMC}{[numeric] Random seed for make crosses}
+
 \item{indNames}{[character] NULL or character string vector specifying the individuals
 names. If NULL, \code{rownames(geno)} will be used.}
 

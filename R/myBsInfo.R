@@ -36,6 +36,10 @@ bsInfo <- R6::R6Class(
     traitInfo = NULL,
     #' @field founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
     founderIsInitPop = NULL,
+    #' @field seedSimRM [numeric] Random seed for mate pairs
+    seedSimRM = NULL,
+    #' @field seedSimMC [numeric] Random seed for make crosses
+    seedSimMC = NULL,
     #' @field popNameBase [character] base of population's name.
     popNameBase = NULL,
     #' @field populations [list] A list of population objects
@@ -67,6 +71,8 @@ bsInfo <- R6::R6Class(
     #' If you use real data, you must specify `geno` or `haplo` argument.
     #' @param haplo [array] haplotype of the individuals scored with 0 and 1 (3-dimensional array).
     #' @param founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
+    #' @param seedSimRM [numeric] Random seed for mate pairs
+    #' @param seedSimMC [numeric] Random seed for make crosses
     #' @param popNameBase [character] base of population's name.
     #' @param initIndNames [character] NULL or character string vector specifying the individuals
     #'   names for initial population. If NULL, \code{rownames(geno)} will be used.
@@ -158,6 +164,8 @@ bsInfo <- R6::R6Class(
                           geno = NULL,
                           haplo = NULL,
                           founderIsInitPop = TRUE,
+                          seedSimRM = NA,
+                          seedSimMC = NA,
                           popNameBase = "Population",
                           initIndNames = NULL,
                           herit = NULL,
@@ -273,6 +281,24 @@ bsInfo <- R6::R6Class(
         warning('Some markers of "lociInfo" are not in "geno"')
       }
 
+      if (!is.null(seedSimRM)) {
+        if (!is.na(seedSimRM)) {
+          stopifnot(is.numeric(seedSimRM))
+          seedSimRM <- floor(seedSimRM)
+        } else {
+          seedSimRM <- sample(x = 1e9, size = 1)
+        }
+      }
+
+      if (!is.null(seedSimMC)) {
+        if (!is.na(seedSimMC)) {
+          stopifnot(is.numeric(seedSimMC))
+          seedSimMC <- floor(seedSimMC)
+        } else {
+          seedSimMC <- sample(x = 1e9, size = 1)
+        }
+      }
+
 
       populations <- list()
       initPopName <- paste0(popNameBase, "_", 1)
@@ -281,8 +307,10 @@ bsInfo <- R6::R6Class(
                                      lociInfo = lociInfo,
                                      traitInfo = traitInfo,
                                      founderIsInitPop = founderIsInitPop,
-                                     popName = initPopName,
+                                     seedSimRM = seedSimRM,
+                                     seedSimMC = seedSimMC,
                                      indNames = initIndNames,
+                                     popName = initPopName,
                                      verbose = verbose)
 
       populations[[initPopName]] <- initialPopulation
@@ -297,6 +325,8 @@ bsInfo <- R6::R6Class(
       self$crossInfoList <- list()
       self$popNameBase <- popNameBase
       self$founderIsInitPop <- founderIsInitPop
+      self$seedSimRM <- seedSimRM
+      self$seedSimMC <- seedSimMC
       self$generation <- 1
       self$herit <- herit
       self$envSpecificEffects <- envSpecificEffects

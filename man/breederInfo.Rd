@@ -74,6 +74,10 @@ whether or not calculate epistatic GRM}
 
 \item{\code{estimatedGVByMLRInfo}}{[list] A list of information on estimated GVs using MLR (multiple linear regression)}
 
+\item{\code{multiTraitsAsEnvs}}{[logical] Treat multiple traits as multiple environments or not}
+
+\item{\code{includeIntercept}}{[logical] Include intercept information when estimating genotypic values by replication}
+
 \item{\code{verbose}}{[boolean] display information}
 
 \item{\code{populationFB}}{[populationFB class] R6 class representing population for breeder}
@@ -115,6 +119,8 @@ Create a new specie object.
   calculateGRMBase = TRUE,
   methodsGRMBase = "addNOIA",
   calcEpistasisBase = FALSE,
+  multiTraitsAsEnvs = FALSE,
+  includeIntercept = TRUE,
   verbose = TRUE
 )}\if{html}{\out{</div>}}
 }
@@ -144,6 +150,10 @@ but it will use only 1st population)
 
 \item{\code{calcEpistasisBase}}{[logical] when additive / dominance GRM has already been calulated,
 whether or not calculate epistatic GRM}
+
+\item{\code{multiTraitsAsEnvs}}{[logical] Treat multiple traits as multiple environments or not}
+
+\item{\code{includeIntercept}}{[logical] Include intercept information when estimating genotypic values by replication}
 
 \item{\code{verbose}}{[logical] Display info (optional)}
 }
@@ -223,7 +233,6 @@ get phenotypic values on current population
   bsInfo,
   generationOfInterest = NULL,
   nRep = 1,
-  multiTraitsAsEnvs = FALSE,
   phenotypedIndNames = NULL,
   estimateGV = TRUE,
   estimatedGVMethod = "lme4"
@@ -239,13 +248,13 @@ get phenotypic values on current population
 
 \item{\code{nRep}}{[numeric] Replication of the field trial (common to all traits)}
 
-\item{\code{multiTraitsAsEnvs}}{[logical] Treat multiple traits as multiple environments or not}
-
 \item{\code{phenotypedIndNames}}{[character] individual names that you want to phenotype}
 
 \item{\code{estimateGV}}{[logical] estimate genotypic values by replication or not}
 
 \item{\code{estimatedGVMethod}}{[character] We offer 'lme4' and 'mean'. 'lme4' is recommended.}
+
+\item{\code{multiTraitsAsEnvs}}{[logical] Treat multiple traits as multiple environments or not}
 }
 \if{html}{\out{</div>}}
 }
