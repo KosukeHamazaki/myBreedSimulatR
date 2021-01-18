@@ -10,6 +10,7 @@ createPop(
   lociInfo,
   traitInfo = NULL,
   founderIsInitPop = FALSE,
+  seedSimHaplo = NA,
   seedSimRM = NA,
   seedSimMC = NA,
   indNames = NULL,
@@ -30,6 +31,8 @@ SNPs (see:\link[breedSimulatR]{lociInfo})}
 (see:\link[myBreedSimulatR]{traitInfo})}
 
 \item{founderIsInitPop}{[logical] Founder haplotype will be regarded as first population or not.}
+
+\item{seedSimHaplo}{[numeric] Random seed for selecting haplotype from founder haplotype}
 
 \item{seedSimRM}{[numeric] Random seed for mate pairs}
 

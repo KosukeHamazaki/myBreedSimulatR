@@ -1167,6 +1167,7 @@ population <- R6::R6Class(
 #' @param traitInfo [traitInfo class] Specific information of traits
 #'   (see:\link[myBreedSimulatR]{traitInfo})
 #' @param founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
+#' @param seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
 #' @param seedSimRM [numeric] Random seed for mate pairs
 #' @param seedSimMC [numeric] Random seed for make crosses
 #' @param indNames [character] NULL or character string vector specifying the individuals
@@ -1238,6 +1239,7 @@ createPop <- function(geno = NULL,
                       lociInfo,
                       traitInfo = NULL,
                       founderIsInitPop = FALSE,
+                      seedSimHaplo = NA,
                       seedSimRM = NA,
                       seedSimMC = NA,
                       indNames = NULL,
@@ -1260,6 +1262,15 @@ createPop <- function(geno = NULL,
   }
 
   ploidy <- lociInfo$specie$ploidy
+
+  if (!is.null(seedSimHaplo)) {
+    if (!is.na(seedSimHaplo)) {
+      stopifnot(is.numeric(seedSimHaplo))
+      seedSimHaplo <- floor(seedSimHaplo)
+    } else {
+      seedSimHaplo <- sample(x = 1e9, size = 1)
+    }
+  }
 
   if (!lociInfo$specie$simInfo$simGeno) {
     if (is.null(geno) & is.null(haplo)) {
@@ -1309,30 +1320,75 @@ createPop <- function(geno = NULL,
     stopifnot(all(dim(geno) == dim(haplo)[1:2]))
     stopifnot(dim(haplo)[3] == 2)
   } else {
-    if (verbose) {
-      cat("Create population: Initialize marker genotype from simulated founder haplotypes...\n")
-    }
-    founderHaplo <- lociInfo$founderHaplo
-    haploPair <- matrix(sample(1:nrow(founderHaplo), nrow(founderHaplo), replace = TRUE), ncol = 2)
-    haplo <- sapply(1:(nrow(founderHaplo) / ploidy),
-                    function(x) {
-                      return(founderHaplo[haploPair[x, ], ])
-                    },
-                    simplify = FALSE)
-    haplo <- do.call(cbind, haplo)
-    dim(haplo) <- c(ploidy, ncol(founderHaplo), nrow(founderHaplo) / ploidy)
-    haplo <- aperm(haplo, perm = c(3, 2, 1))
+    if (is.null(geno) & is.null(haplo)) {
+      if (verbose) {
+        cat("Create population: Initialize marker genotype from simulated founder haplotypes...\n")
+      }
+      founderHaplo <- lociInfo$founderHaplo
+      set.seed(seed = seedSimHaplo)
+      haploPair <- matrix(sample(1:nrow(founderHaplo), nrow(founderHaplo), replace = TRUE), ncol = 2)
+      haplo <- sapply(1:(nrow(founderHaplo) / ploidy),
+                      function(x) {
+                        return(founderHaplo[haploPair[x, ], ])
+                      },
+                      simplify = FALSE)
+      haplo <- do.call(cbind, haplo)
+      dim(haplo) <- c(ploidy, ncol(founderHaplo), nrow(founderHaplo) / ploidy)
+      haplo <- aperm(haplo, perm = c(3, 2, 1))
+      if (founderIsInitPop) {
+        indNamesNow <- .charSeq(paste0("G", 1, "_"), seq(nrow(haplo)))
+      } else {
+        indNamesNow <- .charSeq(paste0("G", 0, "_"), seq(nrow(haplo)))
+      }
+      dimnames(haplo) <- list(indNames = indNamesNow,
+                              lociNames = colnames(founderHaplo),
+                              ploidy = paste0("ploidy_", 1:ploidy))
 
-    if (founderIsInitPop) {
-      indNamesNow <- paste0("G1_", 1:nrow(haplo))
+      geno <- apply(haplo, c(1, 2), sum)
+    } else if (is.null(geno)) {
+      if (is.array(haplo)) {
+        if (length(dim(haplo)) == 3) {
+          geno <- apply(haplo, c(1, 2), sum)
+        } else {
+          stop("`haplo` object must be 3-dimensional array!")
+        }
+      } else {
+        stop("`haplo` object must be 3-dimensional array!")
+      }
+
+      geno <- apply(haplo, c(1, 2), sum)
+    } else if (is.null(haplo)) {
+      if (is.data.frame(geno)) {
+        geno <- as.matrix(geno)
+      }
+
+      if (is.array(geno)) {
+        if (length(dim(geno)) == 2) {
+          haplo <- array(NA, dim = c(dim(geno), ploidy),
+                         dimnames = list(indNames = rownames(geno),
+                                         lociNames = colnames(geno),
+                                         ploidy = paste0("ploidy_", 1:ploidy)))
+
+          for (i in 1:ploidy) {
+            haplo[, , i] <- as.matrix(geno) / ploidy
+          }
+          message('All individuals are regarded as homozygotes.')
+        } else {
+          stop("`geno` object must be 2-dimensional array (= matrix) or data.frame!")
+        }
+      } else {
+        stop("`geno` object must be 2-dimensional array (= matrix) or data.frame!")
+      }
     } else {
-      indNamesNow <- paste0("G0_", 1:nrow(haplo))
+      stopifnot(sum(abs(geno - apply(haplo, c(1, 2), sum))) == 0)
     }
-    dimnames(haplo) <- list(indNames = indNamesNow,
-                            lociNames = colnames(founderHaplo),
-                            ploidy = paste0("ploidy_", 1:ploidy))
 
-    geno <- apply(haplo, c(1, 2), sum)
+    stopifnot(is.data.frame(geno) | is.array(geno))
+    stopifnot(is.array(haplo))
+    stopifnot(length(dim(geno)) == 2)
+    stopifnot(length(dim(haplo)) == 3)
+    stopifnot(all(dim(geno) == dim(haplo)[1:2]))
+    stopifnot(dim(haplo)[3] == 2)
   }
   if (any(!colnames(geno) %in% lociInfo$genoMap$lociNames)) {
     stop('Some markers of "geno" are not in "lociInfo"')
