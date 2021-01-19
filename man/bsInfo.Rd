@@ -95,6 +95,8 @@ SNPs (see:\link[breedSimulatR]{lociInfo})}
 
 \item{\code{founderIsInitPop}}{[logical] Founder haplotype will be regarded as first population or not.}
 
+\item{\code{seedSimHaplo}}{[numeric] Random seed for selecting haplotype from founder haplotype}
+
 \item{\code{seedSimRM}}{[numeric] Random seed for mate pairs}
 
 \item{\code{seedSimMC}}{[numeric] Random seed for make crosses}
@@ -187,8 +189,6 @@ If you use real data, you must specify `geno` or `haplo` argument.}
 \item{\code{haplo}}{[array] haplotype of the individuals scored with 0 and 1 (3-dimensional array).}
 
 \item{\code{founderIsInitPop}}{[logical] Founder haplotype will be regarded as first population or not.}
-
-\item{\code{seedSimHaplo}}{[numeric] Random seed for selecting haplotype from founder haplotype}
 
 \item{\code{seedSimHaplo}}{[numeric] Random seed for selecting haplotype from founder haplotype}
 

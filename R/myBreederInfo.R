@@ -1795,13 +1795,15 @@ breederInfo <- R6::R6Class(
               HHt <- tcrossprod(genoMat)
               GRM <- HHt * self$nInd / sum(diag(HHt))
             } else if (methodGRM == "gaussian") {
-              distMat <- as.matrix(dist(genoMat)) / sqrt(ncol(genoMat))
+              distMat <- Rfast::Dist(x = genoMat) / sqrt(ncol(genoMat))
+              rownames(distMat) <- colnames(distMat) <- rownames(genoMat)
               hinv <- median((distMat ^ 2)[upper.tri(distMat ^ 2)])
               h <- 1 / hinv
 
               GRM <- exp(- h * distMat ^ 2)
             } else if (methodGRM == "exponential") {
-              distMat <- as.matrix(dist(genoMat)) / sqrt(ncol(genoMat))
+              distMat <- Rfast::Dist(x = genoMat) / sqrt(ncol(genoMat))
+              rownames(distMat) <- colnames(distMat) <- rownames(genoMat)
               hinv <- median(distMat[upper.tri(distMat)])
               h <- 1 / hinv
 

@@ -36,7 +36,7 @@ bsInfo <- R6::R6Class(
     traitInfo = NULL,
     #' @field founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
     founderIsInitPop = NULL,
-    #' @param seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
+    #' @field seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
     seedSimHaplo = NULL,
     #' @field seedSimRM [numeric] Random seed for mate pairs
     seedSimRM = NULL,

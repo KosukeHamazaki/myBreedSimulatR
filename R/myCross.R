@@ -1042,7 +1042,9 @@ crossInfo <- R6::R6Class(
     #'
     computeGenDist = function() {
       genoMat <- self$parentPopulation$genoMat
-      distObj <- dist(x = genoMat, method = "euclidean")
+      distMat <- Rfast::Dist(x = genoMat, method = "euclidean")
+      rownames(distMat) <- colnames(distMat) <- rownames(genoMat)
+      distObj <- as.dist(m = distMat)
 
       self$genDist <- distObj
     },
