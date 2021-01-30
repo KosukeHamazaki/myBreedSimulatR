@@ -168,7 +168,7 @@ simBs <- R6::R6Class(
 
 
 
-    #' @description Create a new specie object.
+    #' @description Create a new simBs object.
     #' @param simBsName [character] Name of this simulation of breeding schemes
     #' @param bsInfoInit [bsInfo] breeding scheme info
     #'   (see:\link[myBreedSimulatR]{bsInfo})

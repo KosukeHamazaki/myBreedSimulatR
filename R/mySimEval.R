@@ -30,7 +30,7 @@ simEval <- R6::R6Class(
 
 
 
-    #' @description Create a new specie object.
+    #' @description Create a new simEval object.
     #' @param simEvalName [character] Name of this evaluation of simulation results
     #' @param simBsList [list] list of simulation results of breeding scheme
     #'   (see:\link[myBreedSimulatR]{simBs}; \link[myBreedSimulatR]{simBsOpt})

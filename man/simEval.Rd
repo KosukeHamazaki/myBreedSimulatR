@@ -102,7 +102,7 @@ myBsInfo$plot(plotTarget = "trueAGV",
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new simEval object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{simEval$new(simEvalName = "Undefined", simBsList, verbose = TRUE)}\if{html}{\out{</div>}}
 }

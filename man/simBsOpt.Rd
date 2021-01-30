@@ -128,6 +128,16 @@ The following methods are offered:
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
 
+\item{\code{nMaxEvalPerNode}}{[numeric] Number of maximum evaluation per node when optimizing hyper parameter by StoSOO}
+
+\item{\code{maxDepth}}{[numeric] Maximum depth of tree when optimizing hyper parameter by StoSOO}
+
+\item{\code{nChildrenPerExpansion}}{[numeric] Number of children per one expansion of nodes when optimizing hyper parameter by StoSOO}
+
+\item{\code{confidenceParam}}{[numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards}
+
+\item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
+
 \item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 
 \item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -251,7 +261,9 @@ Else, we will summary the simulation results in `summaryAllResAt` path.}
 
 \item{\code{solnInit}}{[list] List of solution of StoSOO for initial state}
 
-\item{\code{hVecOptList}}{[list] List of optimized hyperparameters in each generation}
+\item{\code{hVecOptsList}}{[list] List of optimized hyperparameters in each generation}
+
+\item{\code{optimalHyperParamMatsList}}{[list] List of optimized hyper parameters given finite numbers of budget for optimization}
 
 \item{\code{simBsRes}}{[list] Simulation results of each method}
 
@@ -285,7 +297,7 @@ Else, we will summary the simulation results in `summaryAllResAt` path.}
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new simBsOpt object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{simBsOpt$new(
   simBsName = "Undefined",
@@ -309,6 +321,11 @@ Create a new specie object.
   nTotalIterForOneOptimization = NULL,
   nIterSimulationPerEvaluation = NULL,
   nIterOptimization = NULL,
+  nMaxEvalPerNode = NULL,
+  maxDepth = NULL,
+  nChildrenPerExpansion = NULL,
+  confidenceParam = NULL,
+  returnOptimalNodes = NULL,
   nTopEvalForOpt = NULL,
   rewardWeightVec = NULL,
   digitsEval = NULL,
@@ -415,6 +432,16 @@ The following methods are offered:
 \item{\code{nIterSimulationPerEvaluation}}{[numeric] Number of simulations per one evaluation of the hyperparameter set of your interest}
 
 \item{\code{nIterOptimization}}{[numeric] Number of iterations required for one optimization}
+
+\item{\code{nMaxEvalPerNode}}{[numeric] Number of maximum evaluation per node when optimizing hyper parameter by StoSOO}
+
+\item{\code{maxDepth}}{[numeric] Maximum depth of tree when optimizing hyper parameter by StoSOO}
+
+\item{\code{nChildrenPerExpansion}}{[numeric] Number of children per one expansion of nodes when optimizing hyper parameter by StoSOO}
+
+\item{\code{confidenceParam}}{[numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards}
+
+\item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
 
 \item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 

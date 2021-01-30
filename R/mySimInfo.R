@@ -40,7 +40,7 @@ simInfo <- R6::R6Class(
     saveDataFileName = NULL,
 
 
-    #' @description Create a new specie object.
+    #' @description Create a new simInfo object.
     #' @param simName [character] Name of the simulation study
     #' @param simGeno [logical] Simulate marker genotype or not
     #' @param simPheno simPheno [logical] Simulate phenotypic values or not

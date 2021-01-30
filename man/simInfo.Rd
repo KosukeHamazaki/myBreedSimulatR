@@ -61,7 +61,7 @@ print(mySimInfo)
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new simInfo object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{simInfo$new(
   simName = "Simulation Example",

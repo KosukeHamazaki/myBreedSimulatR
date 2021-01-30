@@ -143,7 +143,7 @@ If `multiTraitsAsEnvs = FALSE`, envSpecificEffects will be 0 for all traits.}
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new bsInfo object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{bsInfo$new(
   bsName = "Undefined",

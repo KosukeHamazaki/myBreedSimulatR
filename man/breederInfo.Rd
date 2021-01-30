@@ -106,7 +106,7 @@ whether or not calculate epistatic GRM}
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new breederInfo object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{breederInfo$new(
   breederName = "Undefined",

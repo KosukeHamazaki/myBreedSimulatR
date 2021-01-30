@@ -60,7 +60,7 @@ breederInfo <- R6::R6Class(
     #' @field verbose [boolean] display information
     verbose = NULL,
 
-    #' @description Create a new specie object.
+    #' @description Create a new breederInfo object.
     #' @param breederName [character] name of this breeder
     #' @param bsInfo [bsInfo class] breeding scheme info (whichever generation is OK,
     #' but it will use only 1st population)

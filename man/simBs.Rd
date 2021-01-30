@@ -240,7 +240,7 @@ Else, we will summary the simulation results in `summaryAllResAt` path.}
 \if{html}{\out{<a id="method-new"></a>}}
 \if{latex}{\out{\hypertarget{method-new}{}}}
 \subsection{Method \code{new()}}{
-Create a new specie object.
+Create a new simBs object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{simBs$new(
   simBsName = "Undefined",

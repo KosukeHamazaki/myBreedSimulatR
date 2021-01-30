@@ -59,7 +59,7 @@ bsInfo <- R6::R6Class(
     residCor = NULL,
 
 
-    #' @description Create a new specie object.
+    #' @description Create a new bsInfo object.
     #' @param bsName [character] Name of this breeding scheme
     #' @param simInfo [simInfo class] Simulation information
     #' (see:\link[myBreedSimulatR]{simInfo})
