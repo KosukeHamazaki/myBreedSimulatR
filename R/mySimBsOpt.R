@@ -2148,7 +2148,6 @@ simBsOpt <- R6::R6Class(
 
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       hVecOptsList <- self$hVecOptsList
-      optimalHyperParamMatsList <- self$optimalHyperParamMatsList
 
       if (!is.null(saveAllResAt)) {
         saveAllResAtSplit <- stringr::str_split(string = list.files(saveAllResAt),
@@ -2236,7 +2235,7 @@ simBsOpt <- R6::R6Class(
         self$solnInit <- list(value = stoSOONow$optimalValue,
                               par = hVecOpt)
 
-        optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
+        self$optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
         hVecOptsList[["Initial"]] <- hVecOpt
 
         rm(stoSOONow)
@@ -2300,7 +2299,7 @@ simBsOpt <- R6::R6Class(
                                                hList = hListOpt,
                                                nNextPopVec = nNextPopVec,
                                                nameMethod = nameMethod,
-                                               nCores = nCores,
+                                               nCores = nCoresPerOptimization,
                                                overWriteRes = overWriteRes,
                                                showProgress = showProgress,
                                                returnMethod = returnMethod,
@@ -2363,7 +2362,7 @@ simBsOpt <- R6::R6Class(
         self$solnInit <- list(value = stoSOONow$optimalValue,
                               par = hVecOpt)
 
-        optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
+        self$optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
         hVecOptsList[["Initial"]] <- hVecOpt
 
         rm(stoSOONow)
@@ -2481,7 +2480,7 @@ simBsOpt <- R6::R6Class(
 
                   hVecOpt <- stoSOONow$optimalParameter
 
-                  optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+                  self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
                   hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
 
                   hCount <- 1
@@ -2489,7 +2488,7 @@ simBsOpt <- R6::R6Class(
                   rm(stoSOONow)
                   gc(reset = TRUE); gc(reset = TRUE)
                 } else {
-                  optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+                  self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
                   hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
                   hCount <- hCount + 1
                 }
@@ -3407,7 +3406,6 @@ simBsOpt <- R6::R6Class(
 
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       hVecOptsList <- self$hVecOptsList
-      optimalHyperParamMatsList <- self$optimalHyperParamMatsList
 
       lociEffectsInit <- self$lociEffectsInit
 
@@ -3483,7 +3481,7 @@ simBsOpt <- R6::R6Class(
 
           hVecOpt <- stoSOONow$optimalParameter
 
-          optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+          self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
           hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- 1
 
@@ -3493,7 +3491,7 @@ simBsOpt <- R6::R6Class(
           }
 
         } else {
-          optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+          self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
           hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- hCount + 1
         }
