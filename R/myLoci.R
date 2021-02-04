@@ -55,6 +55,9 @@ lociInfo <- R6::R6Class(
     #' @field ids [list] Named list of the SNP ids for all chromosomes
     ids = list(),
 
+    #' @field recombBetweenMarkersList [list] Named list of matrix representing recombination between markers for each chromosome
+    recombBetweenMarkersList = NULL,
+
     #' @description Create a new lociInfo object.
     #' @param genoMap [data.frame] Coordinate of all SNPs. (needed for real data)
     #'
@@ -243,7 +246,8 @@ lociInfo <- R6::R6Class(
 
       if (posGeneticDist) {
         diffPos <- diff(genoMap$pos)
-        recombRates <- (1 - exp(-2 * diffPos / 100)) / 2
+        # recombRates <- (1 - exp(-2 * diffPos / 100)) / 2
+        recombRates <- tanh(2 * diffPos / 100) / 2
         recombRates[recombRates < 0] <- 0.5
         recombRates <- c(0.5, recombRates)
       } else {
@@ -311,6 +315,40 @@ lociInfo <- R6::R6Class(
     #' myLoci$getInfo(c("Loci_1", "Loci_3"))
     getInfo = function(lociNames) {
       self$genoMap[match(lociNames, self$genoMap$lociNames),]
+    },
+
+
+    #' @description
+    #' Compute named list of matrix representing recombination between markers for each chromosome
+    #'
+    computeRecombBetweenMarkers = function() {
+      if (is.null(self$recombBetweenMarkersList)) {
+        chrNames <- self$specie$chrNames
+        genoMap <- self$genoMap
+
+        recombBetweenMarkersList <- sapply(X = chrNames,
+                                           FUN = function(chrName) {
+                                             genoMapChr <- genoMap[genoMap$chr %in% chrName, ]
+
+                                             posChr <- genoMapChr$pos
+                                             distPosChr <- matrix(data = 0,
+                                                                  nrow = nrow(genoMapChr),
+                                                                  ncol = nrow(genoMapChr),
+                                                                  dimnames = list(genoMapChr$lociNames,
+                                                                                  genoMapChr$lociNames))
+
+                                             for (i in 1:nrow(genoMapChr)) {
+                                               distPosChr[i, i:nrow(genoMapChr)] <-
+                                                 posChr[i:nrow(genoMapChr)] - posChr[i]
+                                             }
+                                             distPosChr <- distPosChr + t(distPosChr)
+
+                                             distRecombChr <- tanh(2 * distPosChr / 100) / 2
+
+                                             return(distRecombChr)
+                                           }, simplify = FALSE)
+        self$recombBetweenMarkersList <- recombBetweenMarkersList
+      }
     },
 
     #' @description Display summary information about the object: specie, number

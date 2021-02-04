@@ -2449,25 +2449,92 @@ crossInfo <- R6::R6Class(
     # \code{ind1} \code{ind2}
     computeGVP = function (crosses0) {
       parentPopulation <- self$parentPopulation
-      genoMat <- parentPopulation$genoMat
+      haploArray <- parentPopulation$haploArray
       lociEffects <- self$lociEffects
-      lociEffectsSquare <- (lociEffects ^ 2)[-1, , drop = FALSE]
+      lociInfo <- parentPopulation$traitInfo$lociInfo
+      genoMap <- lociInfo$genoMap
+      chrNames <- lociInfo$specie$chrNames
+      lociNames <- rownames(lociEffects)
+      selCands <- self$selCands
 
-      genVarProgenies <- matrix(c(apply(X = crosses0,
-                                        MARGIN = 1,
-                                        FUN = function (eachPair) {
-                                          diffGenoMat <- genoMat[eachPair[1], ] - genoMat[eachPair[2], ]
-                                          genVarEachMrk <- abs(diffGenoMat)
-                                          genVarEachMrk[genVarEachMrk == 1] <- 1 / 4
-                                          genVarEachMrk[genVarEachMrk == 2] <- 1 / 2
+      haploArraySel <- haploArray[selCands, , , drop = FALSE]
 
-                                          genVarProgeniesEachPair <- crossprod(lociEffectsSquare,
-                                                                               as.matrix(genVarEachMrk))
+      lociInfo$computeRecombBetweenMarkers()
+      recombBetweenMarkersList <- lociInfo$recombBetweenMarkersList
 
-                                          return(genVarProgeniesEachPair)
-                                        })),
-                                nrow = nrow(crosses0), ncol = ncol(lociEffects),
-                                byrow = TRUE)
+
+      genVarProgeniesChrSelList <- sapply(X = chrNames,
+                                          FUN = function(chrName) {
+                                            genoMapChr <- genoMap[genoMap$chr %in% chrName, ]
+                                            lociNamesChr <- genoMapChr$lociNames
+                                            lociEffectsChr <- lociEffects[lociNamesChr, ]
+                                            recombBetweenMarkers <- recombBetweenMarkersList[[chrName]]
+
+                                            haploArraySelChr <- haploArraySel[, lociNamesChr, ]
+
+                                            genVarProgeniesChrSel <- t(sapply(X = dimnames(haploArraySelChr)[[1]],
+                                                                              FUN = function(indName) {
+                                                                                haploArraySelChrNow <- haploArraySelChr[indName, , , drop = TRUE]
+
+                                                                                haploArraySelChrNowHetero10Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == 1)]
+                                                                                haploArraySelChrNowHetero01Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == -1)]
+
+                                                                                matForGenVarProgeniesChrSelNow <- matrix(data = 0,
+                                                                                                                         nrow = nrow(genoMapChr),
+                                                                                                                         ncol = nrow(genoMapChr),
+                                                                                                                         dimnames = list(lociNamesChr,
+                                                                                                                                         lociNamesChr))
+
+                                                                                if (length(haploArraySelChrNowHetero10Names) >= 1) {
+                                                                                  matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names] <-
+                                                                                    1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names]
+                                                                                  if (length(haploArraySelChrNowHetero01Names) >= 1) {
+                                                                                    matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] <-
+                                                                                      2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] - 1
+                                                                                    matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] <-
+                                                                                      2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] - 1
+                                                                                    matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
+                                                                                      1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
+                                                                                  }
+                                                                                } else {
+                                                                                  if (length(haploArraySelChrNowHetero01Names) >= 1) {
+                                                                                    matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
+                                                                                      1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
+                                                                                  }
+                                                                                }
+
+
+                                                                                genVarProgeniesChrSelNow <-
+                                                                                  diag(crossprod(lociEffectsChr,
+                                                                                                 matForGenVarProgeniesChrSelNow) %*%
+                                                                                         lociEffectsChr) / 4
+
+                                                                                return(genVarProgeniesChrSelNow)
+                                                                              }, simplify = TRUE))
+
+                                            genVarProgeniesChrSelOneArray <- array(data = genVarProgeniesChrSel,
+                                                                                   dim = c(dim(genVarProgeniesChrSel), 1),
+                                                                                   dimnames = c(dimnames(genVarProgeniesChrSel),
+                                                                                                list(chrName)))
+                                            return(genVarProgeniesChrSelOneArray)
+                                          }, simplify = FALSE)
+
+      genVarProgeniesChrSelArray <- do.call(what = abind::abind,
+                                            args = genVarProgeniesChrSelList)
+      genVarProgeniesSelMat <- apply(X = genVarProgeniesChrSelArray,
+                                     MARGIN = c(1, 2), FUN = sum)
+
+      genVarProgenies <- t(apply(X = crosses0,
+                                 MARGIN = 1,
+                                 FUN = function(parentPair) {
+                                   genVarProgeniesEachParent <- genVarProgeniesSelMat[parentPair[!is.na(parentPair)], , drop = FALSE]
+
+                                   genVarProgeniesParentPair <- apply(X = genVarProgeniesEachParent,
+                                                                      MARGIN = 2, FUN = sum)
+
+                                   return(genVarProgeniesParentPair)
+                                 }))
+
       rownames(genVarProgenies) <- 1:nrow(crosses0)
       colnames(genVarProgenies) <- colnames(lociEffects)
 
@@ -2478,6 +2545,7 @@ crossInfo <- R6::R6Class(
                                      })
       rownames(genVarProgeniesScaled) <- rownames(genVarProgenies)
       colnames(genVarProgeniesScaled) <- colnames(genVarProgenies)
+
 
       return(genVarProgeniesScaled)
     },

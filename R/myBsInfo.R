@@ -874,7 +874,7 @@ bsInfo <- R6::R6Class(
       for(traitNo in 1:nTraits) {
         qtlPos <- traitInfo$qtlPos[[traitNo]]
         actionTypeNow <- traitInfo$actionType[[traitNo]]
-        lociEffects[qtlPos[actionTypeNow == 0], traitNo] <- (traitInfo$qtlEff[[traitNo]])[actionTypeNow == 0]
+        lociEffects[qtlPos[actionTypeNow == 0], traitNo] <- (traitInfo$qtlEff[[traitNo]])[actionTypeNow == 0] / 2
       }
 
       lociEffects <- rbind(Intercept = rep(0, nTraits),

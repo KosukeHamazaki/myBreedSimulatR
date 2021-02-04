@@ -97,6 +97,8 @@ If this argument is FALSE, `specie$recombRateOneVal` will be TRUE.}
 of all SNPs. for each chromosomes}
 
 \item{\code{ids}}{[list] Named list of the SNP ids for all chromosomes}
+
+\item{\code{recombBetweenMarkersList}}{[list] Named list of matrix representing recombination between markers for each chromosome}
 }
 \if{html}{\out{</div>}}
 }
@@ -106,6 +108,7 @@ of all SNPs. for each chromosomes}
 \item \href{#method-new}{\code{lociInfo$new()}}
 \item \href{#method-nLoci}{\code{lociInfo$nLoci()}}
 \item \href{#method-getInfo}{\code{lociInfo$getInfo()}}
+\item \href{#method-computeRecombBetweenMarkers}{\code{lociInfo$computeRecombBetweenMarkers()}}
 \item \href{#method-print}{\code{lociInfo$print()}}
 \item \href{#method-plot}{\code{lociInfo$plot()}}
 \item \href{#method-clone}{\code{lociInfo$clone()}}
@@ -243,6 +246,16 @@ myLoci$getInfo(c("Loci_1", "Loci_3"))
 }
 \if{html}{\out{</div>}}
 
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-computeRecombBetweenMarkers"></a>}}
+\if{latex}{\out{\hypertarget{method-computeRecombBetweenMarkers}{}}}
+\subsection{Method \code{computeRecombBetweenMarkers()}}{
+Compute named list of matrix representing recombination between markers for each chromosome
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{lociInfo$computeRecombBetweenMarkers()}\if{html}{\out{</div>}}
 }
 
 }

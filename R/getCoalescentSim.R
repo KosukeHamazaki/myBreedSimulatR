@@ -25,7 +25,7 @@ getCoalescentSim <-
            seed = as.integer(Sys.time()),
            tree = 0,
            mutRate = 1e-08) {
-    
+
     systemCall <- rep(NA, 11)
     nPopsSamples <- effPopSize
     systemCall[1] <- 1     # pop1
@@ -39,7 +39,7 @@ getCoalescentSim <-
     systemCall[9] <- tree     # tree
     systemCall[10] <- round(8 * nMrkOrMut / nChr)     # s
     systemCall[11] <- mutRate
-    
+
     doGenome <- function(call){
       .Call('coalescentSim',
             par1 = call[1],
@@ -54,7 +54,7 @@ getCoalescentSim <-
             par10 = call[10],
             par11 = call[11])
     }
-    
+
     tempFileName <- tempfile(pattern="genome", fileext=".txt")
     sink(tempFileName)
     doGenome(systemCall)
