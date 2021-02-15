@@ -1335,7 +1335,9 @@ tree <- R6::R6Class(
               self$iterationCounter <- self$iterationCounter + (self$nChildrenPerExpansion %/% 2) * 2
             }
           } else {
-            self$iterationCounter <- self$iterationCounter + 1
+            if (layerNow$maxUcbValues >= self$maxUcbValuesSoFar) {
+              self$iterationCounter <- self$iterationCounter + 1
+            }
           }
         }
       }
