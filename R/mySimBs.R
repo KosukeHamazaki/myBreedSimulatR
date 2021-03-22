@@ -1926,11 +1926,26 @@ simBs <- R6::R6Class(
                 trueGVMatNow <- estimatedGVMat
               }
 
-              trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
-                                       FUN = function(trueGV) {
-                                         return(scale(x = trueGV, center = TRUE,
-                                                      scale = as.logical(sd(trueGV))))
-                                       })
+              # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
+              #                          FUN = function(trueGV) {
+              #                            return(scale(x = trueGV, center = TRUE,
+              #                                         scale = as.logical(sd(trueGV))))
+              #                          })
+              trueGVMatInit <- self$trueGVMatInit
+              trueGVMatScaled <- do.call(what = cbind,
+                                         args = sapply(X = 1:ncol(trueGVMatNow),
+                                                       FUN = function (traitNo) {
+                                                         trueGVMean <- mean(trueGVMatInit[, traitNo])
+                                                         trueGVSd <- sd(trueGVMatInit[, traitNo])
+                                                         if (trueGVSd != 0) {
+                                                           trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean) / trueGVSd
+                                                         } else {
+                                                           trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
+                                                         }
+
+                                                         return(trueGVScaled)
+                                                       }, simplify = FALSE))
+
               rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
               colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
 
@@ -2640,11 +2655,26 @@ simBs <- R6::R6Class(
           trueGVMatNow <- estimatedGVMat
         }
 
-        trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
-                                 FUN = function(trueGV) {
-                                   return(scale(x = trueGV, center = TRUE,
-                                                scale = as.logical(sd(trueGV))))
-                                 })
+        # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
+        #                          FUN = function(trueGV) {
+        #                            return(scale(x = trueGV, center = TRUE,
+        #                                         scale = as.logical(sd(trueGV))))
+        #                          })
+
+        trueGVMatInit <- self$trueGVMatInit
+        trueGVMatScaled <- do.call(what = cbind,
+                                   args = sapply(X = 1:ncol(trueGVMatNow),
+                                                 FUN = function (traitNo) {
+                                                   trueGVMean <- mean(trueGVMatInit[, traitNo])
+                                                   trueGVSd <- sd(trueGVMatInit[, traitNo])
+                                                   if (trueGVSd != 0) {
+                                                     trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean) / trueGVSd
+                                                   } else {
+                                                     trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
+                                                   }
+
+                                                   return(trueGVScaled)
+                                                 }, simplify = FALSE))
         rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
         colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
 
