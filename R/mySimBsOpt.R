@@ -731,8 +731,9 @@ simBsOpt <- R6::R6Class(
 
       # whenToSaveTrees
       if (!is.null(whenToSaveTrees)) {
-        if (!is.na(whenToSaveTrees)) {
+        if (!all(is.na(whenToSaveTrees))) {
           stopifnot(is.numeric(whenToSaveTrees))
+          whenToSaveTrees <- whenToSaveTrees[!is.na(whenToSaveTrees)]
           whenToSaveTrees <- floor(whenToSaveTrees)
           stopifnot(all(whenToSaveTrees >= 1))
           stopifnot(all(whenToSaveTrees <= nIterOptimization))
