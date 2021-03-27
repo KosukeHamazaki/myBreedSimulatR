@@ -42,6 +42,10 @@ P. Preux, R. Munos, M. Valko (2014), Bandits attack function optimization, \emph
 
 \item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
 
+\item{\code{saveTreeNameBase}}{[character] Base name of the tree to be saved}
+
+\item{\code{whenToSaveTrees}}{[numeric] When (how many iterations) to save the tree in StoSOO}
+
 \item{\code{withCheck}}{[logical] Check arguments for `node`, `layer`, and `tree` class or not}
 
 \item{\code{verbose}}{[logical] Display information}
@@ -93,6 +97,8 @@ Create a new stoSOO object.
   maximize = NULL,
   optimizeType = NULL,
   returnOptimalNodes = NULL,
+  saveTreeNameBase = NULL,
+  whenToSaveTrees = NA,
   withCheck = FALSE,
   verbose = TRUE
 )}\if{html}{\out{</div>}}
@@ -126,6 +132,10 @@ Create a new stoSOO object.
 \item{\code{optimizeType}}{[character] Either 'deterministic' for optimizing a deterministic function or 'stochastic' for a stochastic one}
 
 \item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
+
+\item{\code{saveTreeNameBase}}{[character] Base name of the tree to be saved}
+
+\item{\code{whenToSaveTrees}}{[numeric] When (how many iterations) to save the tree in StoSOO}
 
 \item{\code{withCheck}}{[logical] Check arguments for `node`, `layer`, and `tree` class or not}
 

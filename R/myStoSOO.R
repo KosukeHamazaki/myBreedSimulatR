@@ -53,6 +53,10 @@ stoSOO <- R6::R6Class(
     optimizeType = NULL,
     #' @field returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
     returnOptimalNodes = NULL,
+    #' @field saveTreeNameBase [character] Base name of the tree to be saved
+    saveTreeNameBase = NULL,
+    #' @field whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
+    whenToSaveTrees = NULL,
     #' @field withCheck [logical] Check arguments for `node`, `layer`, and `tree` class or not
     withCheck = NULL,
     #' @field verbose [logical] Display information
@@ -91,6 +95,8 @@ stoSOO <- R6::R6Class(
     #' @param maximize [logical] If TRUE, performs maximization
     #' @param optimizeType [character] Either 'deterministic' for optimizing a deterministic function or 'stochastic' for a stochastic one
     #' @param returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
+    #' @param saveTreeNameBase [character] Base name of the tree to be saved
+    #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
     #' @param withCheck [logical] Check arguments for `node`, `layer`, and `tree` class or not
     #' @param verbose [logical] Display information
     #'
@@ -108,6 +114,8 @@ stoSOO <- R6::R6Class(
       maximize = NULL,
       optimizeType = NULL,
       returnOptimalNodes = NULL,
+      saveTreeNameBase = NULL,
+      whenToSaveTrees = NA,
       withCheck = FALSE,
       verbose = TRUE
     ) {
@@ -271,6 +279,24 @@ stoSOO <- R6::R6Class(
                        returnOptimalNodes, "`."))
       }
 
+      # saveTreeNameBase
+      if (is.null(saveTreeNameBase)) {
+        whenToSaveTrees <- NULL
+      }
+
+      # whenToSaveTrees
+      if (!is.null(whenToSaveTrees)) {
+        if (!is.na(whenToSaveTrees)) {
+          stopifnot(is.numeric(whenToSaveTrees))
+          whenToSaveTrees <- floor(whenToSaveTrees)
+          stopifnot(all(whenToSaveTrees >= 1))
+          stopifnot(all(whenToSaveTrees <= nIterOptimization))
+        } else {
+          whenToSaveTrees <- nIterOptimization
+          message(paste0("You do not specify `whenToSaveTrees`. We set `whenToSaveTrees = ",
+                         whenToSaveTrees, "`."))
+        }
+      }
 
       # verbose
       if (!is.null(verbose)) {
@@ -314,6 +340,8 @@ stoSOO <- R6::R6Class(
       self$maximize <- maximize
       self$optimizeType <- optimizeType
       self$returnOptimalNodes <- returnOptimalNodes
+      self$saveTreeNameBase <- saveTreeNameBase
+      self$whenToSaveTrees <- whenToSaveTrees
       self$withCheck <- withCheck
       self$verbose <- verbose
 
@@ -349,8 +377,9 @@ stoSOO <- R6::R6Class(
         )
       }
 
-      iterationCounterOld <- 0
+      iterationCounterOld <- currentTree$iterationCounter - 1
       saveOptimalNodesOld <- rep(FALSE, length(self$returnOptimalNodes))
+      saveTreesOld <- rep(FALSE, length(self$whenToSaveTrees))
       while(currentTree$iterationCounter < self$nIterOptimization) {
         if (self$verbose) {
           cat(paste0("\n------ Iteration ", currentTree$iterationCounter + 1,
@@ -364,8 +393,24 @@ stoSOO <- R6::R6Class(
           self$optimalNodes[paste0("Iteration_", self$returnOptimalNodes[whereToSave])] <-
             rep(list(currentTree$evaluateCurrentOptimalNode), length(whereToSave))
         }
+
+        saveTrees <- self$whenToSaveTrees <= currentTree$iterationCounter
+        whereToSaveTrees <- which(as.logical(saveTrees - saveTreesOld))
+        if (length(whereToSaveTrees) >= 1) {
+          if (!is.null(self$saveTreeNameBase)) {
+            splitSaveTreeNameBase <- stringr::str_split(string = self$saveTreeNameBase,
+                                                        pattern = "/")[[1]]
+            fileNameSaveTree <- here::here(dirname(self$saveTreeNameBase),
+                                           paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                                  "_StoSOO_tree.rds"))
+            saveRDS(object = currentTree,
+                    file = fileNameSaveTree)
+          }
+        }
+
         self$currentTree <- currentTree
         saveOptimalNodesOld <- saveOptimalNodes
+        saveTreesOld <- saveTrees
         if (iterationCounterOld == currentTree$iterationCounter) {
           break
         } else {

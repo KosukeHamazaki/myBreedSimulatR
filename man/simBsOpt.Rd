@@ -138,6 +138,10 @@ The following methods are offered:
 
 \item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
 
+\item{\code{saveTreeNameBase}}{[character] Base name of the tree to be saved}
+
+\item{\code{whenToSaveTrees}}{[numeric] When (how many iterations) to save the tree in StoSOO}
+
 \item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 
 \item{\code{rewardWeightVec}}{[numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -326,6 +330,8 @@ Create a new simBsOpt object.
   nChildrenPerExpansion = NULL,
   confidenceParam = NULL,
   returnOptimalNodes = NULL,
+  saveTreeNameBase = NULL,
+  whenToSaveTrees = NA,
   nTopEvalForOpt = NULL,
   rewardWeightVec = NULL,
   digitsEval = NULL,
@@ -442,6 +448,10 @@ The following methods are offered:
 \item{\code{confidenceParam}}{[numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards}
 
 \item{\code{returnOptimalNodes}}{[numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO}
+
+\item{\code{saveTreeNameBase}}{[character] Base name of the tree to be saved}
+
+\item{\code{whenToSaveTrees}}{[numeric] When (how many iterations) to save the tree in StoSOO}
 
 \item{\code{nTopEvalForOpt}}{[numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters}
 

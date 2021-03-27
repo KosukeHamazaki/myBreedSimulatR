@@ -79,6 +79,10 @@ simBsOpt <- R6::R6Class(
     confidenceParam = NULL,
     #' @field returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
     returnOptimalNodes = NULL,
+    #' @field saveTreeNameBase [character] Base name of the tree to be saved
+    saveTreeNameBase = NULL,
+    #' @field whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
+    whenToSaveTrees = NULL,
     #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -259,6 +263,8 @@ simBsOpt <- R6::R6Class(
     #' @param nChildrenPerExpansion [numeric] Number of children per one expansion of nodes when optimizing hyper parameter by StoSOO
     #' @param confidenceParam [numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards
     #' @param returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
+    #' @param saveTreeNameBase [character] Base name of the tree to be saved
+    #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
     #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -423,6 +429,8 @@ simBsOpt <- R6::R6Class(
                           nChildrenPerExpansion = NULL,
                           confidenceParam = NULL,
                           returnOptimalNodes = NULL,
+                          saveTreeNameBase = NULL,
+                          whenToSaveTrees = NA,
                           nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
@@ -713,6 +721,26 @@ simBsOpt <- R6::R6Class(
         returnOptimalNodes <- 1:nIterOptimization
         message(paste0("You do not specify `returnOptimalNodes`. We set `returnOptimalNodes = 1:",
                        max(returnOptimalNodes), "`."))
+      }
+
+
+      # saveTreeNameBase
+      if (is.null(saveTreeNameBase)) {
+        whenToSaveTrees <- NULL
+      }
+
+      # whenToSaveTrees
+      if (!is.null(whenToSaveTrees)) {
+        if (!is.na(whenToSaveTrees)) {
+          stopifnot(is.numeric(whenToSaveTrees))
+          whenToSaveTrees <- floor(whenToSaveTrees)
+          stopifnot(all(whenToSaveTrees >= 1))
+          stopifnot(all(whenToSaveTrees <= nIterOptimization))
+        } else {
+          whenToSaveTrees <- nIterOptimization
+          message(paste0("You do not specify `whenToSaveTrees`. We set `whenToSaveTrees = ",
+                         whenToSaveTrees, "`."))
+        }
       }
 
 
@@ -1917,6 +1945,8 @@ simBsOpt <- R6::R6Class(
       self$nChildrenPerExpansion <- nChildrenPerExpansion
       self$confidenceParam <- confidenceParam
       self$returnOptimalNodes <- returnOptimalNodes
+      self$saveTreeNameBase <- saveTreeNameBase
+      self$whenToSaveTrees <- whenToSaveTrees
       self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
@@ -2221,6 +2251,8 @@ simBsOpt <- R6::R6Class(
                                                  maximize = TRUE,
                                                  optimizeType = "stochastic",
                                                  returnOptimalNodes = returnOptimalNodes,
+                                                 saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
+                                                 whenToSaveTrees = self$whenToSaveTrees,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
         stoSOONow$startOptimization()
@@ -2348,6 +2380,8 @@ simBsOpt <- R6::R6Class(
                                                  maximize = TRUE,
                                                  optimizeType = "stochastic",
                                                  returnOptimalNodes = returnOptimalNodes,
+                                                 saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
+                                                 whenToSaveTrees = self$whenToSaveTrees,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
         stoSOONow$startOptimization()
@@ -2382,8 +2416,8 @@ simBsOpt <- R6::R6Class(
             # }
 
             iterName <- iterNames[iterNo]
-            if (is.null(hVecOptsList[[iterNames]])) {
-              hVecOptsList[[iterNames]] <- list()
+            if (is.null(hVecOptsList[[iterName]])) {
+              hVecOptsList[[iterName]] <- list()
             }
 
             if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
@@ -2468,6 +2502,9 @@ simBsOpt <- R6::R6Class(
                                                            maximize = TRUE,
                                                            optimizeType = "stochastic",
                                                            returnOptimalNodes = returnOptimalNodes,
+                                                           saveTreeNameBase = paste0(self$saveTreeNameBase, "_",
+                                                                                     iterName, "_Generation_", genProceedNo),
+                                                           whenToSaveTrees = self$whenToSaveTrees,
                                                            withCheck = TRUE,
                                                            verbose = showProgress)
                   stoSOONow$startOptimization()
@@ -2480,16 +2517,16 @@ simBsOpt <- R6::R6Class(
 
                   hVecOpt <- stoSOONow$optimalParameter
 
-                  self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
-                  hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
+                  self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+                  hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
 
                   hCount <- 1
 
                   rm(stoSOONow)
                   gc(reset = TRUE); gc(reset = TRUE)
                 } else {
-                  self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
-                  hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
+                  self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+                  hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
                   hCount <- hCount + 1
                 }
 
@@ -3434,8 +3471,8 @@ simBsOpt <- R6::R6Class(
       simRes$trueGVMatList <- list()
       simRes$estimatedGVMatList <- list()
 
-      if (is.null(hVecOptsList[[iterNames]])) {
-        hVecOptsList[[iterNames]] <- list()
+      if (is.null(hVecOptsList[[iterName]])) {
+        hVecOptsList[[iterName]] <- list()
       }
 
       bsInfo <- bsInfoInit$clone(deep = FALSE)
@@ -3484,6 +3521,9 @@ simBsOpt <- R6::R6Class(
                                                    maximize = TRUE,
                                                    optimizeType = "stochastic",
                                                    returnOptimalNodes = returnOptimalNodes,
+                                                   saveTreeNameBase = paste0(self$saveTreeNameBase, "_",
+                                                                             iterName, "_Generation_", genProceedNo),
+                                                   whenToSaveTrees = self$whenToSaveTrees,
                                                    withCheck = TRUE,
                                                    verbose = showProgress)
           stoSOONow$startOptimization()
@@ -3496,8 +3536,8 @@ simBsOpt <- R6::R6Class(
 
           hVecOpt <- stoSOONow$optimalParameter
 
-          self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
-          hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
+          self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+          hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- 1
 
           if (iterNo %% nRefreshMemoryEvery == 0) {
@@ -3506,8 +3546,8 @@ simBsOpt <- R6::R6Class(
           }
 
         } else {
-          self$optimalHyperParamMatsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
-          hVecOptsList[[iterNames]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
+          self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
+          hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- hCount + 1
         }
 
