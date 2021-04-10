@@ -2472,7 +2472,7 @@ crossInfo <- R6::R6Class(
 
                                             haploArraySelChr <- haploArraySel[, lociNamesChr, ]
 
-                                            genVarProgeniesChrSel <- t(sapply(X = dimnames(haploArraySelChr)[[1]],
+                                            genVarProgeniesChrSelList <- sapply(X = dimnames(haploArraySelChr)[[1]],
                                                                               FUN = function(indName) {
                                                                                 haploArraySelChrNow <- haploArraySelChr[indName, , , drop = TRUE]
 
@@ -2510,7 +2510,9 @@ crossInfo <- R6::R6Class(
                                                                                          lociEffectsChr) / 4
 
                                                                                 return(genVarProgeniesChrSelNow)
-                                                                              }, simplify = TRUE))
+                                                                              }, simplify = FALSE)
+                                            genVarProgeniesChrSel <- do.call(what = rbind,
+                                                                             args = genVarProgeniesChrSelList)
 
                                             genVarProgeniesChrSelOneArray <- array(data = genVarProgeniesChrSel,
                                                                                    dim = c(dim(genVarProgeniesChrSel), 1),
@@ -2524,19 +2526,19 @@ crossInfo <- R6::R6Class(
       genVarProgeniesSelMat <- apply(X = genVarProgeniesChrSelArray,
                                      MARGIN = c(1, 2), FUN = sum)
 
-      genVarProgenies <- t(apply(X = crosses0,
-                                 MARGIN = 1,
-                                 FUN = function(parentPair) {
-                                   genVarProgeniesEachParent <- genVarProgeniesSelMat[parentPair[!is.na(parentPair)], , drop = FALSE]
-
-                                   genVarProgeniesParentPair <- apply(X = genVarProgeniesEachParent,
-                                                                      MARGIN = 2, FUN = sum)
-
-                                   return(genVarProgeniesParentPair)
-                                 }))
-
-      rownames(genVarProgenies) <- 1:nrow(crosses0)
-      colnames(genVarProgenies) <- colnames(lociEffects)
+      genVarProgenies <- matrix(data = apply(X = crosses0,
+                                             MARGIN = 1,
+                                             FUN = function(parentPair) {
+                                               genVarProgeniesEachParent <- genVarProgeniesSelMat[parentPair[!is.na(parentPair)], , drop = FALSE]
+                                               genVarProgeniesParentPair <- apply(X = genVarProgeniesEachParent,
+                                                                                  MARGIN = 2, FUN = sum)
+                                               return(genVarProgeniesParentPair)
+                                             }),
+                                nrow = nrow(crosses0),
+                                ncol = ncol(lociEffects),
+                                dimnames = list(1:nrow(crosses0),
+                                                colnames(lociEffects)),
+                                byrow = TRUE)
 
       genVarProgeniesScaled <- apply(X = genVarProgenies, MARGIN = 2,
                                      FUN = function(genVarProgeniesEach) {
