@@ -83,6 +83,8 @@ simBsOpt <- R6::R6Class(
     saveTreeNameBase = NULL,
     #' @field whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
     whenToSaveTrees = NULL,
+    #' @field currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
+    currentTreeMid = NULL,
     #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -265,6 +267,7 @@ simBsOpt <- R6::R6Class(
     #' @param returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
     #' @param saveTreeNameBase [character] Base name of the tree to be saved
     #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
+    #' @param currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
     #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -431,6 +434,7 @@ simBsOpt <- R6::R6Class(
                           returnOptimalNodes = NULL,
                           saveTreeNameBase = NULL,
                           whenToSaveTrees = NA,
+                          currentTreeMid = NULL,
                           nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
@@ -2256,6 +2260,9 @@ simBsOpt <- R6::R6Class(
                                                  whenToSaveTrees = self$whenToSaveTrees,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
+        if (!is.null(self$currentTreeMid)) {
+          stoSOONow$currentTree <- self$currentTreeMid
+        }
         stoSOONow$startOptimization()
         optimalNodesList <- stoSOONow$optimalNodes
         optimalHyperParamMat <- do.call(what = rbind,
@@ -2385,6 +2392,9 @@ simBsOpt <- R6::R6Class(
                                                  whenToSaveTrees = self$whenToSaveTrees,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
+        if (!is.null(self$currentTreeMid)) {
+          stoSOONow$currentTree <- self$currentTreeMid
+        }
         stoSOONow$startOptimization()
         optimalNodesList <- stoSOONow$optimalNodes
         optimalHyperParamMat <- do.call(what = rbind,
