@@ -2180,8 +2180,72 @@ crossInfo <- R6::R6Class(
     #' @field makeCrosses [list] return a list of new individuals
     makeCrosses = function() {
       if (!(self$matingMethod %in% c("makeDH", "nonCross"))) {
+        crosses <- self$crosses
+        pop <- self$parentPopulation
+        seed <- self$seedSimMC
+
+        # checks
+        if (!all(colnames(crosses) %in% c("ind1", "ind2", "n", "names"))) {
+          stop('colnames(crosses) must be "ind1", "ind2", "n", "names".')
+        }
+        crosses$ind1 <- as.character(crosses$ind1)
+        crosses$ind2 <- as.character(crosses$ind2)
+        crosses$names <- as.character(crosses$names)
+
+        # no NA in parnets
+        if (any(is.na(crosses$ind1)) || any(is.na(crosses$ind2))) {
+          stop('Columns "ind1" and "ind2" should not contain any "NA"')
+        }
+
+        # parents in population
+        if (any(!crosses$ind1 %in% names(pop$inds))
+            || any(!crosses$ind2 %in% names(pop$inds))) {
+          notFound <- crosses$ind1[which(!(crosses$ind1 %in% names(pop$inds)))]
+          notFound <- c(notFound,
+                        crosses$ind2[which(!(crosses$ind2 %in% names(pop$inds)))])
+          notFound <- paste(notFound, collapse = '" ; "')
+          stop(paste0('Parents not found in the population: "', notFound, '"'))
+        }
 
 
+        # number of offspring
+        crosses$n[which(is.na(crosses$n))] <- 1
+        if (!is.numeric(crosses$n)) {
+          stop(paste0('Column n should be numeric values'))
+        }
+        if (!all(crosses$n == floor(crosses$n))) {
+          stop(paste0('Column n should be integer values'))
+        }
+        # names
+        if (any(is.na(crosses$name))) {
+          noNames <- crosses[is.na(crosses$name),]
+          noNames$name <- paste(noNames$ind1, "x", noNames$ind2, "-",
+                                seq_len(nrow(noNames)), "-")
+          crosses[is.na(crosses$name),"names"] <- noNames$name
+        }
+
+        set.seed(seed = seed)
+
+        newInds <- mapply(private$makeSingleCross,
+                          pop$inds[crosses$ind1],
+                          pop$inds[crosses$ind2],
+                          crosses$name,
+                          crosses$n,
+                          USE.NAMES = FALSE)
+
+        newInds <- unlist(newInds)
+
+        # offsprings names do not already exist in population
+        if (any(vapply(newInds, function(x){x$name}, "character") %in% names(pop$inds))) {
+          nameInPop <-
+            unique(crosses$names[which(crosses$names %in% names(pop$inds))])
+          nameInPop <- paste(nameInPop, collapse = '" ; "')
+          message(paste0(
+            'Offspring names already exist in the population: "',
+            nameInPop,
+            '"'
+          ))
+        }
       } else if (self$matingMethod == "makeDH") {
         newInds <- self$makeDHs
       } else if (self$matingMethod == "nonCross") {
