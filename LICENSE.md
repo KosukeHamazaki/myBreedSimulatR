@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2020 The University of Tokyo, Laboratory of Biometry and Bioinformatics
+Copyright (c) 2023 Kosuke Hamazaki
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -2,25 +2,19 @@ Type: Package
 Package: myBreedSimulatR
 Title: R Breeding Simulator for K.Hamazaki
 Version: 0.2.1
-Date: 2020-12-21
+Date: 2023-01-20
 Authors@R: 
-    c(person(given = "Julien",
-             family = "Diot",
-             role = c("aut", "cre"),
-             email = "juliendiot@ut-biomet.org"),
-      person(given = "Kosuke",
+    c(person(given = "Kosuke",
              family = "Hamazaki",
-             role = c("aut", "ctb"),
+             role = c("aut", "cre"),
              email = "hamazaki@ut-biomet.org"),
       person(given = "Hiroyoshi",
              family = "Iwata",
              role = c("aut", "ctb"),
-             email = "aiwata@mail.ecc.u-tokyo.ac.jp"))
-Description: R package providing classes and functions to
-    simulate breeding schemes.
+             email = "hiroiwata@g.ecc.u-tokyo.ac.jp"))
+Description: R package providing classes and functions to simulate breeding schemes. R Breeding Simulator for the paper "Simulation-based future-oriented strategy can optimize decision making in a breeding program".
+Version: 0.2.1
 License: MIT + file LICENSE
-URL: https://github.com/ut-biomet/breedSimulatR
-BugReports: https://github.com/ut-biomet/breedSimulatR/issues
 Depends: 
     R (>= 3.5.0)
 Imports: 
@@ -55,13 +49,13 @@ Suggests:
     testthat
 VignetteBuilder: 
     knitr
-Copyright: The University of Tokyo, Laboratory of Biometry and
-    Bioinfomatics.
 Encoding: UTF-8
 Language: en-US
 LazyData: true
 LinkingTo: 
     Rcpp
-Maintainers@R: person("Julien", "Diot", email =
-    "juliendiot@ut-biomet.org", role = c("aut", "cre"))
+Maintainers@R: person(given = "Kosuke",
+             family = "Hamazaki",
+             role = c("aut", "ctb"),
+             email = "hamazaki@ut-biomet.org")
 RoxygenNote: 7.1.1
