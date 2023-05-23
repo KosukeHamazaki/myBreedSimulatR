@@ -45,6 +45,12 @@ simBs <- R6::R6Class(
     methodMLRInit = NULL,
     #' @field multiTraitInit [logical] Use multiple-trait model for estimation of marker effects or not for initial population
     multiTraitInit = NULL,
+    #' @field samplingMrkEffInit [logical] Whether or not sampling of marker effects from the distribution is conducted for initial population.
+    #' This option can be used for the robust optimization when using estimated marker effects.
+    #' This option can only be `TRUE` when using bayesian methods for `methodMLRInit`.
+    samplingMrkEffInit = NULL,
+    #' @field seedMrkEffSamplingInit [numeric] When `samplingMrkEffInit` is TRUE, you can set seed for sampling by setting `seedMrkEffSampling`.
+    seedMrkEffSamplingInit = NULL,
     #' @field nIterSimulation [numeric] Number of iterations for this simulation setting
     nIterSimulation = NULL,
     #' @field nGenerationProceed [numeric] Number of generations to be proceeded
@@ -124,7 +130,7 @@ simBs <- R6::R6Class(
     nNextPopVec = NULL,
     #' @field nameMethod [character] Method for naming individuals
     nameMethod = NULL,
-    #' @field nCores [numeric] Number of cores used for simulations of breedinhh scheme
+    #' @field nCores [numeric] Number of cores used for simulations of breeding scheme
     nCores = NULL,
     #' @field overWriteRes [logical] Overwrite simulation results when the targeted results already exists
     overWriteRes = NULL,
@@ -185,6 +191,10 @@ simBs <- R6::R6Class(
     #' "Ridge", "LASSO", "ElasticNet", "RR-BLUP", "GBLUP", "BayesA" (uni-trait),
     #' "BayesB" (uni-trait), "BayesC" (uni-trait), "BRR", "BL" (uni-trait), "SpikeSlab" (multi-trait)
     #' @param multiTraitInit [logical] Use multiple-trait model for estimation of marker effects or not for initial population
+    #' @param samplingMrkEffInit [logical] Whether or not sampling of marker effects from the distribution is conducted for initial population.
+    #' This option can be used for the robust optimization when using estimated marker effects.
+    #' This option can only be `TRUE` when using bayesian methods for `methodMLRInit`.
+    #' @param seedMrkEffSamplingInit [numeric] When `samplingMrkEffInit` is TRUE, you can set seed for sampling by setting `seedMrkEffSampling`.
     #' @param nIterSimulation [numeric] Number of iterations for this simulation setting
     #' @param nGenerationProceed [numeric] Number of generations to be proceeded
     #' @param nRefreshMemoryEvery [numeric] Every `nRefreshMemoryEvery` iterations, we refresh memory used for simulations by `gc(reset = TRUE)`.
@@ -324,6 +334,8 @@ simBs <- R6::R6Class(
                           trainingIndNamesInit = NULL,
                           methodMLRInit = NULL,
                           multiTraitInit = FALSE,
+                          samplingMrkEffInit = FALSE,
+                          seedMrkEffSamplingInit = NA,
                           nIterSimulation = NULL,
                           nGenerationProceed = NULL,
                           nRefreshMemoryEvery = NULL,
@@ -566,6 +578,24 @@ simBs <- R6::R6Class(
                            "We use `methodMLR = 'BRR'` instead."))
             methodMLRInit <- "BRR"
           }
+        }
+      }
+      
+      
+      # samplingMrkEffInit
+      if (samplingMrkEffInit & (!(methodMLRInit %in% supportedMethodsBGLR))) {
+        message(paste0("For non-bayesian model, `samplingMrkEffInit = TRUE` is not offered.\n",
+                       "We use `samplingMrkEffInit = FALSE` instead."))
+        samplingMrkEffInit <- FALSE
+      }
+      
+      
+      # seedMrkEffSamplingInit
+      if (samplingMrkEffInit) {
+        seedMrkEffSamplingInit <- NA
+      } else {
+        if (is.na(seedMrkEffSamplingInit)) {
+          seedMrkEffSamplingInit <- sample(x = 1:1e09, size = 1)
         }
       }
 
@@ -1465,6 +1495,8 @@ simBs <- R6::R6Class(
       self$trainingIndNamesInit <- trainingIndNamesInit
       self$methodMLRInit <- methodMLRInit
       self$multiTraitInit <- multiTraitInit
+      self$samplingMrkEffInit <- samplingMrkEffInit
+      self$seedMrkEffSamplingInit <- seedMrkEffSamplingInit
       self$nIterSimulation <- nIterSimulation
       self$nGenerationProceed <- nGenerationProceed
       self$nRefreshMemoryEvery <- nRefreshMemoryEvery
@@ -1572,6 +1604,8 @@ simBs <- R6::R6Class(
       trainingIndNamesInit <- self$trainingIndNamesInit
       methodMLRInit <- self$methodMLRInit
       multiTraitInit <- self$multiTraitInit
+      samplingMrkEffInit <- self$samplingMrkEffInit
+      seedMrkEffSamplingInit <- self$seedMrkEffSamplingInit
       verbose <- self$verbose
 
 
@@ -1595,7 +1629,9 @@ simBs <- R6::R6Class(
         }
         lociEffectsInit <- breederInfoInit$lociEffects(bsInfo = bsInfoInit,
                                                        trainingPop = trainingPopInit,
-                                                       methodMLR = methodMLRInit)
+                                                       methodMLR = methodMLRInit,
+                                                       samplingMrkEff = samplingMrkEffInit,
+                                                       seedMrkEffSampling = seedMrkEffSamplingInit)
       }
 
       self$lociEffectsInit <- lociEffectsInit
