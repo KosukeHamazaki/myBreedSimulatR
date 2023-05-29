@@ -1723,23 +1723,28 @@ simBs <- R6::R6Class(
         }
 
         if ("max" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$max <- c()
+          self$simBsRes[[simBsName]]$max <- rep(x = NA, nIterSimulation)
+          names(self$simBsRes[[simBsName]]$max) <- iterNames
         }
 
         if ("mean" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$mean <- c()
+          self$simBsRes[[simBsName]]$mean <- rep(x = NA, nIterSimulation)
+          names(self$simBsRes[[simBsName]]$mean) <- iterNames
         }
 
         if ("median" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$median <- c()
+          self$simBsRes[[simBsName]]$median <- rep(x = NA, nIterSimulation)
+          names(self$simBsRes[[simBsName]]$median) <- iterNames
         }
 
         if ("min" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$min <- c()
+          self$simBsRes[[simBsName]]$min <- rep(x = NA, nIterSimulation)
+          names(self$simBsRes[[simBsName]]$min) <- iterNames
         }
 
         if ("var" %in% returnMethod) {
-          self$simBsRes[[simBsName]]$var <- c()
+          self$simBsRes[[simBsName]]$var <- rep(x = NA, nIterSimulation)
+          names(self$simBsRes[[simBsName]]$var) <- iterNames
         }
       }
 
