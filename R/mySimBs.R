@@ -1770,7 +1770,7 @@ simBs <- R6::R6Class(
             if (any(c("all", "summary") %in% returnMethod)) {
               conductSimulation <- TRUE
             } else {
-              if (any(sapply(returnMethod, function(x) is.null(self$simBsRes[[simBsName]][[x]][iterName])))) {
+              if (any(sapply(returnMethod, function(x) is.na(self$simBsRes[[simBsName]][[x]][iterName])))) {
                 conductSimulation <- TRUE
               } else {
                 if (overWriteRes) {
@@ -2034,7 +2034,7 @@ simBs <- R6::R6Class(
                                          if (any(c("all", "summary") %in% returnMethod)) {
                                            conductSimulation <- TRUE
                                          } else {
-                                           if (any(sapply(returnMethod, function(x) is.null(self$simBsRes[[simBsName]][[x]][iterName])))) {
+                                           if (any(sapply(returnMethod, function(x) is.na(self$simBsRes[[simBsName]][[x]][iterName])))) {
                                              conductSimulation <- TRUE
                                            } else {
                                              if (overWriteRes) {
