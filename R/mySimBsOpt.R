@@ -834,6 +834,15 @@ simBsOpt <- R6::R6Class(
       }
       
       
+      # currentTreeMid
+      if (!is.null(currentTreeMid)) {
+        if (!("tree" %in% class(currentTreeMid))) {
+          currentTreeMid <- NULL 
+          message(paste0("Your `currentTreeMid` object is not `tree` class. We set `currentTreeMid = NULL`."))
+        }
+      }
+      
+      
       # rewardWeightVec
       if (!is.null(rewardWeightVec)) {
         stopifnot(is.numeric(rewardWeightVec))
@@ -2028,6 +2037,7 @@ simBsOpt <- R6::R6Class(
       self$returnOptimalNodes <- returnOptimalNodes
       self$saveTreeNameBase <- saveTreeNameBase
       self$whenToSaveTrees <- whenToSaveTrees
+      self$currentTreeMid <- currentTreeMid
       self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
