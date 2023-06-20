@@ -1,8 +1,8 @@
 Type: Package
 Package: myBreedSimulatR
 Title: R Breeding Simulator for K.Hamazaki
-Version: 0.2.2
-Date: 2023-01-20
+Version: 0.2.3
+Date: 2023-06-20
 Authors@R: 
     c(person(given = "Kosuke",
              family = "Hamazaki",
@@ -13,7 +13,6 @@ Authors@R:
              role = c("aut", "ctb"),
              email = "hiroiwata@g.ecc.u-tokyo.ac.jp"))
 Description: R package providing classes and functions to simulate breeding schemes. R Breeding Simulator for the paper "Simulation-based future-oriented strategy can optimize decision making in a breeding program".
-Version: 0.2.1
 License: MIT + file LICENSE
 Depends: 
     R (>= 3.5.0)

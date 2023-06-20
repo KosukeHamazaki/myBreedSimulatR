@@ -728,14 +728,14 @@ simBs <- R6::R6Class(
       if (!is.null(traitNoSelList)) {
         if (!is.list(traitNoSelList)) {
           traitNoSelList <- sapply(nSelectionWaysVec,
-                                   function (nSelectionWays) {
+                                   function(nSelectionWays) {
                                      traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
 
                                      return(traitNoSelListNow)
                                    }, simplify = FALSE)
         } else if (!is.list(traitNoSelList[[1]])) {
           traitNoSelList <- sapply(nSelectionWaysVec,
-                                   function (nSelectionWays) {
+                                   function(nSelectionWays) {
                                      traitNoSelListNow <- rep(traitNoSelList, nSelectionWays)
 
                                      return(traitNoSelListNow)
@@ -746,7 +746,7 @@ simBs <- R6::R6Class(
         message(paste0("`traitNoSelList` is not specified. We substitute `traitNoSelList = list(list(",
                        traitNoSelList,"))` instead."))
         traitNoSelList <- sapply(nSelectionWaysVec,
-                                 function (nSelectionWays) {
+                                 function(nSelectionWays) {
                                    traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
 
                                    return(traitNoSelListNow)
@@ -1076,14 +1076,14 @@ simBs <- R6::R6Class(
       if (!is.null(hSelList)) {
         if (!is.list(hSelList)) {
           hSelList <- sapply(nSelectionWaysVec,
-                             function (nSelectionWays) {
+                             function(nSelectionWays) {
                                hSelListNow <- rep(list(hSelList), nSelectionWays)
 
                                return(hSelListNow)
                              }, simplify = FALSE)
         } else if (!is.list(hSelList[[1]])) {
           hSelList <- sapply(nSelectionWaysVec,
-                             function (nSelectionWays) {
+                             function(nSelectionWays) {
                                hSelListNow <- rep(hSelList, nSelectionWays)
 
                                return(hSelListNow)
@@ -1094,10 +1094,10 @@ simBs <- R6::R6Class(
         message(paste0("`hSelList` is not specified. We substitute `hSelList = list(list(",
                        hSelList,"))` instead."))
         hSelList <- sapply(1:nGenerationProceed,
-                           function (generationProceedNo) {
+                           function(generationProceedNo) {
 
                              hSelListNow <- sapply(X = traitNoSelList[[generationProceedNo]],
-                                                   FUN = function (traitNoSelNow) {
+                                                   FUN = function(traitNoSelNow) {
                                                      rep(hSelList, length(traitNoSelNow))
                                                    }, simplify = FALSE)
 
@@ -1702,7 +1702,7 @@ simBs <- R6::R6Class(
         saveAllResAtSplit <- stringr::str_split(string = list.files(saveAllResAt),
                                                 pattern = "_")
         saveAllResAtSplitLast <- lapply(X = saveAllResAtSplit,
-                                        FUN = function (saveAllResAtSplitVec) {
+                                        FUN = function(saveAllResAtSplitVec) {
                                           return(saveAllResAtSplitVec[length(saveAllResAtSplitVec)])
                                         })
 
@@ -1975,7 +1975,7 @@ simBs <- R6::R6Class(
               trueGVMatInit <- self$trueGVMatInit
               trueGVMatScaled <- do.call(what = cbind,
                                          args = sapply(X = 1:ncol(trueGVMatNow),
-                                                       FUN = function (traitNo) {
+                                                       FUN = function(traitNo) {
                                                          trueGVMean <- mean(trueGVMatInit[, traitNo])
                                                          trueGVSd <- sd(trueGVMatInit[, traitNo])
                                                          if (trueGVSd != 0) {
@@ -2027,7 +2027,7 @@ simBs <- R6::R6Class(
         }
       } else {
         conductSimulations <- sapply(X = iterNames,
-                                     FUN = function (iterName) {
+                                     FUN = function(iterName) {
                                        if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
                                              (length(self$trueGVMatList[[iterName]]) <= 1))) {
                                          if (overWriteRes) {
@@ -2226,7 +2226,7 @@ simBs <- R6::R6Class(
     #' @param adjust [numeric] the bandwidth used is actually adjust*bw. This makes it easy to specify values like ‘half the default’ bandwidth.
     #' (see: `adjust` in \link[stats]{density})
     #'
-    plot = function (targetTrait = 1,
+    plot = function(targetTrait = 1,
                      targetPopulation = NULL,
                      plotType = "box",
                      plotTargetDensity = "max",
@@ -2367,7 +2367,7 @@ simBs <- R6::R6Class(
         trueGVSummaryDfTargetSS <- trueGVSummaryDfTarget[trueGVSummaryDfTarget$SummaryStatistics %in% plotTargetDensity, ]
 
         densityValueDfList <- lapply(X = dimnames(trueGVSummaryArray)[[3]],
-                                     FUN = function (popName) {
+                                     FUN = function(popName) {
                                        trueGVSummaryDfTargetSSEachPop <- trueGVSummaryDfTargetSS[trueGVSummaryDfTargetSS$Population %in% popName, ]
                                        densityResEachPop <- density(x = sort(trueGVSummaryDfTargetSSEachPop$Value), adjust = adjust)
 
@@ -2411,7 +2411,7 @@ simBs <- R6::R6Class(
     # @param ind2 [individual class] parent 2
     # @param names [character] names of the descendants
     # @param n [numeric] number of descendants
-    lociEffects = function (bsInfo,
+    lociEffects = function(bsInfo,
                             breederInfo,
                             alpha = 0.5,
                             nIter = 5000,
@@ -2464,7 +2464,7 @@ simBs <- R6::R6Class(
     # @description Proceed breeding scheme (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
-    performOneSimulation = function (iterNo) {
+    performOneSimulation = function(iterNo) {
       simBsName <- self$simBsName
       bsInfoInit <- self$bsInfoInit
       breederInfoInit <- self$breederInfoInit
@@ -2705,7 +2705,7 @@ simBs <- R6::R6Class(
         trueGVMatInit <- self$trueGVMatInit
         trueGVMatScaled <- do.call(what = cbind,
                                    args = sapply(X = 1:ncol(trueGVMatNow),
-                                                 FUN = function (traitNo) {
+                                                 FUN = function(traitNo) {
                                                    trueGVMean <- mean(trueGVMatInit[, traitNo])
                                                    trueGVSd <- sd(trueGVMatInit[, traitNo])
                                                    if (trueGVSd != 0) {
@@ -2754,7 +2754,7 @@ simBs <- R6::R6Class(
     # @description Proceed breeding scheme with try-error (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
-    performOneSimulationTryError = function (iterNo) {
+    performOneSimulationTryError = function(iterNo) {
       simRes <- try(private$performOneSimulation(iterNo = iterNo),
                     silent = TRUE)
 
@@ -2790,7 +2790,7 @@ simBs <- R6::R6Class(
     # @description Extract GV matrix as a list from bsInfo & breederInfo objects
     #
     # @param iterName [character] Iteration Name
-    extractGVMatList = function (iterName) {
+    extractGVMatList = function(iterName) {
       # Read arguments from `self`
       simBsName <- self$simBsName
       bsInfoInit <- self$bsInfoInit
@@ -2882,7 +2882,7 @@ simBs <- R6::R6Class(
     # @description Extract summary results from true GV matrix
     #
     # @param trueGVMatListEach [list] Each list of true GV matrix
-    extractTrueSummaryRes = function (trueGVMatListEach) {
+    extractTrueSummaryRes = function(trueGVMatListEach) {
       nTopEval <- self$nTopEval
 
       trueGVSummaryArrayEachList <- lapply(X = trueGVMatListEach,
@@ -2919,7 +2919,7 @@ simBs <- R6::R6Class(
     # @description Extract summary results from estimated GV matrix
     #
     # @param estimatedGVMatListEach [list] Each list of estimated GV matrix
-    extractEstimatedSummaryRes = function (estimatedGVMatListEach) {
+    extractEstimatedSummaryRes = function(estimatedGVMatListEach) {
       nTopEval <- self$nTopEval
 
       estimatedGVSummaryArrayEachList <- lapply(X = estimatedGVMatListEach,

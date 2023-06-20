@@ -93,6 +93,8 @@ simBsOpt <- R6::R6Class(
     whenToSaveTrees = NULL,
     #' @field currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
     currentTreeMid = NULL,
+    #' @field optimalNodesMid [list] tree class object that is saved as a `optimalNodes` in the previous analysis
+    optimalNodesMid = list(),
     #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -208,8 +210,8 @@ simBsOpt <- R6::R6Class(
     summaryAllResAt = NULL,
     #' @field verbose [logical] Display info (optional)
     verbose = NULL,
-    
-    
+
+
     #' @field lociEffectsInit [matrix] Marker and QTL effects used for crossInfo object for initial population
     lociEffectsInit = NULL,
     #' @field hLens [numeric] Length of hyperparameter vector
@@ -236,9 +238,9 @@ simBsOpt <- R6::R6Class(
     estimatedGVMatList = list(),
     #' @field estimatedGVSummaryArray [array] An array of summary statistics of estimated GVs for each population & each iteration
     estimatedGVSummaryArray = NULL,
-    
-    
-    
+
+
+
     #' @description Create a new simBsOpt object.
     #' @param simBsName [character] Name of this simulation of breeding schemes
     #' @param bsInfoInit [bsInfo] breeding scheme info
@@ -280,6 +282,7 @@ simBsOpt <- R6::R6Class(
     #' @param saveTreeNameBase [character] Base name of the tree to be saved
     #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
     #' @param currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
+    #' @param optimalNodesMid [list] tree class object that is saved as a `optimalNodes` in the previous analysis
     #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -417,8 +420,8 @@ simBsOpt <- R6::R6Class(
     #'               targetPopulation = 1:11,
     #'               plotType = "jitter")
     #'
-    
-    
+
+
     initialize = function(simBsName = "Undefined",
                           bsInfoInit,
                           breederInfoInit = NULL,
@@ -452,6 +455,7 @@ simBsOpt <- R6::R6Class(
                           saveTreeNameBase = NULL,
                           whenToSaveTrees = NA,
                           currentTreeMid = NULL,
+                          optimalNodesMid = list(),
                           nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
@@ -504,7 +508,7 @@ simBsOpt <- R6::R6Class(
                           hEval = NULL,
                           summaryAllResAt = NULL,
                           verbose = TRUE) {
-      
+
       # define some methods
       lociEffMethodsOffered <- c("true", "estimated")
       trainingPopTypesOffered <- c("all", "latest")
@@ -524,28 +528,28 @@ simBsOpt <- R6::R6Class(
       multiTraitsEvalMethodsOffered <- c("sum", "prod")
       nameMethodsOffered <- c("pairBase", "individualBase")
       returnMethodsOffered <- c("all", "summary", "max", "mean", "median", "min", "var")
-      
-      
+
+
       # simBsName
       if (is.null(simBsName)) {
         simBsName <- "Undefined"
       }
       stopifnot(is.character(simBsName))
-      
+
       # bsInfoInit class
       if (class(bsInfoInit)[1] != "bsInfo") {
         stop(paste('class(bsInfoInit)[1] != "bsInfo"\n"bsInfo" must be a',
                    'bsInfo object see: ?bsInfo'))
       }
-      
-      
-      
+
+
+
       # define some variables
       nIndNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$nInd
       nTraits <- bsInfoInit$traitInfo$nTraits
-      
-      
-      
+
+
+
       # lociEffMethod
       if (!is.null(lociEffMethod)) {
         if (!(lociEffMethod %in% lociEffMethodsOffered)) {
@@ -557,9 +561,9 @@ simBsOpt <- R6::R6Class(
         message(paste0("`lociEffMethod` is not specified. We substitute `lociEffMethod = ",
                        lociEffMethod,"` instead."))
       }
-      
-      
-      
+
+
+
       # nIterSimulation
       if (!is.null(nIterSimulation)) {
         stopifnot(is.numeric(nIterSimulation))
@@ -570,9 +574,9 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nIterSimulation` is not specified. We substitute `nIterSimulation = ",
                        nIterSimulation,"` instead."))
       }
-      
-      
-      
+
+
+
       # nGenerationProceed
       if (!is.null(nGenerationProceed)) {
         stopifnot(is.numeric(nGenerationProceed))
@@ -583,8 +587,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nGenerationProceed` is not specified. We substitute `nGenerationProceed = ",
                        nGenerationProceed,"` instead."))
       }
-      
-      
+
+
       # nGenerationProceedSimulation
       if (!is.null(nGenerationProceedSimulation)) {
         stopifnot(is.numeric(nGenerationProceedSimulation))
@@ -595,43 +599,43 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nGenerationProceedSimulation` is not specified. We substitute `nGenerationProceedSimulation = ",
                        nGenerationProceedSimulation,"` instead."))
       }
-      
-      
+
+
       # setGoalAsFinalGeneration
       stopifnot(is.logical(setGoalAsFinalGeneration))
-      
+
       # performOptimization
       if (!is.null(performOptimization)) {
         stopifnot(is.logical(performOptimization))
       } else {
         performOptimization <- rep(FALSE, nGenerationProceed)
         performOptimization[1] <- TRUE
-        
+
         message(paste0("`performOptimization` is not specified. Instead, we substitute `performOptimization = c(",
                        paste(performOptimization, collapse = ", "), ")`"))
       }
-      
+
       if (!(length(performOptimization) %in% c(1, nGenerationProceed))) {
         stop(paste("length(performOptimization) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(performOptimization) == 1) {
         performOptimization <- rep(performOptimization, nGenerationProceed)
       }
       names(performOptimization) <- 1:nGenerationProceed
-      
-      
+
+
       # useFirstOptimizedValue
       if (!is.null(useFirstOptimizedValue)){
         stopifnot(is.logical(useFirstOptimizedValue))
-        
+
         if (useFirstOptimizedValue) {
           if (nGenerationProceed != nGenerationProceedSimulation) {
             useFirstOptimizedValue <- FALSE
           }
-          
+
           if (any(performOptimization[-1])) {
             useFirstOptimizedValue <- FALSE
           }
-          
+
           if (!useFirstOptimizedValue) {
             message(paste0("You cannot set `useFirstOptimizedValue` as `TRUE` with this `nGenerationProceed`, `nGenerationProceedSimulation`, and `performOptimization`. We substitute `useFirstOptimizedValue = ",
                            useFirstOptimizedValue,"` instead."))
@@ -643,19 +647,19 @@ simBsOpt <- R6::R6Class(
         } else {
           useFirstOptimizedValue <- FALSE
         }
-        
+
         message(paste0("`useFirstOptimizedValue` is not specified. We substitute `useFirstOptimizedValue = ",
                        useFirstOptimizedValue,"` instead."))
       }
-      
-      
+
+
       # performRobustOptimization
       if (performRobustOptimization & (lociEffMethod == "true")) {
         performRobustOptimization <- FALSE
         message(paste0("When `lociEffMethod == 'true'`, we don't need to perform robust optimization. We substitute `performRobustOptimization = ",
                        performRobustOptimization,"` instead."))
       }
-      
+
       # lowerQuantile
       if (!is.null(lowerQuantile)) {
         stopifnot(is.numeric(lowerQuantile))
@@ -666,7 +670,7 @@ simBsOpt <- R6::R6Class(
         message(paste0("`lowerQuantile` is not specified. We substitute `lowerQuantile = ",
                        lowerQuantile,"` instead."))
       }
-      
+
       # nTotalIterForOneOptimization
       if (!is.null(nTotalIterForOneOptimization)) {
         stopifnot(is.numeric(nTotalIterForOneOptimization))
@@ -677,8 +681,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nTotalIterForOneOptimization` is not specified. We substitute `nTotalIterForOneOptimization = ",
                        nTotalIterForOneOptimization,"` instead."))
       }
-      
-      
+
+
       # nIterSimulationPerEvaluation
       if (!is.null(nIterSimulationPerEvaluation)) {
         stopifnot(is.numeric(nIterSimulationPerEvaluation))
@@ -689,7 +693,7 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nIterSimulationPerEvaluation` is not specified. We substitute `nIterSimulationPerEvaluation = ",
                        nIterSimulationPerEvaluation,"` instead."))
       }
-      
+
       # nIterSimulationForOneMrkEffect
       if (!is.null(nIterSimulationForOneMrkEffect)) {
         stopifnot(is.numeric(nIterSimulationForOneMrkEffect))
@@ -704,8 +708,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nIterSimulationForOneMrkEffect` is not specified. We substitute `nIterSimulationForOneMrkEffect = ",
                        nIterSimulationForOneMrkEffect,"` instead."))
       }
-      
-      
+
+
       # nIterOptimization
       if (!is.null(nIterMrkEffectForRobustOptimization)) {
         stopifnot(is.numeric(nIterMrkEffectForRobustOptimization))
@@ -717,19 +721,19 @@ simBsOpt <- R6::R6Class(
         } else {
           nIterMrkEffectForRobustOptimization <- 1
         }
-        
+
         message(paste0("`nIterMrkEffectForRobustOptimization` is not specified. We substitute `nIterMrkEffectForRobustOptimization = ",
                        nIterMrkEffectForRobustOptimization,"` instead."))
       }
-      
-      
+
+
       if (nIterSimulationPerEvaluation != nIterSimulationForOneMrkEffect * nIterMrkEffectForRobustOptimization) {
         nIterSimulationPerEvaluation <- nIterSimulationForOneMrkEffect * nIterMrkEffectForRobustOptimization
         message((paste0("We substitute `nIterSimulationPerEvaluation = ",
                         nIterSimulationPerEvaluation,"` instead.")))
       }
-      
-      
+
+
       # nIterOptimization
       if (!is.null(nIterOptimization)) {
         stopifnot(is.numeric(nIterOptimization))
@@ -740,14 +744,14 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nIterOptimization` is not specified. We substitute `nIterOptimization = ",
                        nIterOptimization,"` instead."))
       }
-      
+
       if (nTotalIterForOneOptimization != nIterSimulationPerEvaluation * nIterOptimization) {
         nTotalIterForOneOptimization <- nIterSimulationPerEvaluation * nIterOptimization
         message((paste0("We substitute `nTotalIterForOneOptimization = ",
                         nTotalIterForOneOptimization,"` instead.")))
       }
-      
-      
+
+
       # nChildrenPerExpansion
       if (!is.null(nChildrenPerExpansion)) {
         stopifnot(is.numeric(nChildrenPerExpansion))
@@ -758,8 +762,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("You do not specify `nChildrenPerExpansion`. We set `nChildrenPerExpansion = ",
                        nChildrenPerExpansion, "`."))
       }
-      
-      
+
+
       # nMaxEvalPerNode
       if (!is.null(nMaxEvalPerNode)) {
         stopifnot(is.numeric(nMaxEvalPerNode))
@@ -770,8 +774,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("You do not specify `nMaxEvalPerNode`. We set `nMaxEvalPerNode = ",
                        nMaxEvalPerNode, "`."))
       }
-      
-      
+
+
       # maxDepth
       if (!is.null(maxDepth)) {
         stopifnot(is.numeric(maxDepth))
@@ -788,8 +792,8 @@ simBsOpt <- R6::R6Class(
                        "We set `maxDepth = ", maxDepthInR, ".` We're sorry."))
         maxDepth <- maxDepthInR
       }
-      
-      
+
+
       # confidenceParam
       if (!is.null(confidenceParam)) {
         stopifnot(is.numeric(confidenceParam))
@@ -798,8 +802,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("You do not specify `confidenceParam`. We set `confidenceParam = ",
                        round(confidenceParam, 3), "`."))
       }
-      
-      
+
+
       # returnOptimalNodes
       if (!is.null(returnOptimalNodes)) {
         stopifnot(is.numeric(returnOptimalNodes))
@@ -811,13 +815,13 @@ simBsOpt <- R6::R6Class(
         message(paste0("You do not specify `returnOptimalNodes`. We set `returnOptimalNodes = 1:",
                        max(returnOptimalNodes), "`."))
       }
-      
-      
+
+
       # saveTreeNameBase
       if (is.null(saveTreeNameBase)) {
         whenToSaveTrees <- NULL
       }
-      
+
       # whenToSaveTrees
       if (!is.null(whenToSaveTrees)) {
         if (!all(is.na(whenToSaveTrees))) {
@@ -832,17 +836,36 @@ simBsOpt <- R6::R6Class(
                          whenToSaveTrees, "`."))
         }
       }
-      
-      
+
+
       # currentTreeMid
       if (!is.null(currentTreeMid)) {
         if (!("tree" %in% class(currentTreeMid))) {
-          currentTreeMid <- NULL 
+          currentTreeMid <- NULL
           message(paste0("Your `currentTreeMid` object is not `tree` class. We set `currentTreeMid = NULL`."))
         }
       }
-      
-      
+
+
+      # optimalNodesMid
+      if (is.list(optimalNodesMid)) {
+        if (length(optimalNodesMid) != 0) {
+          isNodeVec <- sapply(X = optimalNodesMid,
+                              FUN = function(optimalNode) {
+                                "node" %in% class(optimalNode)
+                              })
+
+          if (!all(isNodeVec)) {
+            optimalNodesMid <- list()
+            message(paste0("Your `optimalNodesMid` object does not consist of the objects of `node` class. We set `optimalNodesMid = list()`."))
+          }
+        }
+      } else {
+        optimalNodesMid <- list()
+        message(paste0("Your `optimalNodesMid` object is not `list` class. We set `optimalNodesMid = list()`."))
+      }
+
+
       # rewardWeightVec
       if (!is.null(rewardWeightVec)) {
         stopifnot(is.numeric(rewardWeightVec))
@@ -852,15 +875,15 @@ simBsOpt <- R6::R6Class(
         message(paste0("`rewardWeightVec` is not specified. Instead, we substitute `rewardWeightVec = c(",
                        paste(rewardWeightVec, collapse = ", "), ")`."))
       }
-      
+
       if (!(length(rewardWeightVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(rewardWeightVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(rewardWeightVec) == 1) {
         rewardWeightVec <- rep(rewardWeightVec, nGenerationProceedSimulation)
       }
       names(rewardWeightVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # digitsEval
       if (!is.null(digitsEval)) {
         stopifnot(is.numeric(digitsEval))
@@ -870,7 +893,7 @@ simBsOpt <- R6::R6Class(
         message(paste0("`digitsEval` is not specified. We substitute `digitsEval = ",
                        digitsEval,"` instead."))
       }
-      
+
       # nRefreshMemoryEvery
       if (!is.null(nRefreshMemoryEvery)) {
         stopifnot(is.numeric(nRefreshMemoryEvery))
@@ -880,22 +903,22 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nRefreshMemoryEvery` is not specified. We substitute `nRefreshMemoryEvery = ",
                        nRefreshMemoryEvery,"` instead."))
       }
-      
-      
+
+
       # updateBreederInfo
       stopifnot(is.logical(updateBreederInfo))
-      
+
       if (!(length(updateBreederInfo) %in% c(1, nGenerationProceed))) {
         stop(paste("length(updateBreederInfo) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateBreederInfo) == 1) {
         updateBreederInfo <- rep(updateBreederInfo, nGenerationProceed)
       }
       names(updateBreederInfo) <- 1:nGenerationProceed
-      
-      
+
+
       # phenotypingInds
       stopifnot(is.logical(phenotypingInds))
-      
+
       if (!(length(phenotypingInds) %in% c(1, nGenerationProceed))) {
         stop(paste("length(phenotypingInds) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(phenotypingInds) == 1) {
@@ -903,8 +926,8 @@ simBsOpt <- R6::R6Class(
       }
       names(phenotypingInds) <- 1:nGenerationProceed
       phenotypingInds[!updateBreederInfo] <- FALSE
-      
-      
+
+
       # nRepForPhenoInit
       if (!is.null(nRepForPhenoInit)) {
         stopifnot(is.numeric(nRepForPhenoInit))
@@ -915,8 +938,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nRepForPhenoInit` is not specified. We substitute `nRepForPhenoInit = ",
                        nRepForPhenoInit,"` instead."))
       }
-      
-      
+
+
       # nRepForPheno
       if (!is.null(nRepForPheno)) {
         stopifnot(is.numeric(nRepForPheno))
@@ -927,31 +950,31 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nRepForPheno` is not specified. We substitute `nRepForPheno = ",
                        nRepForPheno,"` instead."))
       }
-      
+
       if (!(length(nRepForPheno) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nRepForPheno) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nRepForPheno) == 1) {
         nRepForPheno <- rep(nRepForPheno, nGenerationProceed)
       }
       names(nRepForPheno) <- 1:nGenerationProceed
-      
+
       nRepForPheno[!phenotypingInds] <- 0
-      
-      
+
+
       # updateBreederInfoSimulation
       stopifnot(is.logical(updateBreederInfoSimulation))
-      
+
       if (!(length(updateBreederInfoSimulation) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(updateBreederInfoSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(updateBreederInfoSimulation) == 1) {
         updateBreederInfoSimulation <- rep(updateBreederInfoSimulation, nGenerationProceedSimulation)
       }
       names(updateBreederInfoSimulation) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # phenotypingIndsSimulation
       stopifnot(is.logical(phenotypingIndsSimulation))
-      
+
       if (!(length(phenotypingIndsSimulation) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(phenotypingIndsSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(phenotypingIndsSimulation) == 1) {
@@ -959,10 +982,10 @@ simBsOpt <- R6::R6Class(
       }
       names(phenotypingIndsSimulation) <- 1:nGenerationProceedSimulation
       phenotypingIndsSimulation[!updateBreederInfoSimulation] <- FALSE
-      
-      
-      
-      
+
+
+
+
       # nRepForPhenoSimulation
       if (!is.null(nRepForPhenoSimulation)) {
         stopifnot(is.numeric(nRepForPhenoSimulation))
@@ -973,18 +996,18 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nRepForPhenoSimulation` is not specified. We substitute `nRepForPhenoSimulation = ",
                        nRepForPhenoSimulation,"` instead."))
       }
-      
+
       if (!(length(nRepForPhenoSimulation) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nRepForPhenoSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nRepForPhenoSimulation) == 1) {
         nRepForPhenoSimulation <- rep(nRepForPhenoSimulation, nGenerationProceedSimulation)
       }
       names(nRepForPhenoSimulation) <- 1:nGenerationProceedSimulation
-      
+
       nRepForPhenoSimulation[!phenotypingIndsSimulation] <- 0
-      
-      
-      
+
+
+
       # trainingPopType
       if (!is.null(trainingPopType)) {
         if (!(trainingPopType %in% trainingPopTypesOffered)) {
@@ -996,11 +1019,11 @@ simBsOpt <- R6::R6Class(
         message(paste0("`trainingPopType` is not specified. We substitute `trainingPopType = ",
                        trainingPopType,"` instead."))
       }
-      
-      
+
+
       # multiTraitInit
       stopifnot(is.logical(multiTraitInit))
-      
+
       # methodMLRInit
       if (!is.null(methodMLRInit)) {
         if (!(methodMLRInit %in% supportedMethodsMLR)) {
@@ -1016,8 +1039,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`methodMLRInit` is not specified. We substitute `methodMLRInit = ",
                        methodMLRInit,"` instead."))
       }
-      
-      
+
+
       if (methodMLRInit %in% supportedMethodsBGLR) {
         if (!multiTraitInit) {
           if (methodMLRInit == "SpikeSlab") {
@@ -1037,37 +1060,37 @@ simBsOpt <- R6::R6Class(
           }
         }
       }
-      
-      
+
+
       # updateModels
       stopifnot(is.logical(updateModels))
-      
+
       if (!(length(updateModels) %in% c(1, nGenerationProceed))) {
         stop(paste("length(updateModels) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateModels) == 1) {
         updateModels <- rep(updateModels, nGenerationProceed)
       }
       names(updateModels) <- 1:nGenerationProceed
-      
+
       updateModels[!phenotypingInds] <- FALSE
-      
-      
+
+
       # updateModelsSimulation
       stopifnot(is.logical(updateModelsSimulation))
-      
+
       if (!(length(updateModelsSimulation) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(updateModelsSimulation) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(updateModelsSimulation) == 1) {
         updateModelsSimulation <- rep(updateModelsSimulation, nGenerationProceedSimulation)
       }
       names(updateModelsSimulation) <- 1:nGenerationProceedSimulation
-      
+
       updateModelsSimulation[!phenotypingIndsSimulation] <- FALSE
-      
-      
+
+
       # multiTrait
       stopifnot(is.logical(multiTrait))
-      
+
       # methodMLR
       if (!is.null(methodMLR)) {
         if (!(methodMLR %in% supportedMethodsMLR)) {
@@ -1079,8 +1102,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`methodMLR` is not specified. We substitute `methodMLR = ",
                        methodMLR,"` instead."))
       }
-      
-      
+
+
       if (methodMLR %in% supportedMethodsBGLR) {
         if (!multiTrait) {
           if (methodMLR == "SpikeSlab") {
@@ -1100,8 +1123,8 @@ simBsOpt <- R6::R6Class(
           }
         }
       }
-      
-      
+
+
       # breederInfoInit class
       if (!is.null(breederInfoInit)) {
         if (class(breederInfoInit)[1] != "breederInfo") {
@@ -1128,8 +1151,8 @@ simBsOpt <- R6::R6Class(
                                    estimateGV = TRUE,
                                    estimatedGVMethod = "lme4")
       }
-      
-      
+
+
       # nSelectionWaysVec
       if (!is.null(nSelectionWaysVec)) {
         stopifnot(is.numeric(nSelectionWaysVec))
@@ -1140,15 +1163,15 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nSelectionWaysVec` is not specified. We substitute `nSelectionWaysVec = ",
                        nSelectionWaysVec,"` instead."))
       }
-      
+
       if (!(length(nSelectionWaysVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nSelectionWaysVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nSelectionWaysVec) == 1) {
         nSelectionWaysVec <- rep(nSelectionWaysVec, nGenerationProceedSimulation)
       }
       names(nSelectionWaysVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # selectionMethodList
       if (!is.null(selectionMethodList)) {
         if (!is.list(selectionMethodList)) {
@@ -1163,7 +1186,7 @@ simBsOpt <- R6::R6Class(
                                         rep(selectionMethodList, nSelectionWays)
                                       }, simplify = FALSE)
       }
-      
+
       if (!(length(selectionMethodList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(selectionMethodList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(selectionMethodList) == 1) {
@@ -1172,24 +1195,24 @@ simBsOpt <- R6::R6Class(
       names(selectionMethodList) <- 1:nGenerationProceedSimulation
       stopifnot(all(unlist(lapply(selectionMethodList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(selectionMethodList, function(x) all(x %in% selectionMethodsOffered)))))
-      
+
       whereSelectionList <- lapply(selectionMethodList, function(x) x %in% selectionMethodsWithSelection)
-      
-      
+
+
       # traitNoSelList
       if (!is.null(traitNoSelList)) {
         if (!is.list(traitNoSelList)) {
           traitNoSelList <- sapply(nSelectionWaysVec,
-                                   function (nSelectionWays) {
+                                   function(nSelectionWays) {
                                      traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
-                                     
+
                                      return(traitNoSelListNow)
                                    }, simplify = FALSE)
         } else if (!is.list(traitNoSelList[[1]])) {
           traitNoSelList <- sapply(nSelectionWaysVec,
-                                   function (nSelectionWays) {
+                                   function(nSelectionWays) {
                                      traitNoSelListNow <- rep(traitNoSelList, nSelectionWays)
-                                     
+
                                      return(traitNoSelListNow)
                                    }, simplify = FALSE)
         }
@@ -1198,13 +1221,13 @@ simBsOpt <- R6::R6Class(
         message(paste0("`traitNoSelList` is not specified. We substitute `traitNoSelList = list(list(",
                        traitNoSelList,"))` instead."))
         traitNoSelList <- sapply(nSelectionWaysVec,
-                                 function (nSelectionWays) {
+                                 function(nSelectionWays) {
                                    traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
-                                   
+
                                    return(traitNoSelListNow)
                                  }, simplify = FALSE)
       }
-      
+
       if (!(length(traitNoSelList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(traitNoSelList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(traitNoSelList) == 1) {
@@ -1215,10 +1238,10 @@ simBsOpt <- R6::R6Class(
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x >= 1)))))))
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x <= nTraits)))))))
       stopifnot(all(unlist(lapply(traitNoRAList, length)) == nSelectionWaysVec))
-      
+
       names(traitNoSelList) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # blockSplitMethod
       if (!is.null(blockSplitMethod)) {
         if (!(blockSplitMethod %in% blockSplitMethodsOffered)) {
@@ -1229,8 +1252,8 @@ simBsOpt <- R6::R6Class(
         blockSplitMethod <- "minimumSegmentLength"
         message("You do not specify the block splitting method. We will define blocks by the minimum length of segements.")
       }
-      
-      
+
+
       # nMrkInBlock
       if (!is.null(nMrkInBlock)) {
         stopifnot(is.numeric(nMrkInBlock))
@@ -1239,13 +1262,13 @@ simBsOpt <- R6::R6Class(
         stopifnot(nMrkInBlock <= min(bsInfoInit$specie$nLoci))
       } else {
         nMrkInBlock <- min(bsInfoInit$specie$nLoci) %/% 10
-        
+
         if (any(unlist(lapply(selectionMethodList, function(selectionMethod) c("selectOHV", "selectOPV") %in% selectionMethod)))) {
           message(paste0("`nMrkInBlock` is not specified even though you choose 'selectOHV' / 'selectOPV' method. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
         }
       }
-      
-      
+
+
       # minimumSegmentLength
       if (!is.null(minimumSegmentLength)) {
         stopifnot(is.numeric(minimumSegmentLength))
@@ -1258,9 +1281,9 @@ simBsOpt <- R6::R6Class(
           message(paste0("`nMrkInBlock` is not specified even though you choose 'selectOHV' / 'selectOPV' method. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
         }
       }
-      
-      
-      
+
+
+
       # nIterOPV
       if (!is.null(nIterOPV)) {
         stopifnot(is.numeric(nIterOPV))
@@ -1272,9 +1295,9 @@ simBsOpt <- R6::R6Class(
           message(paste0("`nIterOPV` is not specified even though you choose 'selectOPV' method. We substitute `nIterOPV = ", nIterOPV,"` instead."))
         }
       }
-      
-      
-      
+
+
+
       # clusteringForSelList
       if (!is.null(clusteringForSelList)) {
         if (!is.list(clusteringForSelList)) {
@@ -1289,7 +1312,7 @@ simBsOpt <- R6::R6Class(
                                          rep(clusteringForSelList, nSelectionWays)
                                        }, simplify = FALSE)
       }
-      
+
       if (!(length(clusteringForSelList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(clusteringForSelList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(clusteringForSelList) == 1) {
@@ -1298,10 +1321,10 @@ simBsOpt <- R6::R6Class(
       names(clusteringForSelList) <- 1:nGenerationProceedSimulation
       stopifnot(all(unlist(lapply(clusteringForSelList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(clusteringForSelList, is.logical))))
-      
-      
-      
-      
+
+
+
+
       # nSelList
       if (!is.null(nSelList)) {
         if (!is.list(nSelList)) {
@@ -1316,7 +1339,7 @@ simBsOpt <- R6::R6Class(
                              rep(nSelList, nSelectionWays)
                            }, simplify = FALSE)
       }
-      
+
       if (!(length(nSelList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nSelList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nSelList) == 1) {
@@ -1324,21 +1347,21 @@ simBsOpt <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nSelList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nSelList, is.numeric))))
-      
+
       nSelList <- sapply(X = 1:nGenerationProceedSimulation,
                          FUN = function(generationProceedNo) {
                            nSel <- nSelList[[generationProceedNo]]
                            whereSelection <- whereSelectionList[[generationProceedNo]]
-                           
+
                            nSel[!whereSelection] <- nIndNow
-                           
+
                            return(nSel)
                          }, simplify = FALSE)
-      
-      
+
+
       names(nSelList) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # nSelInitOPVList
       if (!is.null(nSelInitOPVList)) {
         if (!is.list(nSelInitOPVList)) {
@@ -1355,7 +1378,7 @@ simBsOpt <- R6::R6Class(
                                     rep(nSelInitOPVList, nSelectionWays)
                                   }, simplify = FALSE)
       }
-      
+
       if (!(length(nSelInitOPVList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nSelInitOPVList) must be equal to 1 or equal to nGenerationProceedSimulation"))
       } else if (length(nSelInitOPVList) == 1) {
@@ -1364,33 +1387,33 @@ simBsOpt <- R6::R6Class(
       stopifnot(all(unlist(lapply(nSelInitOPVList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
       stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
-      
+
       whereNSelSatisfy <- unlist(mapply(FUN = function(nSelInitOPV, nSel) {
         all(nSelInitOPV >= nSel)
       },
       nSelInitOPVList,
       nSelList))
-      
+
       if (any(!whereNSelSatisfy)) {
         if (any(lapply(selectionMethodList, function(selectionMethod) "selectOPV" %in% selectionMethod))) {
           message("`nSelInitOPV` should be larger than `nSel`. We substitute `nSelInitOPV` by `nSel` when `nSelInitOPV` is smaller than `nSel`.")
         }
-        
+
         nSelInitOPVList[whereNSelSatisfy] <- sapply(X = (1:nGenerationProceedSimulation)[whereNSelSatisfy],
                                                     FUN = function(generationProceedNo) {
                                                       nSelInitOPV <- nSelInitOPVList[generationProceedNo]
                                                       nSel <- nSelList[generationProceedNo]
-                                                      
+
                                                       nSelInitOPV[nSelInitOPV < nSel] <- nSel[nSelInitOPV < nSel]
-                                                      
+
                                                       return(nSelInitOPV)
                                                     }, simplify = FALSE)
       }
-      
+
       names(nSelInitOPVList) <- 1:nGenerationProceedSimulation
-      
-      
-      
+
+
+
       # nClusterList
       if (!is.null(nClusterList)) {
         if (!is.list(nClusterList)) {
@@ -1405,7 +1428,7 @@ simBsOpt <- R6::R6Class(
                                  rep(nClusterList, nSelectionWays)
                                }, simplify = FALSE)
       }
-      
+
       if (!(length(nClusterList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nClusterList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nClusterList) == 1) {
@@ -1413,21 +1436,21 @@ simBsOpt <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nClusterList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nClusterList, is.numeric))))
-      
+
       nClusterList <- sapply(X = 1:nGenerationProceedSimulation,
                              FUN = function(generationProceedNo) {
                                nCluster <- nClusterList[[generationProceedNo]]
                                clusteringForSel <- clusteringForSelList[[generationProceedNo]]
-                               
+
                                nCluster[!clusteringForSel] <- 1
-                               
+
                                return(nCluster)
                              }, simplify = FALSE)
-      
-      
+
+
       names(nClusterList) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # nTopClusterList
       if (!is.null(nTopClusterList)) {
         if (!is.list(nTopClusterList)) {
@@ -1442,7 +1465,7 @@ simBsOpt <- R6::R6Class(
                                     rep(nTopClusterList, nSelectionWays)
                                   }, simplify = FALSE)
       }
-      
+
       if (!(length(nTopClusterList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nTopClusterList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nTopClusterList) == 1) {
@@ -1450,22 +1473,22 @@ simBsOpt <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nTopClusterList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nTopClusterList, is.numeric))))
-      
+
       nTopClusterList <- sapply(X = 1:nGenerationProceedSimulation,
                                 FUN = function(generationProceedNo) {
                                   nTopCluster <- nTopClusterList[[generationProceedNo]]
                                   clusteringForSel <- clusteringForSelList[[generationProceedNo]]
-                                  
+
                                   nTopCluster[!clusteringForSel] <- 1
-                                  
+
                                   return(nTopCluster)
                                 }, simplify = FALSE)
-      
-      
+
+
       names(nTopClusterList) <- 1:nGenerationProceedSimulation
-      
-      
-      
+
+
+
       # nTopEachList
       if (!is.null(nTopEachList)) {
         if (!is.list(nTopEachList)) {
@@ -1477,15 +1500,15 @@ simBsOpt <- R6::R6Class(
                                  nTopEach <- nTopEachList[[generationProceedNo]]
                                  nSel <- nSelList[[generationProceedNo]]
                                  nTopCluster <- nTopClusterList[[generationProceedNo]]
-                                 
+
                                  nTopEach <- nSel %/% nTopCluster
-                                 
+
                                  return(nTopEach)
                                }, simplify = FALSE)
         message(paste0("`nTopEachList` is not specified. We substitute `nTopEachList = list(",
                        nTopEachList,")` instead."))
       }
-      
+
       if (!(length(nTopEachList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nTopEachList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nTopEachList) == 1) {
@@ -1493,10 +1516,10 @@ simBsOpt <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nTopEachList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nTopEachList, is.numeric))))
-      
+
       names(nTopEachList) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # multiTraitsEvalMethodList
       if (!is.null(multiTraitsEvalMethodList)) {
         if (!is.list(multiTraitsEvalMethodList)) {
@@ -1511,7 +1534,7 @@ simBsOpt <- R6::R6Class(
                                               rep(multiTraitsEvalMethodList, nSelectionWays)
                                             }, simplify = FALSE)
       }
-      
+
       if (!(length(multiTraitsEvalMethodList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(multiTraitsEvalMethodList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(multiTraitsEvalMethodList) == 1) {
@@ -1520,23 +1543,23 @@ simBsOpt <- R6::R6Class(
       names(multiTraitsEvalMethodList) <- 1:nGenerationProceedSimulation
       stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, function(x) all(x %in% multiTraitsEvalMethodsOffered)))))
-      
-      
-      
+
+
+
       # hSelList
       if (!is.null(hSelList)) {
         if (!is.list(hSelList)) {
           hSelList <- sapply(nSelectionWaysVec,
-                             function (nSelectionWays) {
+                             function(nSelectionWays) {
                                hSelListNow <- rep(list(hSelList), nSelectionWays)
-                               
+
                                return(hSelListNow)
                              }, simplify = FALSE)
         } else if (!is.list(hSelList[[1]])) {
           hSelList <- sapply(nSelectionWaysVec,
-                             function (nSelectionWays) {
+                             function(nSelectionWays) {
                                hSelListNow <- rep(hSelList, nSelectionWays)
-                               
+
                                return(hSelListNow)
                              }, simplify = FALSE)
         }
@@ -1545,17 +1568,17 @@ simBsOpt <- R6::R6Class(
         message(paste0("`hSelList` is not specified. We substitute `hSelList = list(list(",
                        hSelList,"))` instead."))
         hSelList <- sapply(1:nGenerationProceedSimulation,
-                           function (generationProceedNo) {
-                             
+                           function(generationProceedNo) {
+
                              hSelListNow <- sapply(X = traitNoSelList[[generationProceedNo]],
-                                                   FUN = function (traitNoSelNow) {
+                                                   FUN = function(traitNoSelNow) {
                                                      rep(hSelList, length(traitNoSelNow))
                                                    }, simplify = FALSE)
-                             
+
                              return(hSelListNow)
                            }, simplify = FALSE)
       }
-      
+
       if (!(length(hSelList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(hSelList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(hSelList) == 1) {
@@ -1565,14 +1588,14 @@ simBsOpt <- R6::R6Class(
       stopifnot(all(unlist(lapply(hSelList, function(hSel) all(unlist(lapply(hSel, is.numeric)))))))
       stopifnot(all(sapply(hSelList, function(hSel) all(unlist(lapply(hSel, function(x) all(x >= 0)))))))
       stopifnot(all(unlist(lapply(hSelList, length)) == nSelectionWaysVec))
-      
+
       names(hSelList) <- 1:nGenerationProceedSimulation
-      
+
       stopifnot(all(unlist(lapply(X = hSelList, FUN = function(x) lapply(x, length))) ==
                       unlist(lapply(X = traitNoSelList, FUN = function(x) lapply(x, length)))))
-      
-      
-      
+
+
+
       # matingMethodVec
       if (!is.null(matingMethodVec)) {
         stopifnot(is.character(matingMethodVec))
@@ -1582,15 +1605,15 @@ simBsOpt <- R6::R6Class(
         message(paste0("`matingMethodVec` is not specified. We substitute `matingMethodVec = ",
                        matingMethodVec,"` instead."))
       }
-      
+
       if (!(length(matingMethodVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(matingMethodVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(matingMethodVec) == 1) {
         matingMethodVec <- rep(matingMethodVec, nGenerationProceedSimulation)
       }
       names(matingMethodVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # allocateMethodVec
       if (!is.null(allocateMethodVec)) {
         stopifnot(is.character(allocateMethodVec))
@@ -1600,16 +1623,16 @@ simBsOpt <- R6::R6Class(
         message(paste0("`allocateMethodVec` is not specified. We substitute `allocateMethodVec = ",
                        allocateMethodVec,"` instead."))
       }
-      
+
       if (!(length(allocateMethodVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(allocateMethodVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(allocateMethodVec) == 1) {
         allocateMethodVec <- rep(allocateMethodVec, nGenerationProceedSimulation)
       }
       names(allocateMethodVec) <- 1:nGenerationProceedSimulation
-      
-      
-      
+
+
+
       # weightedAllocationMethodList
       if (!is.null(weightedAllocationMethodList)) {
         if (!is.list(weightedAllocationMethodList)) {
@@ -1621,20 +1644,20 @@ simBsOpt <- R6::R6Class(
                        weightedAllocationMethodList,")` instead."))
         weightedAllocationMethodList <- list(weightedAllocationMethodList)
       }
-      
+
       if (!(length(weightedAllocationMethodList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(weightedAllocationMethodList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(weightedAllocationMethodList) == 1) {
         weightedAllocationMethodList <- rep(weightedAllocationMethodList, nGenerationProceedSimulation)
       }
       weightedAllocationMethodList <- lapply(weightedAllocationMethodList, function(x) x[x %in% selectionMethodsWithSelection])
-      
+
       names(weightedAllocationMethodList) <- 1:nGenerationProceedSimulation
       stopifnot(all(unlist(lapply(weightedAllocationMethodList, is.character))))
       stopifnot(all(unlist(lapply(weightedAllocationMethodList, length)) >= 1))
-      
-      
-      
+
+
+
       # traitNoRAList
       if (!is.null(traitNoRAList)) {
         if (!is.list(traitNoRAList)) {
@@ -1646,7 +1669,7 @@ simBsOpt <- R6::R6Class(
                        traitNoRAList,")` instead."))
         traitNoRAList <- list(traitNoRAList)
       }
-      
+
       if (!(length(traitNoRAList) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(traitNoRAList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(traitNoRAList) == 1) {
@@ -1654,21 +1677,21 @@ simBsOpt <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(traitNoRAList, is.numeric))))
       stopifnot(all(sapply(traitNoRAList, function(traitNoRA) all(traitNoRA >= 1))))
-      
+
       names(traitNoRAList) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # includeGVPVec
       stopifnot(is.logical(includeGVPVec))
-      
+
       if (!(length(includeGVPVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(includeGVPVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(includeGVPVec) == 1) {
         includeGVPVec <- rep(includeGVPVec, nGenerationProceedSimulation)
       }
       names(includeGVPVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # hLens
       hLens <- sapply(X = 1:nGenerationProceedSimulation,
                       FUN = function(genNow) {
@@ -1679,11 +1702,11 @@ simBsOpt <- R6::R6Class(
                              paste(bsInfoInit$traitInfo$traitNames[traitNoRAList[[genNow]]],
                                    c(weightedAllocationMethodList[[genNow]], "genVarProgeny"), sep = "-")[1:hLens[genNow]]
                            }, simplify = FALSE)
-      
+
       names(hNamesList) <- paste0("Generation_", 1:nGenerationProceedSimulation)
       hVecNamesAll <- paste0(rep(names(hNamesList), hLens), "-", unlist(hNamesList, use.names = FALSE))
-      
-      
+
+
       # sameAcrossGeneration
       stopifnot(is.logical(sameAcrossGeneration))
       if (!((length(unique(traitNoRAList)) == 1) & (length(unique(weightedAllocationMethodList)) == 1))) {
@@ -1697,8 +1720,8 @@ simBsOpt <- R6::R6Class(
       } else {
         hVecNames <- hVecNamesAll
       }
-      
-      
+
+
       # hMin
       if (!is.null(hMin)) {
         stopifnot(is.numeric(hMin))
@@ -1708,15 +1731,15 @@ simBsOpt <- R6::R6Class(
         message(paste0("`hMin` is not specified. We substitute `hMin = ",
                        hMin,"` instead."))
       }
-      
-      
+
+
       if (!(length(hMin) %in% c(1, hVecLen))) {
         stop(paste0("length(hMin) must be equal to 1 or equal to ", hVecLen, "."))
       } else if (length(hMin) == 1) {
         hMin <- rep(hMin, hVecLen)
       }
-      
-      
+
+
       # hMax
       if (!is.null(hMax)) {
         stopifnot(is.numeric(hMax))
@@ -1726,19 +1749,19 @@ simBsOpt <- R6::R6Class(
         message(paste0("`hMax` is not specified. We substitute `hMax = ",
                        hMax,"` instead."))
       }
-      
-      
+
+
       if (!(length(hMax) %in% c(1, hVecLen))) {
         stop(paste0("length(hMax) must be equal to 1 or equal to ", hVecLen, "."))
       } else if (length(hMax) == 1) {
         hMax <- rep(hMax, hVecLen)
       }
-      
-      
+
+
       # hStart
       hStart <- (hMin + hMax) / 2
       names(hMin) <- names(hMax) <- names(hStart) <- hVecNames
-      
+
       # nNextPopVec
       if (!is.null(nNextPopVec)) {
         stopifnot(is.numeric(nNextPopVec))
@@ -1749,15 +1772,15 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nNextPopVec` is not specified. We substitute `nNextPopVec = ",
                        nNextPopVec,"` instead."))
       }
-      
+
       if (!(length(nNextPopVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nNextPopVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nNextPopVec) == 1) {
         nNextPopVec <- rep(nNextPopVec, nGenerationProceedSimulation)
       }
       names(nNextPopVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # nProgeniesEMBV
       if (!is.null(nProgeniesEMBVVec)) {
         stopifnot(is.numeric(nProgeniesEMBVVec))
@@ -1771,16 +1794,16 @@ simBsOpt <- R6::R6Class(
                          ")` instead."))
         }
       }
-      
-      
+
+
       if (!(length(nProgeniesEMBVVec) %in% c(1, nGenerationProceedSimulation))) {
         stop(paste("length(nProgeniesEMBVVec) must be equal to 1 or equal to nGenerationProceedSimulation"))
       } else if (length(nProgeniesEMBVVec) == 1) {
         nProgeniesEMBVVec <- rep(nProgeniesEMBVVec, nGenerationProceedSimulation)
       }
       names(nProgeniesEMBVVec) <- 1:nGenerationProceedSimulation
-      
-      
+
+
       # nIterEMBV
       if (!is.null(nIterEMBV)) {
         stopifnot(is.numeric(nIterEMBV))
@@ -1792,8 +1815,8 @@ simBsOpt <- R6::R6Class(
           message(paste0("`nIterEMBV` is not specified. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
         }
       }
-      
-      
+
+
       # nCoresEMBV
       if (!is.null(nCoresEMBV)) {
         stopifnot(is.numeric(nCoresEMBV))
@@ -1806,13 +1829,13 @@ simBsOpt <- R6::R6Class(
                          nCoresEMBV,"` instead."))
         }
       }
-      
+
       if (nCoresEMBV >= parallel::detectCores()) {
         warning("You are going to assign the number of cores larger than that of your PC to `nCoresEMBV` ! Is it OK ?")
       }
-      
-      
-      
+
+
+
       # nameMethod
       if (!is.null(nameMethod)) {
         if (!(nameMethod %in% nameMethodsOffered)) {
@@ -1820,20 +1843,20 @@ simBsOpt <- R6::R6Class(
                       paste(nameMethodsOffered, collapse = "; ")))
         }
       }
-      
+
       # returnMethod
       if (!is.null(returnMethod)) {
         if (!all(returnMethod %in% returnMethodsOffered)) {
           returnMethod <- returnMethod[returnMethod %in% returnMethodsOffered]
           message(paste0("We only offer the following methods for returining the simulation results: ",
                          paste(returnMethodsOffered, collapse = "; ")))
-          
+
           stopifnot(length(returnMethod) >= 1)
         }
       } else {
         returnMethod <- "summary"
       }
-      
+
       # evaluateGVMethod
       if (!is.null(evaluateGVMethod)) {
         if (!(evaluateGVMethod %in% lociEffMethodsOffered)) {
@@ -1843,9 +1866,9 @@ simBsOpt <- R6::R6Class(
       } else {
         evaluateGVMethod <- "true"
       }
-      
-      
-      
+
+
+
       # nTopEvalForOpt
       if (!is.null(nTopEvalForOpt)) {
         stopifnot(is.numeric(nTopEvalForOpt))
@@ -1857,8 +1880,8 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nTopEvalForOpt` is not specified. We substitute `nTopEvalForOpt = ",
                        nTopEvalForOpt,"` instead."))
       }
-      
-      
+
+
       # nTopEval
       if (!is.null(nTopEval)) {
         stopifnot(is.numeric(nTopEval))
@@ -1870,7 +1893,7 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nTopEval` is not specified. We substitute `nTopEval = ",
                        nTopEval,"` instead."))
       }
-      
+
       # traitNoEval
       if (!is.null(traitNoEval)) {
         stopifnot(is.numeric(traitNoEval))
@@ -1881,8 +1904,8 @@ simBsOpt <- R6::R6Class(
         traitNoEval <- 1
         message(paste0("`traitNoEval` is not specified. We substitute `traitNoEval = ", traitNoEval,"` instead."))
       }
-      
-      
+
+
       # hEval
       if (!is.null(hEval)) {
         stopifnot(is.numeric(hEval))
@@ -1891,17 +1914,17 @@ simBsOpt <- R6::R6Class(
         hEval <- 0.1
         message(paste0("`hEval` is not specified. We substitute `hEval = ", hEval, "` instead."))
       }
-      
+
       hEvalLen <- length(traitNoEval)
-      
+
       if (!(length(hEval) %in% c(1, hEvalLen))) {
         stop(paste("length(hEval) must be equal to 1 or equal to `length(traitNoEval)`"))
       } else if (length(hEval) == 1) {
         hEval <- rep(hEval, hEvalLen)
       }
-      
-      
-      
+
+
+
       # nCores
       if (!is.null(nCores)) {
         stopifnot(is.numeric(nCores))
@@ -1912,12 +1935,12 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nCores` is not specified. We substitute `nCores = ",
                        nCores,"` instead."))
       }
-      
+
       if (nCores >= parallel::detectCores()) {
         warning("You are going to assign the number of cores larger than that of your PC to `nCores` ! Is it OK ?")
       }
-      
-      
+
+
       # nCoresPerOptimization
       if (!is.null(nCoresPerOptimization)) {
         stopifnot(is.numeric(nCoresPerOptimization))
@@ -1928,14 +1951,14 @@ simBsOpt <- R6::R6Class(
         message(paste0("`nCoresPerOptimization` is not specified. We substitute `nCoresPerOptimization = ",
                        nCoresPerOptimization,"` instead."))
       }
-      
+
       if (nCoresPerOptimization >= parallel::detectCores()) {
         warning("You are going to assign the number of cores larger than that of your PC to `nCoresPerOptimization` ! Is it OK ?")
       }
-      
-      
-      
-      
+
+
+
+
       estimatedGVInitExist <- !is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]])
       if (!estimatedGVInitExist) {
         # trainingPopInit
@@ -1954,21 +1977,21 @@ simBsOpt <- R6::R6Class(
             trainingPopInit <- trainingPopInit[trainingPopInit %in% (1:bsInfoInit$generation)]
           }
         }
-        
+
         # trainingIndNamesInit
         if (!is.null(trainingIndNamesInit)) {
           stopifnot(is.character(trainingIndNamesInit))
           stopifnot(length(trainingIndNamesInit) >= 1)
         }
       }
-      
-      
-      
+
+
+
       # saveAllResAt
       if (!is.null(saveAllResAt)) {
         stopifnot(is.character(saveAllResAt))
         tailCheck <- TRUE
-        
+
         while (tailCheck) {
           strLength <- stringr::str_length(string = saveAllResAt)
           tailCheck <- stringr::str_sub(string = saveAllResAt, start = strLength, end = strLength) == "/"
@@ -1976,18 +1999,18 @@ simBsOpt <- R6::R6Class(
             saveAllResAt <- stringr::str_sub(string = saveAllResAt, start = 1, end = strLength - 1)
           }
         }
-        
+
         if (!dir.exists(paths = saveAllResAt)) {
           dir.create(path = saveAllResAt)
         }
       }
-      
-      
+
+
       # summaryAllResAt
       if (!is.null(summaryAllResAt)) {
         stopifnot(is.character(summaryAllResAt))
         tailCheck <- TRUE
-        
+
         while (tailCheck) {
           strLength <- stringr::str_length(string = summaryAllResAt)
           tailCheck <- stringr::str_sub(string = summaryAllResAt, start = strLength, end = strLength) == "/"
@@ -1995,15 +2018,15 @@ simBsOpt <- R6::R6Class(
             summaryAllResAt <- stringr::str_sub(string = summaryAllResAt, start = 1, end = strLength - 1)
           }
         }
-        
+
         if (!dir.exists(paths = summaryAllResAt)) {
           message(paste0("There is no directory named '", summaryAllResAt, "'. We will summarize the simulation results inside the `simBsOpt` object."))
           summaryAllResAt <- NULL
         }
       }
-      
-      
-      
+
+
+
       # Save arguments in `self`
       self$simBsName <- simBsName
       self$bsInfoInit <- bsInfoInit
@@ -2038,6 +2061,7 @@ simBsOpt <- R6::R6Class(
       self$saveTreeNameBase <- saveTreeNameBase
       self$whenToSaveTrees <- whenToSaveTrees
       self$currentTreeMid <- currentTreeMid
+      self$optimalNodesMid <- optimalNodesMid
       self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
@@ -2092,19 +2116,19 @@ simBsOpt <- R6::R6Class(
       self$hEval <- hEval
       self$summaryAllResAt <- summaryAllResAt
       self$verbose <- verbose
-      
-      
-      
+
+
+
       # trueGVMatList
       trueGVMatInit <- list(bsInfoInit$populations[[length(bsInfoInit$populations)]]$trueGVMat)
       names(trueGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       trueGVMatInitList <- rep(list(trueGVMatInit), nIterSimulation)
       names(trueGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       self$trueGVMatInit <- trueGVMatInit[[1]]
       self$trueGVMatList <- trueGVMatInitList
-      
-      
+
+
       # estimatedGVMatList
       # if (!estimatedGVInitExist) {
       #   self$computeLociEffInit()
@@ -2121,23 +2145,23 @@ simBsOpt <- R6::R6Class(
       # }
       #
       # estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]]$testingEstimatedGVByMLR)
-      
+
       self$computeLociEffInit()
       lociEffectsInit <- self$lociEffectsInit
       genoMatNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$genoMat
       genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                  genoMatNow)
-      
+
       estimatedGVMatInit <- list(genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit)
       names(estimatedGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
       names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       self$estimatedGVMatInit <- estimatedGVMatInit[[1]]
       self$estimatedGVMatList <- estimatedGVMatInitList
     },
-    
-    
+
+
     #' @description
     #' estimate/extract marker/QTL effects information
     computeLociEffInit = function() {
@@ -2151,15 +2175,15 @@ simBsOpt <- R6::R6Class(
       methodMLRInit <- self$methodMLRInit
       multiTraitInit <- self$multiTraitInit
       verbose <- self$verbose
-      
-      
-      
+
+
+
       if (lociEffMethod == "true") {
         lociEffectsInit <- bsInfoInit$lociEffects
       } else if (lociEffMethod == "estimated") {
         trainingPopName <- names(breederInfoInit$populationsFB)[trainingPopInit]
         estimatedMrkEffName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLRInit)
-        
+
         if (is.null(breederInfoInit$estimatedMrkEffInfo[[estimatedMrkEffName]])) {
           breederInfoInit$estimateMrkEff(trainingPop = trainingPopInit,
                                          trainingIndNames = trainingIndNamesInit,
@@ -2175,14 +2199,14 @@ simBsOpt <- R6::R6Class(
                                                        trainingPop = trainingPopInit,
                                                        methodMLR = methodMLRInit)
       }
-      
+
       self$lociEffectsInit <- lociEffectsInit
     },
-    
-    
-    
-    
-    
+
+
+
+
+
     #' @description
     #' start simulation of breeding scheme
     startSimulation = function() {
@@ -2267,64 +2291,64 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
-      
-      
+
+
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       hVecOptsList <- self$hVecOptsList
-      
+
       if (!is.null(saveAllResAt)) {
         saveAllResAtSplit <- stringr::str_split(string = list.files(saveAllResAt),
                                                 pattern = "_")
         saveAllResAtSplitLast <- lapply(X = saveAllResAtSplit,
-                                        FUN = function (saveAllResAtSplitVec) {
+                                        FUN = function(saveAllResAtSplitVec) {
                                           return(saveAllResAtSplitVec[length(saveAllResAtSplitVec)])
                                         })
-        
+
         saveAllNumeric <- unique(sort(as.numeric(stringr::str_remove(saveAllResAtSplitLast, ".rds"))))
       }
-      
-      
+
+
       if (is.null(self$lociEffectsInit)) {
         self$computeLociEffInit()
       }
       lociEffectsInit <- self$lociEffectsInit
-      
+
       if (is.null(self$simBsRes[[simBsName]])) {
         self$simBsRes[[simBsName]] <- list()
-        
+
         if ("all" %in% returnMethod) {
           self$simBsRes[[simBsName]]$all <- list()
         }
-        
+
         if ("max" %in% returnMethod) {
           self$simBsRes[[simBsName]]$max <- c()
         }
-        
+
         if ("mean" %in% returnMethod) {
           self$simBsRes[[simBsName]]$mean <- c()
         }
-        
+
         if ("median" %in% returnMethod) {
           self$simBsRes[[simBsName]]$median <- c()
         }
-        
+
         if ("min" %in% returnMethod) {
           self$simBsRes[[simBsName]]$min <- c()
         }
-        
+
         if ("var" %in% returnMethod) {
           self$simBsRes[[simBsName]]$var <- c()
         }
       }
-      
-      
+
+
       if (useFirstOptimizedValue) {
         if (verbose) {
           print("Perform optimization of hyperparameters once.")
         }
-        
+
         # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
         #                     nGenerationProceedSimulation = nGenerationProceedSimulation,
         #                     lower = hMin, upper = hMax,
@@ -2332,7 +2356,7 @@ simBsOpt <- R6::R6Class(
         #                     control = list(type = "sto", verbose = showProgress, max = TRUE))
         # self$solnInit <- soln
         # hVecOpt <- soln$par
-        
+
         stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
                                                  optimizeFunc = private$maximizeFunc,
                                                  nGenerationProceedSimulation = nGenerationProceedSimulation,
@@ -2348,38 +2372,33 @@ simBsOpt <- R6::R6Class(
                                                  returnOptimalNodes = returnOptimalNodes,
                                                  saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
                                                  whenToSaveTrees = self$whenToSaveTrees,
+                                                 currentTree = self$currentTreeMid,
+                                                 optimalNodes = self$optimalNodesMid,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
-        if (!is.null(self$currentTreeMid)) {
-          stoSOONow$currentTree <- self$currentTreeMid
-        }
         stoSOONow$startOptimization()
         optimalNodesList <- stoSOONow$optimalNodes
-        optimalHyperParamMat <- do.call(what = rbind,
-                                        args = lapply(X = optimalNodesList,
-                                                      FUN = function(eachOptimalNode) {
-                                                        eachOptimalNode$xRepresentative
-                                                      }))
-        
+        optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
+
         hVecOpt <- stoSOONow$optimalParameter
         self$solnInit <- list(value = stoSOONow$optimalValue,
                               par = hVecOpt)
-        
+
         self$optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
         hVecOptsList[["Initial"]] <- hVecOpt
-        
+
         rm(stoSOONow)
         gc(reset = TRUE); gc(reset = TRUE)
         if (sameAcrossGeneration) {
           hListOpt <- sapply(X = hLens,
-                             FUN = function (hLen) {
+                             FUN = function(hLen) {
                                hVecOpt[1:hLen]
                              }, simplify = FALSE)
         } else {
           hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
         }
-        
-        
+
+
         # save
         if (verbose) {
           print("Perform simulation based on optimized hyperparameters.")
@@ -2456,7 +2475,7 @@ simBsOpt <- R6::R6Class(
           print(paste0("Iteration: ", "1-", nIterSimulation, ", Generation: ", 1,
                        ";  Perform optimization of hyperparameters."))
         }
-        
+
         # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
         #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
         #                     lower = hMin, upper = hMax,
@@ -2465,8 +2484,8 @@ simBsOpt <- R6::R6Class(
         #
         # self$solnInit <- soln
         # hVecOpt <- soln$par
-        
-        
+
+
         stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
                                                  optimizeFunc = private$maximizeFunc,
                                                  nGenerationProceedSimulation = nGenerationProceedSimulation,
@@ -2482,47 +2501,42 @@ simBsOpt <- R6::R6Class(
                                                  returnOptimalNodes = returnOptimalNodes,
                                                  saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
                                                  whenToSaveTrees = self$whenToSaveTrees,
+                                                 currentTree = self$currentTreeMid,
+                                                 optimalNodes = self$optimalNodesMid,
                                                  withCheck = TRUE,
                                                  verbose = showProgress)
-        if (!is.null(self$currentTreeMid)) {
-          stoSOONow$currentTree <- self$currentTreeMid
-        }
         stoSOONow$startOptimization()
         optimalNodesList <- stoSOONow$optimalNodes
-        optimalHyperParamMat <- do.call(what = rbind,
-                                        args = lapply(X = optimalNodesList,
-                                                      FUN = function(eachOptimalNode) {
-                                                        eachOptimalNode$xRepresentative
-                                                      }))
-        
+        optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
+
         hVecOpt <- stoSOONow$optimalParameter
         self$solnInit <- list(value = stoSOONow$optimalValue,
                               par = hVecOpt)
-        
+
         self$optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
         hVecOptsList[["Initial"]] <- hVecOpt
-        
+
         rm(stoSOONow)
         gc(reset = TRUE); gc(reset = TRUE)
-        
+
         if (nCores == 1) {
           # if (showProgress) {
           #   pb <- utils::txtProgressBar(min = 0, max = nIterSimulation, style = 3)
           # }
-          
-          
-          
+
+
+
           simulationCounts <- 0
           for (iterNo in 1:nIterSimulation) {
             # if (showProgress) {
             #   utils::setTxtProgressBar(pb, iterNo)
             # }
-            
+
             iterName <- iterNames[iterNo]
             if (is.null(hVecOptsList[[iterName]])) {
               hVecOptsList[[iterName]] <- list()
             }
-            
+
             if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
                   (length(self$trueGVMatList[[iterName]]) <= 1))) {
               if (overWriteRes) {
@@ -2545,30 +2559,30 @@ simBsOpt <- R6::R6Class(
                 }
               }
             }
-            
+
             if (!is.null(saveAllResAt)) {
               if (!overWriteRes) {
                 conductSimulation <- !(iterNo %in% saveAllNumeric)
               }
             }
-            
+
             if (conductSimulation) {
               simulationCounts <- simulationCounts + 1
               bsInfo <- bsInfoInit$clone(deep = FALSE)
               breederInfo <- breederInfoInit$clone(deep = FALSE)
               lociEffects <- lociEffectsInit
               hCount <- 0
-              
+
               # trueGVMatList
               if (is.null(self$trueGVMatList[[iterName]])) {
                 self$trueGVMatList[[iterName]][[populationNameInit]] <- self$trueGVMatInit
               }
-              
+
               # estimatedGVMatList
               if (is.null(self$estimatedGVMatList[[iterName]])) {
                 self$estimatedGVMatList[[iterName]][[populationNameInit]] <- self$estimatedGVMatInit
               }
-              
+
               for (genProceedNo in 1:nGenerationProceed) {
                 if (setGoalAsFinalGeneration) {
                   nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
@@ -2576,13 +2590,13 @@ simBsOpt <- R6::R6Class(
                 } else {
                   nGenerationProceedSimulationNow <- nGenerationProceedSimulation
                 }
-                
+
                 if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
                   if (verbose) {
                     print(paste0("Iteration: ", iterNo, ", Generation: ", genProceedNo,
                                  ";  Perform optimization of hyperparameters."))
                   }
-                  
+
                   # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
                   #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
                   #                     lower = hMin, upper = hMax,
@@ -2590,8 +2604,8 @@ simBsOpt <- R6::R6Class(
                   #                     control = list(type = "sto", verbose = showProgress, max = TRUE))
                   #
                   # hVecOpt <- soln$par
-                  
-                  
+
+
                   stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
                                                            optimizeFunc = private$maximizeFunc,
                                                            nGenerationProceedSimulation = nGenerationProceedSimulationNow,
@@ -2612,19 +2626,15 @@ simBsOpt <- R6::R6Class(
                                                            verbose = showProgress)
                   stoSOONow$startOptimization()
                   optimalNodesList <- stoSOONow$optimalNodes
-                  optimalHyperParamMat <- do.call(what = rbind,
-                                                  args = lapply(X = optimalNodesList,
-                                                                FUN = function(eachOptimalNode) {
-                                                                  eachOptimalNode$xRepresentative
-                                                                }))
-                  
+                  optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
+
                   hVecOpt <- stoSOONow$optimalParameter
-                  
+
                   self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
                   hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
-                  
+
                   hCount <- 1
-                  
+
                   rm(stoSOONow)
                   gc(reset = TRUE); gc(reset = TRUE)
                 } else {
@@ -2632,18 +2642,18 @@ simBsOpt <- R6::R6Class(
                   hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
                   hCount <- hCount + 1
                 }
-                
-                
+
+
                 if (sameAcrossGeneration) {
                   hListOpt <- sapply(X = hLens,
-                                     FUN = function (hLen) {
+                                     FUN = function(hLen) {
                                        hVecOpt[1:hLen]
                                      }, simplify = FALSE)
                 } else {
                   hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
                 }
-                
-                
+
+
                 crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                                nSelectionWays = nSelectionWaysVec[hCount],
                                                                selectionMethod = selectionMethodList[[hCount]],
@@ -2682,8 +2692,8 @@ simBsOpt <- R6::R6Class(
                                                                crosses = NULL,
                                                                verbose = verbose)
                 bsInfo$nextGeneration(crossInfo = crossInfoNow)
-                
-                
+
+
                 if (updateBreederInfo[genProceedNo]) {
                   breederInfo$getNewPopulation(bsInfo = bsInfo,
                                                generationNew = NULL,
@@ -2695,20 +2705,20 @@ simBsOpt <- R6::R6Class(
                                            estimateGV = TRUE,
                                            estimatedGVMethod = "lme4",
                                            nRep = nRepForPheno[genProceedNo])
-                    
+
                     if (updateModels[genProceedNo]) {
                       lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                          breederInfo = breederInfo$clone(deep = FALSE))
                     }
                   }
                 }
-                
-                
+
+
                 if (any(c("all", "summary") %in% returnMethod)) {
                   populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
                   trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                   self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
-                  
+
                   # if (breederInfo$generation < bsInfo$generation) {
                   #   breederInfo$getNewPopulation(bsInfo = bsInfo,
                   #                                generationNew = bsInfo$generation,
@@ -2729,16 +2739,16 @@ simBsOpt <- R6::R6Class(
                   #                               bayesian = TRUE)
                   # }
                   # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-                  
+
                   genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
                   genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                              genoMatNow)
-                  
+
                   estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
                   self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
                 }
               }
-              
+
               if (!is.null(saveAllResAt)) {
                 fileNameBsInfoRes <- here::here(saveAllResAt,
                                                 paste0(simBsName, "_bsInfo_", iterName, ".rds"))
@@ -2747,7 +2757,7 @@ simBsOpt <- R6::R6Class(
                 saveRDS(object = bsInfo, file = fileNameBsInfoRes)
                 saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
               }
-              
+
               if ("all" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$all[[iterName]] <- list(bsInfo = bsInfo,
                                                                    breederInfo = breederInfo)
@@ -2760,7 +2770,7 @@ simBsOpt <- R6::R6Class(
                 } else {
                   trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                   self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
-                  
+
                   # if (breederInfo$generation < bsInfo$generation) {
                   #   breederInfo$getNewPopulation(bsInfo = bsInfo,
                   #                                generationNew = bsInfo$generation,
@@ -2781,32 +2791,32 @@ simBsOpt <- R6::R6Class(
                   #                               bayesian = TRUE)
                   # }
                   # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-                  
+
                   genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
                   genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                              genoMatNow)
-                  
+
                   estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
                   self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
                 }
-                
+
                 if (evaluateGVMethod == "true") {
                   trueGVMatNow <- trueGVMat
                 } else {
                   trueGVMatNow <- estimatedGVMat
                 }
-                
-                
+
+
                 # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
                 #                          FUN = function(trueGV) {
                 #                            return(scale(x = trueGV, center = TRUE,
                 #                                         scale = as.logical(sd(trueGV))))
                 #                          })
-                
+
                 trueGVMatInit <- self$trueGVMatInit
                 trueGVMatScaled <- do.call(what = cbind,
                                            args = sapply(X = 1:ncol(trueGVMatNow),
-                                                         FUN = function (traitNo) {
+                                                         FUN = function(traitNo) {
                                                            trueGVMean <- mean(trueGVMatInit[, traitNo])
                                                            trueGVSd <- sd(trueGVMatInit[, traitNo])
                                                            if (trueGVSd != 0) {
@@ -2814,50 +2824,50 @@ simBsOpt <- R6::R6Class(
                                                            } else {
                                                              trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
                                                            }
-                                                           
+
                                                            return(trueGVScaled)
                                                          }, simplify = FALSE))
                 rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
                 colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
-                
+
                 trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
-                
+
                 if ("max" %in% returnMethod) {
                   self$simBsRes[[simBsName]]$max[iterName] <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
                 }
-                
+
                 if ("mean" %in% returnMethod) {
                   self$simBsRes[[simBsName]]$mean[iterName] <- mean(x = trueEvals)
                 }
-                
+
                 if ("median" %in% returnMethod) {
                   self$simBsRes[[simBsName]]$median[iterName] <- median(x = trueEvals)
                 }
-                
+
                 if ("min" %in% returnMethod) {
                   self$simBsRes[[simBsName]]$min[iterName] <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
                 }
-                
+
                 if ("varmin" %in% returnMethod) {
                   self$simBsRes[[simBsName]]$var[iterName] <- var(x = trueEvals)
                 }
               }
-              
-              
+
+
               if (simulationCounts %% nRefreshMemoryEvery == 0) {
                 rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
                 gc(reset = TRUE); gc(reset = TRUE)
               }
             }
-            
+
           }
-          
+
           if (showProgress) {
             cat("\n")
           }
         } else {
           conductSimulations <- sapply(X = iterNames,
-                                       FUN = function (iterName) {
+                                       FUN = function(iterName) {
                                          if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
                                                (length(self$trueGVMatList[[iterName]]) <= 1))) {
                                            if (overWriteRes) {
@@ -2880,17 +2890,17 @@ simBsOpt <- R6::R6Class(
                                              }
                                            }
                                          }
-                                         
+
                                          return(conductSimulation)
                                        })
-          
+
           if (!is.null(saveAllResAt)) {
             if (!overWriteRes) {
               conductSimulations[saveAllNumeric] <- FALSE
             }
           }
-          
-          
+
+
           if (any(conductSimulations)) {
             if (showProgress) {
               simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
@@ -2902,39 +2912,39 @@ simBsOpt <- R6::R6Class(
                                               mc.cores = nCores)
             }
             names(simResAll) <- iterNames[conductSimulations]
-            
+
             if ("all" %in% returnMethod) {
               self$simBsRes[[simBsName]]$all[iterNames[conductSimulations]] <- lapply(simResAll, function(x) x$all)
             }
-            
+
             if ("max" %in% returnMethod) {
               self$simBsRes[[simBsName]]$max[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$max))
             }
-            
+
             if ("mean" %in% returnMethod) {
               self$simBsRes[[simBsName]]$mean[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$mean))
             }
-            
+
             if ("median" %in% returnMethod) {
               self$simBsRes[[simBsName]]$median[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$median))
             }
-            
+
             if ("min" %in% returnMethod) {
               self$simBsRes[[simBsName]]$min[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$min))
             }
-            
+
             if ("var" %in% returnMethod) {
               self$simBsRes[[simBsName]]$var[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$var))
             }
-            
-            
+
+
             trueGVMatListNow <- lapply(simResAll, function(x) x$trueGVMatList)
             self$trueGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
                                                                         function(iterName) {
                                                                           c(self$trueGVMatList[[iterName]],
                                                                             trueGVMatListNow[[iterName]])
                                                                         }, simplify = FALSE)
-            
+
             estimatedGVMatListNow <- lapply(simResAll, function(x) x$estimatedGVMatList)
             self$estimatedGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
                                                                              function(iterName) {
@@ -2944,12 +2954,12 @@ simBsOpt <- R6::R6Class(
           }
         }
       }
-      
+
       self$hVecOptsList <- hVecOptsList
     },
-    
-    
-    
+
+
+
     #' @description
     #' start simulation of breeding scheme
     summaryResults = function() {
@@ -2963,8 +2973,8 @@ simBsOpt <- R6::R6Class(
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
-      
+
+
       if (!is.null(summaryAllResAt)) {
         fileNameBsInfoRes0 <- here::here(summaryAllResAt,
                                          paste0(simBsName, "_bsInfo_"))
@@ -2979,17 +2989,17 @@ simBsOpt <- R6::R6Class(
                                                 FUN = private$extractGVMatList,
                                                 mc.cores = self$nCores)
         }
-        
+
         if (!is.null(listOfGVMatList$warning)) {
           listOfGVMatList <- listOfGVMatList$value
         }
-        
+
         trueGVMatList <- lapply(listOfGVMatList, function(x) x$trueGVMatEachList)
         names(trueGVMatList) <- iterNames
         trueGVMatListNonNULL <- which(!unlist(lapply(trueGVMatList, is.null)))
         trueGVMatList <- trueGVMatList[trueGVMatListNonNULL]
         self$trueGVMatList <- trueGVMatList
-        
+
         estimatedGVMatList <- lapply(listOfGVMatList, function(x) x$estimatedGVMatEachList)
         names(estimatedGVMatList) <- iterNames
         estimatedGVMatListNonNULL <- which(!unlist(lapply(estimatedGVMatList, is.null)))
@@ -3003,38 +3013,38 @@ simBsOpt <- R6::R6Class(
           stop("Please start simulation with `returnMethod = 'summary'`. You do not have simulation results.")
         }
       }
-      
-      
+
+
       trueGVSummaryArrayList <- lapply(X = trueGVMatList,
                                        FUN = private$extractTrueSummaryRes)
-      
-      
+
+
       trueGVSummaryArray <- do.call(what = abind::abind,
                                     args = trueGVSummaryArrayList)
       dimnames(trueGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                        Population = names(trueGVMatList[[1]]),
                                                        Iteration = names(trueGVMatList))
-      
-      
+
+
       self$trueGVSummaryArray <- trueGVSummaryArray
-      
-      
-      
+
+
+
       estimatedGVSummaryArrayList <- lapply(X = estimatedGVMatList,
                                             FUN = private$extractEstimatedSummaryRes)
-      
-      
+
+
       estimatedGVSummaryArray <- do.call(what = abind::abind,
                                          args = estimatedGVSummaryArrayList)
       dimnames(estimatedGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                             Population = names(estimatedGVMatList[[1]]),
                                                             Iteration = names(estimatedGVMatList))
-      
-      
+
+
       self$estimatedGVSummaryArray <- estimatedGVSummaryArray
     },
-    
-    
+
+
     #' @description
     #' Display information about the object
     print = function() {
@@ -3046,8 +3056,8 @@ simBsOpt <- R6::R6Class(
       ))
       print(self$nNextPopVec)
     },
-    
-    
+
+
     #' @description Draw figures for visualization of simulation results for summary statistics
     #' @param targetTrait [numeric] Target trait. character is OK, but numeric vector
     #'  corresponding to target traits is preferred. It should be a vector with length 1.
@@ -3061,7 +3071,7 @@ simBsOpt <- R6::R6Class(
     #' @param adjust [numeric] the bandwidth used is actually adjust*bw. This makes it easy to specify values like ‘half the default’ bandwidth.
     #' (see: `adjust` in \link[stats]{density})
     #'
-    plot = function (targetTrait = 1,
+    plot = function(targetTrait = 1,
                      targetPopulation = NULL,
                      plotType = "box",
                      plotTargetDensity = "max",
@@ -3077,15 +3087,15 @@ simBsOpt <- R6::R6Class(
         stop("`targetTraitName` must be `numeric` or `character`!")
       }
       stopifnot(length(targetTraitName) == 1)
-      
-      
+
+
       # plotType
       plotTypeOffered <- c("box", "violin", "lines", "density")
-      
+
       stopifnot(length(plotType) == 1)
       stopifnot(plotType %in% plotTypeOffered)
-      
-      
+
+
       # plotGVMethod
       if (!is.null(plotGVMethod)) {
         if (!(plotGVMethod %in% lociEffMethodsOffered)) {
@@ -3095,34 +3105,34 @@ simBsOpt <- R6::R6Class(
       } else {
         plotGVMethod <- "true"
       }
-      
-      
+
+
       if (plotGVMethod == "true") {
         if (is.null(self$trueGVSummaryArray)) {
           self$summaryResults()
         }
-        
+
         trueGVSummaryArray <- self$trueGVSummaryArray
       } else {
         if (is.null(self$estimatedGVSummaryArray)) {
           self$summaryResults()
         }
-        
+
         trueGVSummaryArray <- self$estimatedGVSummaryArray
       }
-      
+
       # targetPopulation
       if (is.null(targetPopulation)) {
         targetPopulation <- 1:dim(trueGVSummaryArray)[3]
       }
       targetPopulation <- targetPopulation[targetPopulation %in% (1:dim(trueGVSummaryArray)[3])]
-      
-      
+
+
       trueGVSummaryArray <- trueGVSummaryArray[ , , targetPopulation, , drop = FALSE]
-      
+
       dimSummary <- dim(trueGVSummaryArray)
       dimnamesSummary <- dimnames(trueGVSummaryArray)
-      
+
       trueGVSummaryDf <- data.frame(SummaryStatistics = rep(dimnamesSummary[[1]], prod(dimSummary[-1])),
                                     Trait = rep(rep(dimnamesSummary[[2]], each = dimSummary[1]),
                                                 prod(dimSummary[3:4])),
@@ -3134,7 +3144,7 @@ simBsOpt <- R6::R6Class(
       trueGVSummaryDf$Trait <- factor(trueGVSummaryDf$Trait, levels = dimnamesSummary[[2]])
       trueGVSummaryDf$Population <- factor(trueGVSummaryDf$Population, levels = dimnamesSummary[[3]])
       trueGVSummaryDf$Iteration <- factor(trueGVSummaryDf$Iteration, levels = dimnamesSummary[[4]])
-      
+
       if (plotType %in% c("box", "violin")) {
         # trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$SummaryStatistics %in% plotTarget, ]
         trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$Trait %in% targetTraitName, ]
@@ -3165,10 +3175,10 @@ simBsOpt <- R6::R6Class(
       } else if (plotType %in% c("lines")) {
         trueGVSummaryMeanArray <- apply(X = trueGVSummaryArray,
                                         MARGIN = 1:3, FUN = mean)
-        
+
         dimSummaryMean <- dim(trueGVSummaryMeanArray)
         dimnamesSummaryMean <- dimnames(trueGVSummaryMeanArray)
-        
+
         trueGVSummaryMeanDf <- data.frame(SummaryStatistics = rep(dimnamesSummaryMean[[1]], prod(dimSummaryMean[-1])),
                                           Trait = rep(rep(dimnamesSummaryMean[[2]], each = dimSummaryMean[1]),
                                                       prod(dimSummaryMean[3])),
@@ -3177,7 +3187,7 @@ simBsOpt <- R6::R6Class(
         trueGVSummaryMeanDf$SummaryStatistics <- factor(trueGVSummaryMeanDf$SummaryStatistics, levels = dimnamesSummaryMean[[1]])
         trueGVSummaryMeanDf$Trait <- factor(trueGVSummaryMeanDf$Trait, levels = dimnamesSummaryMean[[2]])
         trueGVSummaryMeanDf$Population <- factor(trueGVSummaryMeanDf$Population, levels = dimnamesSummaryMean[[3]])
-        
+
         trueGVSummaryMeanDfTarget <- trueGVSummaryMeanDf[trueGVSummaryMeanDf$Trait %in% targetTraitName, ]
         trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget, 3)
         plt <- plot_ly(
@@ -3200,24 +3210,24 @@ simBsOpt <- R6::R6Class(
       } else if (plotType == "density") {
         trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$Trait %in% targetTraitName, ]
         trueGVSummaryDfTargetSS <- trueGVSummaryDfTarget[trueGVSummaryDfTarget$SummaryStatistics %in% plotTargetDensity, ]
-        
+
         densityValueDfList <- lapply(X = dimnames(trueGVSummaryArray)[[3]],
-                                     FUN = function (popName) {
+                                     FUN = function(popName) {
                                        trueGVSummaryDfTargetSSEachPop <- trueGVSummaryDfTargetSS[trueGVSummaryDfTargetSS$Population %in% popName, ]
                                        densityResEachPop <- density(x = sort(trueGVSummaryDfTargetSSEachPop$Value), adjust = adjust)
-                                       
+
                                        x <- densityResEachPop$x
                                        x <- c(min(x), x)
                                        y <- cumsum(densityResEachPop$y / sum(densityResEachPop$y))
                                        y <- c(0, y)
-                                       
+
                                        return(data.frame(x, y))
                                      })
         densityValueDf <- do.call(what = rbind,
                                   args = densityValueDfList)
         densityValueDf$Population <- rep(dimnames(trueGVSummaryArray)[[3]], unlist(lapply(densityValueDfList, nrow)))
         densityValueDf$Population <- factor(densityValueDf$Population, levels = dimnames(trueGVSummaryArray)[[3]])
-        
+
         plt <- plot_ly(
           data = densityValueDf,
           x = ~ x,
@@ -3233,12 +3243,12 @@ simBsOpt <- R6::R6Class(
           plotly::layout(title = list(text = paste0(targetTraitName, "-", plotTargetDensity)),
                          xaxis = list(title = list(text = paste0(plotGVMethod, " GV"))))
       }
-      
-      
+
+
       return(plt)
     }
   ),
-  
+
   private = list(
     # @description marker and QTL effects used for crossInfo object
     #
@@ -3246,7 +3256,7 @@ simBsOpt <- R6::R6Class(
     # @param ind2 [individual class] parent 2
     # @param names [character] names of the descendants
     # @param n [numeric] number of descendants
-    lociEffects = function (bsInfo,
+    lociEffects = function(bsInfo,
                             breederInfo,
                             alpha = 0.5,
                             nIter = 5000,
@@ -3259,21 +3269,21 @@ simBsOpt <- R6::R6Class(
       methodMLR <- self$methodMLR
       multiTrait <- self$multiTrait
       verbose <- self$verbose
-      
-      
-      
+
+
+
       if (lociEffMethod == "true") {
         lociEffects <- bsInfo$lociEffects
       } else if (lociEffMethod == "estimated") {
         trainingPopName <- names(breederInfo$populationsFB)
         infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
-        
+
         if (trainingPopType == "all") {
           trainingPop <- 1:length(breederInfo$populationsFB)
         } else {
           trainingPop <- length(breederInfo$populationsFB)
         }
-        
+
         if (is.null(breederInfo$estimatedMrkEffInfo[[infoName]])) {
           breederInfo$estimateMrkEff(trainingPop = trainingPop,
                                      methodMLR = methodMLR,
@@ -3288,19 +3298,19 @@ simBsOpt <- R6::R6Class(
                                                trainingPop = trainingPop,
                                                methodMLR = methodMLR)
       }
-      
-      
+
+
       return(lociEffects)
     },
-    
+
     # @description marker and QTL effects used for crossInfo object
     # @param hVec [numeric] hyperparameter to be optimized
-    maximizeFunc = function (hVec, nGenerationProceedSimulation) {
+    maximizeFunc = function(hVec, nGenerationProceedSimulation) {
       performRobustOptimization <- self$performRobustOptimization
-      
+
       if (self$sameAcrossGeneration) {
         hList <- sapply(X = self$hLens,
-                        FUN = function (hLen) {
+                        FUN = function(hLen) {
                           hVec[1:hLen]
                         }, simplify = FALSE)
       } else {
@@ -3308,17 +3318,17 @@ simBsOpt <- R6::R6Class(
       }
       rewardWeightVec <- self$rewardWeightVec[(self$nGenerationProceedSimulation - nGenerationProceedSimulation + 1):self$nGenerationProceedSimulation]
       rewardWeightVec <- rewardWeightVec / sum(rewardWeightVec)
-      
+
       nonZeroWeight <- rewardWeightVec != 0
-      
-      
-      rewardOnlyLast <- (!any(nonZeroWeight[1:(nGenerationProceedSimulation - 1)])) & nonZeroWeight[nGenerationProceedSimulation]    
+
+
+      rewardOnlyLast <- (!any(nonZeroWeight[1:(nGenerationProceedSimulation - 1)])) & nonZeroWeight[nGenerationProceedSimulation]
       if (rewardOnlyLast) {
         returnMethod <- "max"
       } else {
         returnMethod <- "summary"
       }
-      
+
       if (performRobustOptimization) {
         samplingMrkEffInit <- TRUE
         nCoresForOneMrkEff <- 1
@@ -3326,8 +3336,8 @@ simBsOpt <- R6::R6Class(
         samplingMrkEffInit <- FALSE
         nCoresForOneMrkEff <- self$nCoresPerOptimization
       }
-      
-      
+
+
       maximizeFuncForOneMrkEffect <- function(iterNoForMrkEffects) {
         simBsNow <- myBreedSimulatR::simBs$new(simBsName = self$simBsName,
                                                bsInfoInit = self$bsInfoInit,
@@ -3388,9 +3398,9 @@ simBsOpt <- R6::R6Class(
                                                summaryAllResAt = NULL,
                                                verbose = FALSE)
         simBsNow$startSimulation()
-        
+
         if (rewardOnlyLast) {
-          maxEvalForOneMrkEffect <- mean(simBsNow$simBsRes[[simBsNow$simBsName]]$max, na.rm = TRUE) 
+          maxEvalForOneMrkEffect <- mean(simBsNow$simBsRes[[simBsNow$simBsName]]$max, na.rm = TRUE)
         } else {
           rewardEachIter <- lapply(X = simBsNow$estimatedGVMatList,
                                    FUN = function(estimatedGVMatEachIter) {
@@ -3400,8 +3410,8 @@ simBsOpt <- R6::R6Class(
                                                                                       apply(estimatedGVMatEachPop, 2, max)
                                                                                     })
                                      ), silent = TRUE)
-                                     
-                                     
+
+
                                      if ("try-error" %in% class(estimatedGVMatMax)) {
                                        reward <- NA
                                      } else {
@@ -3412,59 +3422,70 @@ simBsOpt <- R6::R6Class(
                                        } else {
                                          reward <- try(sum(estimatedGVMaxEachPop[-1, 1] * rewardWeightVec),
                                                        silent = TRUE)
-                                         
+
                                          if ("try-error" %in% class(reward)) {
                                            reward <- NA
                                          }
                                        }
                                      }
-                                     
+
                                      return(reward)
                                    })
-          
-          
-          maxEvalForOneMrkEffect <- mean(unlist(rewardEachIter), na.rm = TRUE) 
+
+
+          maxEvalForOneMrkEffect <- mean(unlist(rewardEachIter), na.rm = TRUE)
         }
-        
+
         return(maxEvalForOneMrkEffect)
-      } 
-      
+      }
+
       if (performRobustOptimization) {
+        maximizeFuncForOneMrkEffectTryError <- function(iterNoForMrkEffects) {
+          performMaximizeFuncForOneMrkEffect <- TRUE
+
+          while (performMaximizeFuncForOneMrkEffect) {
+            maxEvalForOneMrkEffect <- maximizeFuncForOneMrkEffect(iterNoForMrkEffects = iterNoForMrkEffects)
+            performMaximizeFuncForOneMrkEffect <- "try-error" %in% class(maxEvalForOneMrkEffect)
+          }
+
+          return(maxEvalForOneMrkEffect)
+        }
+
         if (self$nCoresPerOptimization == 1) {
           if (self$showProgress) {
             maxEvalsForMrkEffects <- unlist(
               pbapply::pblapply(X = 1:self$nIterMrkEffectForRobustOptimization,
-                                FUN = maximizeFuncForOneMrkEffect)
+                                FUN = maximizeFuncForOneMrkEffectTryError)
             )
           } else {
             maxEvalsForMrkEffects <- unlist(
               lapply(X = 1:self$nIterMrkEffectForRobustOptimization,
-                     FUN = maximizeFuncForOneMrkEffect)
-            ) 
+                     FUN = maximizeFuncForOneMrkEffectTryError)
+            )
           }
         } else {
           if (self$showProgress) {
             maxEvalsForMrkEffects <- unlist(
               pbmcapply::pbmclapply(X = 1:self$nIterMrkEffectForRobustOptimization,
-                                    FUN = maximizeFuncForOneMrkEffect,
+                                    FUN = maximizeFuncForOneMrkEffectTryError,
                                     mc.cores = self$nCoresPerOptimization)
             )
           } else {
             maxEvalsForMrkEffects <- unlist(
               parallel::mclapply(X = 1:self$nIterMrkEffectForRobustOptimization,
-                                 FUN = maximizeFuncForOneMrkEffect,
+                                 FUN = maximizeFuncForOneMrkEffectTryError,
                                  mc.cores = self$nCoresPerOptimization)
-            ) 
+            )
           }
         }
-        
-        
+
+
         maxEval <- quantile(x = maxEvalsForMrkEffects, probs = self$lowerQuantile)
       } else {
         maxEval <- maximizeFuncForOneMrkEffect()
       }
-      
-      
+
+
       if (!is.na(maxEval)) {
         maxEval <- round(maxEval,
                          digits = self$digitsEval)
@@ -3472,17 +3493,17 @@ simBsOpt <- R6::R6Class(
         maxEval <- -Inf
         message("Computation failed: maybe internal error occured !")
       }
-      
+
       return(maxEval)
     },
-    
-    
-    
-    
+
+
+
+
     # @description Proceed optimized breeding scheme (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
-    performOneSimulationOpt = function (iterNo) {
+    performOneSimulationOpt = function(iterNo) {
       # Read arguments from `self`
       simBsName <- self$simBsName
       bsInfoInit <- self$bsInfoInit
@@ -3559,45 +3580,45 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
-      
-      
+
+
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       hVecOptsList <- self$hVecOptsList
-      
+
       lociEffectsInit <- self$lociEffectsInit
-      
+
       soln <- self$solnInit
       hVecOpt <- soln$par
       hVecOptsList[["Initial"]] <- hVecOpt
-      
-      
+
+
       iterName <- iterNames[iterNo]
       simRes <- list()
       simRes$trueGVMatList <- list()
       simRes$estimatedGVMatList <- list()
-      
+
       if (is.null(hVecOptsList[[iterName]])) {
         hVecOptsList[[iterName]] <- list()
       }
-      
+
       bsInfo <- bsInfoInit$clone(deep = FALSE)
       breederInfo <- breederInfoInit$clone(deep = FALSE)
       lociEffects <- lociEffectsInit
       hCount <- 0
-      
+
       # trueGVMatList
       if (is.null(self$trueGVMatList[[iterName]])) {
         simRes$trueGVMatList[[populationNameInit]] <- self$trueGVMatInit
       }
-      
+
       # estimatedGVMatList
       if (is.null(self$estimatedGVMatList[[iterName]])) {
         simRes$estimatedGVMatList[[populationNameInit]] <- self$estimatedGVMatInit
       }
-      
-      
+
+
       for (genProceedNo in 1:nGenerationProceed) {
         if (setGoalAsFinalGeneration) {
           nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
@@ -3605,7 +3626,7 @@ simBsOpt <- R6::R6Class(
         } else {
           nGenerationProceedSimulationNow <- nGenerationProceedSimulation
         }
-        
+
         if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
           # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
           #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
@@ -3614,7 +3635,7 @@ simBsOpt <- R6::R6Class(
           #                     control = list(type = "sto", verbose = 0, max = TRUE))
           #
           # hVecOpt <- soln$par
-          
+
           stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
                                                    optimizeFunc = private$maximizeFunc,
                                                    nGenerationProceedSimulation = nGenerationProceedSimulationNow,
@@ -3635,41 +3656,37 @@ simBsOpt <- R6::R6Class(
                                                    verbose = showProgress)
           stoSOONow$startOptimization()
           optimalNodesList <- stoSOONow$optimalNodes
-          optimalHyperParamMat <- do.call(what = rbind,
-                                          args = lapply(X = optimalNodesList,
-                                                        FUN = function(eachOptimalNode) {
-                                                          eachOptimalNode$xRepresentative
-                                                        }))
-          
+          optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
+
           hVecOpt <- stoSOONow$optimalParameter
-          
+
           self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
           hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- 1
-          
+
           if (iterNo %% nRefreshMemoryEvery == 0) {
             rm(stoSOONow)
             gc(reset = TRUE); gc(reset = TRUE)
           }
-          
+
         } else {
           self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
           hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- hCount + 1
         }
-        
-        
+
+
         if (sameAcrossGeneration) {
           hListOpt <- sapply(X = hLens,
-                             FUN = function (hLen) {
+                             FUN = function(hLen) {
                                hVecOpt[1:hLen]
                              }, simplify = FALSE)
         } else {
           hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
         }
-        
-        
-        
+
+
+
         crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                        nSelectionWays = nSelectionWaysVec[hCount],
                                                        selectionMethod = selectionMethodList[[hCount]],
@@ -3708,8 +3725,8 @@ simBsOpt <- R6::R6Class(
                                                        crosses = NULL,
                                                        verbose = verbose)
         bsInfo$nextGeneration(crossInfo = crossInfoNow)
-        
-        
+
+
         if (updateBreederInfo[genProceedNo]) {
           breederInfo$getNewPopulation(bsInfo = bsInfo,
                                        generationNew = NULL,
@@ -3721,19 +3738,19 @@ simBsOpt <- R6::R6Class(
                                    estimateGV = TRUE,
                                    estimatedGVMethod = "lme4",
                                    nRep = nRepForPheno[genProceedNo])
-            
+
             if (updateModels[genProceedNo]) {
               lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                  breederInfo = breederInfo$clone(deep = FALSE))
             }
           }
         }
-        
+
         if (any(c("all", "summary") %in% returnMethod)) {
           populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
           trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-          
+
           # if (breederInfo$generation < bsInfo$generation) {
           #   breederInfo$getNewPopulation(bsInfo = bsInfo,
           #                                generationNew = bsInfo$generation,
@@ -3754,27 +3771,27 @@ simBsOpt <- R6::R6Class(
           #                               bayesian = TRUE)
           # }
           # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-          
+
           genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
-          
+
           estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
       }
-      
+
       if (!is.null(saveAllResAt)) {
         fileNameBsInfoRes <- here::here(saveAllResAt,
                                         paste0(simBsName, "_bsInfo_", iterName, ".rds"))
         fileNameBreederInfoRes <- here::here(saveAllResAt,
                                              paste0(simBsName, "_breederInfo_", iterName, ".rds"))
-        
+
         saveRDS(object = bsInfo, file = fileNameBsInfoRes)
         saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
       }
-      
-      
+
+
       if ("all" %in% returnMethod) {
         simRes$all <- list(bsInfo = bsInfo,
                            breederInfo = breederInfo)
@@ -3787,7 +3804,7 @@ simBsOpt <- R6::R6Class(
         } else {
           trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-          
+
           # if (breederInfo$generation < bsInfo$generation) {
           #   breederInfo$getNewPopulation(bsInfo = bsInfo,
           #                                generationNew = bsInfo$generation,
@@ -3808,22 +3825,22 @@ simBsOpt <- R6::R6Class(
           #                               bayesian = TRUE)
           # }
           # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-          
+
           genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
-          
+
           estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
-        
-        
+
+
         if (evaluateGVMethod == "true") {
           trueGVMatNow <- trueGVMat
         } else {
           trueGVMatNow <- estimatedGVMat
         }
-        
+
         # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
         #                          FUN = function(trueGV) {
         #                            return(scale(x = trueGV, center = TRUE,
@@ -3832,7 +3849,7 @@ simBsOpt <- R6::R6Class(
         trueGVMatInit <- self$trueGVMatInit
         trueGVMatScaled <- do.call(what = cbind,
                                    args = sapply(X = 1:ncol(trueGVMatNow),
-                                                 FUN = function (traitNo) {
+                                                 FUN = function(traitNo) {
                                                    trueGVMean <- mean(trueGVMatInit[, traitNo])
                                                    trueGVSd <- sd(trueGVMatInit[, traitNo])
                                                    if (trueGVSd != 0) {
@@ -3840,84 +3857,84 @@ simBsOpt <- R6::R6Class(
                                                    } else {
                                                      trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
                                                    }
-                                                   
+
                                                    return(trueGVScaled)
                                                  }, simplify = FALSE))
         rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
         colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
-        
+
         trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
-        
+
         if ("max" %in% returnMethod) {
           simRes$max <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
         }
-        
+
         if ("mean" %in% returnMethod) {
           simRes$mean <- mean(x = trueEvals)
         }
-        
+
         if ("median" %in% returnMethod) {
           simRes$median <- median(x = trueEvals)
         }
-        
+
         if ("min" %in% returnMethod) {
           simRes$min <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
         }
-        
+
         if ("var" %in% returnMethod) {
           simRes$var <- var(x = trueEvals)
         }
       }
-      
+
       if (iterNo %% nRefreshMemoryEvery == 0) {
         rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
         gc(reset = TRUE); gc(reset = TRUE)
       }
-      
+
       return(simRes)
     },
-    
-    
+
+
     # @description Proceed optimized breeding scheme with try-error (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
-    performOneSimulationOptTryError = function (iterNo) {
+    performOneSimulationOptTryError = function(iterNo) {
       simRes <- try(private$performOneSimulationOpt(iterNo = iterNo),
                     silent = TRUE)
-      
+
       nIterSimulation <- self$nIterSimulation
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       iterName <- iterNames[iterNo]
-      
+
       bsInfoInit <- self$bsInfoInit
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       if ("try-error" %in% class(simRes)) {
         simRes <- list()
         simRes$trueGVMatList <- list()
         simRes$estimatedGVMatList <- list()
-        
+
         # trueGVMatList
         if (is.null(self$trueGVMatList[[iterName]])) {
           simRes$trueGVMatList[[populationNameInit]] <- self$trueGVMatInit
         }
-        
+
         # estimatedGVMatList
         if (is.null(self$estimatedGVMatList[[iterName]])) {
           simRes$estimatedGVMatList[[populationNameInit]] <- self$estimatedGVMatInit
         }
       }
-      
-      
+
+
       return(simRes)
     },
-    
-    
+
+
     # @description Extract GV matrix as a list from bsInfo & breederInfo objects
     #
     # @param iterName [character] Iteration Name
-    extractGVMatList = function (iterName) {
+    extractGVMatList = function(iterName) {
       # Read arguments from `self`
       simBsName <- self$simBsName
       bsInfoInit <- self$bsInfoInit
@@ -3928,31 +3945,31 @@ simBsOpt <- R6::R6Class(
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       fileNameBsInfoRes0 <- here::here(summaryAllResAt,
                                        paste0(simBsName, "_bsInfo_"))
       fileNameBreederInfoRes0 <- here::here(summaryAllResAt,
                                             paste0(simBsName, "_breederInfo_"))
-      
-      
+
+
       fileNameBsInfoRes <- paste0(fileNameBsInfoRes0, iterName, ".rds")
       bsInfoEach <- try(readRDS(file = fileNameBsInfoRes), silent = TRUE)
-      
+
       if (!("try-error" %in% class(bsInfoEach))) {
         trueGVMatEachList <- lapply(X = bsInfoEach$populations,
                                     FUN = function(eachPop) {
                                       trueGVMatEachPop <- eachPop$trueGVMat
-                                      
+
                                       return(trueGVMatEachPop)
                                     })
       } else {
         trueGVMatEachList <- NULL
       }
-      
-      
+
+
       # fileNameBreederInfoRes <- paste0(fileNameBreederInfoRes0,  iterName, ".rds")
       # breederInfoEach <- try(readRDS(file = fileNameBreederInfoRes), silent = TRUE)
-      
+
       # if (!("try-error" %in% class(breederInfoEach))) {
       #   if (breederInfoEach$generation < bsInfoEach$generation) {
       #     for (generationAdd in (breederInfoEach$generation + 1):bsInfoEach$generation) {
@@ -3987,28 +4004,28 @@ simBsOpt <- R6::R6Class(
       # } else {
       #   estimatedGVMatEachList <- NULL
       # }
-      
+
       estimatedGVMatEachList <- lapply(X = bsInfoEach$populations,
                                        FUN = function(eachPop) {
                                          genoMatNow <- eachPop$genoMat
                                          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                                                     genoMatNow)
                                          estimatedGVMatEachPop <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
-                                         
+
                                          return(estimatedGVMatEachPop)
                                        })
-      
+
       return(list(trueGVMatEachList = trueGVMatEachList,
                   estimatedGVMatEachList = estimatedGVMatEachList))
     },
-    
-    
+
+
     # @description Extract summary results from true GV matrix
     #
     # @param trueGVMatListEach [list] Each list of true GV matrix
-    extractTrueSummaryRes = function (trueGVMatListEach) {
+    extractTrueSummaryRes = function(trueGVMatListEach) {
       nTopEval <- self$nTopEval
-      
+
       trueGVSummaryArrayEachList <- lapply(X = trueGVMatListEach,
                                            FUN = function(trueGVMatEachPop) {
                                              trueGVSummaryEachPop <- apply(X = trueGVMatEachPop,
@@ -4019,15 +4036,15 @@ simBsOpt <- R6::R6Class(
                                                                                                                 median(trueGVMatEachPopEachTrait),
                                                                                                                 mean(x = sort(x = trueGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                 var(trueGVMatEachPopEachTrait))
-                                                                             
+
                                                                              return(trueGVSummaryEachPopEachTrait)
                                                                            })
                                              trueGVSummaryArrayEachPop <- array(data = trueGVSummaryEachPop,
                                                                                 dim = c(dim(trueGVSummaryEachPop), 1),
                                                                                 dimnames = c(dimnames(trueGVSummaryEachPop),
                                                                                              list(Population = "")))
-                                             
-                                             
+
+
                                              return(trueGVSummaryArrayEachPop)
                                            })
       trueGVSummaryArrayEach <- do.call(what = abind::abind,
@@ -4038,14 +4055,14 @@ simBsOpt <- R6::R6Class(
                                                    list(Iteration = "")))
       return(trueGVSummaryArrayEach)
     },
-    
-    
+
+
     # @description Extract summary results from estimated GV matrix
     #
     # @param estimatedGVMatListEach [list] Each list of estimated GV matrix
-    extractEstimatedSummaryRes = function (estimatedGVMatListEach) {
+    extractEstimatedSummaryRes = function(estimatedGVMatListEach) {
       nTopEval <- self$nTopEval
-      
+
       estimatedGVSummaryArrayEachList <- lapply(X = estimatedGVMatListEach,
                                                 FUN = function(estimatedGVMatEachPop) {
                                                   estimatedGVSummaryEachPop <- apply(X = estimatedGVMatEachPop,
@@ -4056,15 +4073,15 @@ simBsOpt <- R6::R6Class(
                                                                                                                                median(estimatedGVMatEachPopEachTrait),
                                                                                                                                mean(x = sort(x = estimatedGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                                var(estimatedGVMatEachPopEachTrait))
-                                                                                       
+
                                                                                        return(estimatedGVSummaryEachPopEachTrait)
                                                                                      })
                                                   estimatedGVSummaryArrayEachPop <- array(data = estimatedGVSummaryEachPop,
                                                                                           dim = c(dim(estimatedGVSummaryEachPop), 1),
                                                                                           dimnames = c(dimnames(estimatedGVSummaryEachPop),
                                                                                                        list(Population = "")))
-                                                  
-                                                  
+
+
                                                   return(estimatedGVSummaryArrayEachPop)
                                                 })
       estimatedGVSummaryArrayEach <- do.call(what = abind::abind,

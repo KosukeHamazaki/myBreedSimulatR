@@ -113,7 +113,7 @@ haplotype <- R6::R6Class(
       # }
 
       self$values <- sapply (X = lociInfo$ids,
-                        FUN = function (id) {
+                        FUN = function(id) {
                           h <- haplo[, id]
                           mode(h) <- "integer"
                           rownames(h) <- .charSeq(paste0("Ploidy_"), seq(lociInfo$specie$ploidy))

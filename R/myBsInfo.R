@@ -509,7 +509,7 @@ bsInfo <- R6::R6Class(
     #' @param indName [character] individual name of interest
     parentInd = function(indName) {
       populations <- self$populations
-      whichPop <- which(!is.na(unlist(lapply(populations, function (pop) {
+      whichPop <- which(!is.na(unlist(lapply(populations, function(pop) {
         charmatch(x = indName,
                   table = names(pop$inds))
       }))))
@@ -563,7 +563,7 @@ bsInfo <- R6::R6Class(
     #' @param widthVecBase [numeric] vector representing width of the line in "lines" option
     #' @param dashVecBase [character]vector representing solid / dash in "lines" option
     #'
-    plot = function (plotTarget = "trueGV",
+    plot = function(plotTarget = "trueGV",
                      targetTrait = 1:self$traitInfo$nTraits,
                      targetPopulation = 1:self$generation,
                      plotType = "box",
@@ -588,7 +588,7 @@ bsInfo <- R6::R6Class(
 
       if (length(plotTarget) == 1) {
         trueGVMatList <- lapply(self$populations[targetPopulation],
-                                function (pop) {
+                                function(pop) {
                                   round(pop[[paste0(plotTarget, "Mat")]], 5)[, targetTrait, drop = FALSE]
                                 })
         trueGVMatNow <- do.call(what = rbind,
@@ -717,7 +717,7 @@ bsInfo <- R6::R6Class(
 
 
         trueGVMatList <- lapply(self$populations[targetPopulation],
-                                function (pop) {
+                                function(pop) {
                                   sapply(plotTarget, function(plotTargetNow) {
                                     round(pop[[paste0(plotTargetNow, "Mat")]], 5)[, targetTrait]
                                   })
@@ -857,7 +857,7 @@ bsInfo <- R6::R6Class(
   active = list(
     #' @field lociEffects [matrix] marker and QTL effects used for crossInfo object
     #'
-    lociEffects = function () {
+    lociEffects = function() {
       lociInfo <- self$lociInfo
       traitInfo <- self$traitInfo
       nLoci <- lociInfo$nLoci()

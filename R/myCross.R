@@ -1552,7 +1552,7 @@ crossInfo <- R6::R6Class(
     #' @description Allocate the number of progenies to each parent pair
     #' @param crosses0 [data.frame] data.frame with crossing instructions: parents names
     #' \code{ind1} \code{ind2}
-    allocateProgenies = function (crosses0) {
+    allocateProgenies = function(crosses0) {
       allocateMethod <- self$allocateMethod
       nNextPop <- self$nNextPop
       h <- self$h
@@ -1876,7 +1876,7 @@ crossInfo <- R6::R6Class(
         blockRanges <- blockRanges[unlist(lapply(blockRanges, length)) != 0]
 
         haploEffMaxList <- lapply(X = blockRanges,
-                                  FUN = function (blockRangeNow) {
+                                  FUN = function(blockRangeNow) {
                                     haploArrayNow <- haploArray[, blockRangeNow, , drop = FALSE]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]
@@ -1927,7 +1927,7 @@ crossInfo <- R6::R6Class(
 
       if (self$verbose) {
         EMBVArrayList <- pbmcapply::pbmclapply(X = 1:nIterEMBV,
-                                               FUN = function (iterEMBVNo) {
+                                               FUN = function(iterEMBVNo) {
                                                  newIndsEMBV <- mapply(private$makeSingleDH,
                                                                        parentPopulation$inds,
                                                                        indNamesEMBV,
@@ -1950,7 +1950,7 @@ crossInfo <- R6::R6Class(
 
                                                  EMBVNow <- apply(X = trueGVMatAll,
                                                                   MARGIN = 2,
-                                                                  FUN = function (trueGVEach) {
+                                                                  FUN = function(trueGVEach) {
                                                                     return(tapply(X = trueGVEach,
                                                                                   INDEX = rep(indNamesEMBV, each = nProgeniesEMBV),
                                                                                   FUN = max))
@@ -1967,7 +1967,7 @@ crossInfo <- R6::R6Class(
                                                }, mc.cores = nCoresEMBV)
       } else {
         EMBVArrayList <- parallel::mclapply(X = 1:nIterEMBV,
-                                            FUN = function (iterEMBVNo) {
+                                            FUN = function(iterEMBVNo) {
                                               newIndsEMBV <- mapply(private$makeSingleDH,
                                                                     parentPopulation$inds,
                                                                     indNamesEMBV,
@@ -1990,7 +1990,7 @@ crossInfo <- R6::R6Class(
 
                                               EMBVNow <- apply(X = trueGVMatAll,
                                                                MARGIN = 2,
-                                                               FUN = function (trueGVEach) {
+                                                               FUN = function(trueGVEach) {
                                                                  return(tapply(X = trueGVEach,
                                                                                INDEX = rep(indNamesEMBV, each = nProgeniesEMBV),
                                                                                FUN = max))
@@ -2367,7 +2367,7 @@ crossInfo <- R6::R6Class(
       gam1 <- ind1$generateGametes(n)
 
       #  Haplotype
-      haplo <- sapply(X = gam1, FUN = function (g1) {
+      haplo <- sapply(X = gam1, FUN = function(g1) {
         rbind(g1, g1)
       }, simplify = FALSE)
 
@@ -2439,7 +2439,7 @@ crossInfo <- R6::R6Class(
     # @description Extract top n individuals from vector v
     # @param v [numeric] Numeric vector
     # @param n [numeric] Number of top individuals to be extracted
-    extractTopN = function (v, n, decreasing = TRUE) {
+    extractTopN = function(v, n, decreasing = TRUE) {
       return(sort(x = v, decreasing = decreasing)[1:n])
     },
 
@@ -2447,7 +2447,7 @@ crossInfo <- R6::R6Class(
     # @description computeGVP [matrix] matrix of the genetic variance of progenies
     # @param crosses0 [data.frame] data.frame with crossing instructions: parents names
     # \code{ind1} \code{ind2}
-    computeGVP = function (crosses0) {
+    computeGVP = function(crosses0) {
       parentPopulation <- self$parentPopulation
       haploArray <- parentPopulation$haploArray
       lociEffects <- self$lociEffects
@@ -2554,7 +2554,7 @@ crossInfo <- R6::R6Class(
 
     # @description computeOPV [matrix] matrix of the optimal population value
     # @param indNamesCands [character] vector of individual names of selection candidates
-    computeOPV = function (indNamesCands) {
+    computeOPV = function(indNamesCands) {
       if (is.null(self$haploEffMaxArray)) {
         parentPopulation <- self$parentPopulation
         lociEffects <- self$lociEffects
@@ -2603,7 +2603,7 @@ crossInfo <- R6::R6Class(
         blockRanges <- blockRanges[unlist(lapply(blockRanges, length)) != 0]
 
         haploEffMaxList <- lapply(X = blockRanges,
-                                  FUN = function (blockRangeNow) {
+                                  FUN = function(blockRangeNow) {
                                     haploArrayNow <- haploArray[, blockRangeNow, , drop = FALSE]
                                     haploArray_1 <- haploArrayNow[, , 1]
                                     haploArray_2 <- haploArrayNow[, , 2]

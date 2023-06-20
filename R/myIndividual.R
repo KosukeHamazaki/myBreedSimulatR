@@ -216,7 +216,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueAGVs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueAGVs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             qtlPosNow <- traitInfo$qtlPos[[traitNo]]
             qtlGenoNow <- haplo$allelDose[qtlPosNow]
             qtlEffNow <- traitInfo$qtlEff[[traitNo]]
@@ -244,7 +244,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueAGVETs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueAGVETs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             qtlEachPosNow <- traitInfo$qtlEachPos[[traitNo]]
             qtlEachNamesNow <- traitInfo$qtlEachNamesList[[traitNo]]
             qtlEachGenoNow <- haplo$allelDose[qtlEachPosNow]
@@ -291,7 +291,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (traitInfo$lociInfo$specie$simInfo$simPheno) {
         if (!is.null(traitInfo)) {
-          trueDGVs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueDGVs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             qtlPosNow <- traitInfo$qtlPos[[traitNo]]
             qtlGenoNow <- haplo$allelDose[qtlPosNow]
             qtlEffNow <- traitInfo$qtlEff[[traitNo]]
@@ -320,7 +320,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueDGVETs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueDGVETs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             qtlEachPosNow <- traitInfo$qtlEachPos[[traitNo]]
             qtlEachNamesNow <- traitInfo$qtlEachNamesList[[traitNo]]
             qtlEachGenoNow <- haplo$allelDose[qtlEachPosNow]
@@ -368,7 +368,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueEGVs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueEGVs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             nEpiNow <- traitInfo$nEpi[traitNo]
 
             if (nEpiNow > 0) {
@@ -418,7 +418,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueEGVETs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueEGVETs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             nEpiNow <- traitInfo$nEpi[traitNo]
 
             if (nEpiNow > 0) {
@@ -483,7 +483,7 @@ individual <- R6::R6Class(
       haplo <- self$haplo
       if (!is.null(traitInfo)) {
         if (traitInfo$lociInfo$specie$simInfo$simPheno) {
-          trueEGVCTs <- sapply(1:traitInfo$nTraits, function (traitNo) {
+          trueEGVCTs <- sapply(1:traitInfo$nTraits, function(traitNo) {
             nEpiNow <- traitInfo$nEpi[traitNo]
 
             if (nEpiNow > 0) {

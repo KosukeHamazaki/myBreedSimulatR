@@ -337,7 +337,7 @@ population <- R6::R6Class(
     #' @param phenotypicValues [array] individual x traits x replication (3-dimensional array) of phenotypic values
     #' If you use real phenotypic data, please specify your phenotypic values.
     #' If you simulate phenotypic data, please set `phenotypicValues = NULL`.
-    inputPhenotypicValues = function (phenotypicValues = NULL) {
+    inputPhenotypicValues = function(phenotypicValues = NULL) {
       if (!is.null(self$trialInfo)) {
         trialInfo <- self$trialInfo
         simPheno <- self$traitInfo$lociInfo$specie$simInfo$simPheno
@@ -420,7 +420,7 @@ population <- R6::R6Class(
     #'  you should design which traits will be assigned to each axis. You can
     #'  define by indices of traits or trait names.
     #'
-    plot = function (plotTarget = "trueGV",
+    plot = function(plotTarget = "trueGV",
                      plotType = "box",
                      scatterAxes = 1:min(2, self$traitInfo$nTraits)) {
       supportTargets <- c("trueAGV", "trueDGV", "trueEGV", "trueGV",
@@ -725,7 +725,7 @@ population <- R6::R6Class(
       }
     },
     #' @field trueAGVMat [matrix] matrix of true additive genotypic values
-    trueAGVMat = function () {
+    trueAGVMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -753,7 +753,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueDGVMat [matrix] matrix of true dominant genotypic values
-    trueDGVMat = function () {
+    trueDGVMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -781,7 +781,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueEGVMat [matrix] matrix of true epistatic genotypic values
-    trueEGVMat = function () {
+    trueEGVMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -809,7 +809,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueGVMat [matrix] matrix of true genotypic values
-    trueGVMat = function () {
+    trueGVMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -837,7 +837,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueAGVETMat [matrix] matrix of true additive genotypic values specific to each trait
-    trueAGVETMat = function () {
+    trueAGVETMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -865,7 +865,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueDGVETMat [matrix] matrix of true dominant genotypic values specific to each trait
-    trueDGVETMat = function () {
+    trueDGVETMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -893,7 +893,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueEGVETMat [matrix] matrix of true epistatic genotypic values specific to each trait
-    trueEGVETMat = function () {
+    trueEGVETMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -921,7 +921,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueGVETMat [matrix] matrix of true genotypic values specific to each trait
-    trueGVETMat = function () {
+    trueGVETMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -950,7 +950,7 @@ population <- R6::R6Class(
     },
 
     #' @field trueAGVCTMat [matrix] matrix of true additive genotypic values common across trait
-    trueAGVCTMat = function () {
+    trueAGVCTMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -978,7 +978,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueDGVCTMat [matrix] matrix of true dominant genotypic values common across trait
-    trueDGVCTMat = function () {
+    trueDGVCTMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -1006,7 +1006,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueEGVCTMat [matrix] matrix of true epistatic genotypic values common across trait
-    trueEGVCTMat = function () {
+    trueEGVCTMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -1034,7 +1034,7 @@ population <- R6::R6Class(
       return(mat)
     },
     #' @field trueGVCTMat [matrix] matrix of true genotypic values common across trait
-    trueGVCTMat = function () {
+    trueGVCTMat = function() {
       if (length(self$inds) >= 2) {
         if (self$traitInfo$nTraits >= 2) {
           mat <- t(vapply(self$inds, function(ind) {
@@ -1112,7 +1112,7 @@ population <- R6::R6Class(
       stopifnot(ploidy %in% c(1, 2))
       genoMat <- self$genoMat
 
-      heteroRate <- apply(genoMat, 2, function (mrk) {
+      heteroRate <- apply(genoMat, 2, function(mrk) {
         mean(!(mrk %in% c(0, ploidy)))
       })
 

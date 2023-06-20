@@ -397,7 +397,7 @@ breederInfo <- R6::R6Class(
         testingIndNames <- testingIndNames[testingIndNames %in% allIndNames]
 
         testingPop <- sapply(testingIndNames, function(indName) {
-          whichPop <- which(!is.na(unlist(lapply(populationsFB, function (pop) {
+          whichPop <- which(!is.na(unlist(lapply(populationsFB, function(pop) {
             charmatch(x = indName,
                       table = pop$indNames)
           }))))
@@ -562,7 +562,7 @@ breederInfo <- R6::R6Class(
           }
           totalEstimatedGVByGRM <- do.call(what = cbind,
                                            args = lapply(X = EMMResList,
-                                                         FUN = function (BGLRRes) {
+                                                         FUN = function(BGLRRes) {
                                                            totalEstimatedGVByGRMET <- BGLRRes$yHat
 
                                                            return(totalEstimatedGVByGRMET)
@@ -594,8 +594,8 @@ breederInfo <- R6::R6Class(
       testingEstimatedGVByGRM <- totalEstimatedGVByGRM[testingIndNames, , drop = FALSE]
 
 
-      whichPops <- sapply(totalIndNames, function (indName) {
-        whichPop <- which(!is.na(unlist(lapply(populationsFB, function (pop) {
+      whichPops <- sapply(totalIndNames, function(indName) {
+        whichPop <- which(!is.na(unlist(lapply(populationsFB, function(pop) {
           charmatch(x = indName,
                     table = pop$indNames)
         }))))
@@ -614,7 +614,7 @@ breederInfo <- R6::R6Class(
       }
 
       totalEstimatedGVByGRMList <- lapply(totalIndNamesList,
-                                          function (totalIndNamesEach) {
+                                          function(totalIndNamesEach) {
                                             totalEstimatedGVByGRM[totalIndNamesEach, ]
                                           })
 
@@ -624,7 +624,7 @@ breederInfo <- R6::R6Class(
       }
 
       totalR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                        FUN = function (x) {
+                        FUN = function(x) {
                           R2 <- try(cor(totalEstimatedGVByRepForPlt[, x],
                                         totalEstimatedGVByGRM[, x],
                                         use = "complete.obs") ^ 2)
@@ -636,7 +636,7 @@ breederInfo <- R6::R6Class(
                           return(R2)
                         })
       trainingR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                           FUN = function (x) {
+                           FUN = function(x) {
                              R2 <- try(cor(totalEstimatedGVByRepForPlt[trainingIndNames, x],
                                            totalEstimatedGVByGRM[trainingIndNames, x],
                                            use = "complete.obs") ^ 2)
@@ -648,7 +648,7 @@ breederInfo <- R6::R6Class(
                              return(R2)
                            })
       testingR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                          FUN = function (x) {
+                          FUN = function(x) {
                             R2 <- try(cor(totalEstimatedGVByRepForPlt[testingIndNames, x],
                                           totalEstimatedGVByGRM[testingIndNames, x],
                                           use = "complete.obs") ^ 2)
@@ -670,7 +670,7 @@ breederInfo <- R6::R6Class(
       trainingOrTesting <- factor(trainingOrTesting,
                                   levels = c("training", "testing"))
       pltList <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                        FUN = function (x) {
+                        FUN = function(x) {
                           dataForPlot <- data.frame(Observed = totalEstimatedGVByRepForPlt[, x],
                                                     Predicted = totalEstimatedGVByGRM[, x],
                                                     TrainOrTest = trainingOrTesting)
@@ -882,7 +882,7 @@ breederInfo <- R6::R6Class(
           }
           
           mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEstRes, FUN = function (glmnetRes) {
+                               args = lapply(X = mrkEstRes, FUN = function(glmnetRes) {
                                  mrkEffEst <- as.matrix(coef(glmnetRes, s = glmnetRes$lambda.min))
                                  
                                  return(mrkEffEst)
@@ -895,7 +895,7 @@ breederInfo <- R6::R6Class(
                                          standardize.response = TRUE)
           mrkEffList <- coef(mrkEstRes, s = "lambda.min")
           mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEffList, FUN = function (mrkEffEach) {
+                               args = lapply(X = mrkEffList, FUN = function(mrkEffEach) {
                                  mrkEffEst <- as.matrix(mrkEffEach)
                                  
                                  return(mrkEffEst)
@@ -962,7 +962,7 @@ breederInfo <- R6::R6Class(
           }
           mrkEffMat <- do.call(what = cbind,
                                args = lapply(X = mrkEstRes,
-                                             FUN = function (BGLRRes) {
+                                             FUN = function(BGLRRes) {
                                                mrkEffEst <- c(Intercept = BGLRRes$mu,
                                                               BGLRRes$ETA$G$b)
                                                
@@ -970,7 +970,7 @@ breederInfo <- R6::R6Class(
                                              }))
           mrkEffSdMat <- do.call(what = cbind,
                                  args = lapply(X = mrkEstRes,
-                                               FUN = function (BGLRRes) {
+                                               FUN = function(BGLRRes) {
                                                  mrkEffSd <- c(Intercept = BGLRRes$SD.mu,
                                                                BGLRRes$ETA$G$SD.b)
                                                  
@@ -1040,7 +1040,7 @@ breederInfo <- R6::R6Class(
           
           mrkEffMat <- do.call(what = cbind,
                                args = lapply(X = mrkEstRes,
-                                             FUN = function (EMMRes) {
+                                             FUN = function(EMMRes) {
                                                mrkEffEst <- c(Intercept = EMMRes$beta,
                                                               EMMRes$u)
                                                
@@ -1091,7 +1091,7 @@ breederInfo <- R6::R6Class(
             
             mrkEffMat <- do.call(what = cbind,
                                  args = lapply(X = mrkEstRes,
-                                               FUN = function (EMMRes) {
+                                               FUN = function(EMMRes) {
                                                  gvEst <- EMMRes$u
                                                  intercept <- EMMRes$beta
                                                  mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
@@ -1168,7 +1168,7 @@ breederInfo <- R6::R6Class(
             }
             mrkEffMat <- do.call(what = cbind,
                                  args = lapply(X = mrkEstRes,
-                                               FUN = function (BGLRRes) {
+                                               FUN = function(BGLRRes) {
                                                  gvEst <- BGLRRes$ETA$A$u
                                                  intercept <- BGLRRes$mu
                                                  mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
@@ -1412,7 +1412,7 @@ breederInfo <- R6::R6Class(
         testingIndNames <- testingIndNames[testingIndNames %in% allIndNames]
 
         testingPop <- sapply(testingIndNames, function(indName) {
-          whichPop <- which(!is.na(unlist(lapply(populationsFB, function (pop) {
+          whichPop <- which(!is.na(unlist(lapply(populationsFB, function(pop) {
             charmatch(x = indName,
                       table = pop$indNames)
           }))))
@@ -1470,8 +1470,8 @@ breederInfo <- R6::R6Class(
       testingEstimatedGVByMLR <- totalEstimatedGVByMLR[testingIndNames, , drop = FALSE]
 
 
-      whichPops <- sapply(totalIndNames, function (indName) {
-        whichPop <- which(!is.na(unlist(lapply(populationsFB, function (pop) {
+      whichPops <- sapply(totalIndNames, function(indName) {
+        whichPop <- which(!is.na(unlist(lapply(populationsFB, function(pop) {
           charmatch(x = indName,
                     table = pop$indNames)
         }))))
@@ -1490,7 +1490,7 @@ breederInfo <- R6::R6Class(
       }
 
       totalEstimatedGVByMLRList <- lapply(totalIndNamesList,
-                                          function (totalIndNamesEach) {
+                                          function(totalIndNamesEach) {
                                             totalEstimatedGVByMLR[totalIndNamesEach, ]
                                           })
 
@@ -1500,7 +1500,7 @@ breederInfo <- R6::R6Class(
       }
 
       totalR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                        FUN = function (x) {
+                        FUN = function(x) {
                           R2 <- try(cor(totalEstimatedGVByRepForPlt[, x],
                                         totalEstimatedGVByMLR[, x],
                                         use = "complete.obs") ^ 2, silent = TRUE)
@@ -1512,7 +1512,7 @@ breederInfo <- R6::R6Class(
                           return(R2)
                         })
       trainingR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                           FUN = function (x) {
+                           FUN = function(x) {
                              R2 <- try(cor(totalEstimatedGVByRepForPlt[trainingIndNames, x],
                                            totalEstimatedGVByMLR[trainingIndNames, x],
                                            use = "complete.obs") ^ 2, silent = TRUE)
@@ -1524,7 +1524,7 @@ breederInfo <- R6::R6Class(
                              return(R2)
                            })
       testingR2 <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                          FUN = function (x) {
+                          FUN = function(x) {
                             R2 <- try(cor(totalEstimatedGVByRepForPlt[testingIndNames, x],
                                           totalEstimatedGVByMLR[testingIndNames, x],
                                           use = "complete.obs") ^ 2, silent = TRUE)
@@ -1546,7 +1546,7 @@ breederInfo <- R6::R6Class(
       trainingOrTesting <- factor(trainingOrTesting,
                                   levels = c("training", "testing"))
       pltList <- sapply(X = 1:ncol(totalEstimatedGVByRep),
-                        FUN = function (x) {
+                        FUN = function(x) {
                           dataForPlot <- data.frame(Observed = totalEstimatedGVByRepForPlt[, x],
                                                     Predicted = totalEstimatedGVByMLR[, x],
                                                     TrainOrTest = trainingOrTesting)
@@ -1653,7 +1653,7 @@ breederInfo <- R6::R6Class(
         estimatedGVByGRM = NULL,
         estimatedGVByMLR = NULL,
 
-        initialize = function (population,
+        initialize = function(population,
                                genotyping = TRUE,
                                genotypedIndNames = NULL,
                                mrkNames = NULL,
@@ -1733,7 +1733,7 @@ breederInfo <- R6::R6Class(
           af <- Rfast::colsums(genoMat) / (nrow(genoMat) * ploidy)
           names(af) <- colnames(genoMat)
           maf <- pmin(af, 1 - af)
-          heteroRate <- apply(genoMat, 2, function (mrk) {
+          heteroRate <- apply(genoMat, 2, function(mrk) {
             mean(!(mrk %in% c(0, ploidy)))
           })
 
@@ -2303,7 +2303,7 @@ breederInfo <- R6::R6Class(
     #' @param indName [character] individual name of interest
     parentInd = function(indName) {
       populationsFB <- self$populationsFB
-      whichPop <- which(!is.na(unlist(lapply(populationsFB, function (pop) {
+      whichPop <- which(!is.na(unlist(lapply(populationsFB, function(pop) {
         charmatch(x = indName,
                   table = pop$indNames)
       }))))

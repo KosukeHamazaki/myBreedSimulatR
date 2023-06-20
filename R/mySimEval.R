@@ -203,7 +203,7 @@ simEval <- R6::R6Class(
     #' @param adjust [numeric] the bandwidth used is actually adjust*bw. This makes it easy to specify values like ‘half the default’ bandwidth.
     #' (see: `adjust` in \link[stats]{density})
     #'
-    plot = function (targetTrait = 1,
+    plot = function(targetTrait = 1,
                      targetPopulation = NULL,
                      plotType = "box",
                      plotTarget = "max",
@@ -405,7 +405,7 @@ simEval <- R6::R6Class(
                          yaxis = list(title = list(text = paste0(plotGVMethod, " GV"))))
       } else if (plotType == "density") {
         densityValueDfList <- lapply(X = names(trueGVSummaryDfList),
-                                     FUN = function (strategyName) {
+                                     FUN = function(strategyName) {
                                        trueGVSummaryDfTraitSSEachStr <- trueGVSummaryDfTraitSS[trueGVSummaryDfTraitSS$Strategy %in% strategyName, ]
                                        densityResEachStr <- density(x = sort(trueGVSummaryDfTraitSSEachStr$Value), adjust = adjust)
 
