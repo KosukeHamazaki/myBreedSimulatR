@@ -335,12 +335,11 @@ stoSOO <- R6::R6Class(
         optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, paramLen))
       } else {
         optimalHyperParamMat <- do.call(what = rbind,
-                                        args = lapply(X = self$optimalNodes,
+                                        args = lapply(X = optimalNodes,
                                                       FUN = function(eachOptimalNode) {
                                                         eachOptimalNode$xRepresentative
                                                       }))
-        optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, ncol(optimalHyperParamMat)),
-                                      optimalHyperParamMat)
+        optimalHyperParamMat <- optimalHyperParamMat
       }
 
 
@@ -462,8 +461,7 @@ stoSOO <- R6::R6Class(
                                                             FUN = function(eachOptimalNode) {
                                                               eachOptimalNode$xRepresentative
                                                             }))
-              optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, ncol(optimalHyperParamMat)),
-                                            optimalHyperParamMat)
+              optimalHyperParamMat <- optimalHyperParamMat
               self$optimalHyperParamMat <- optimalHyperParamMat
 
               print(optimalHyperParamMat)
