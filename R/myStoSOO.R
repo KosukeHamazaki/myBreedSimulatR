@@ -432,6 +432,8 @@ stoSOO <- R6::R6Class(
       iterationCounterOld <- currentTree$iterationCounter - 1
       # saveOptimalNodesOld <- rep(FALSE, length(self$returnOptimalNodes))
       saveTreesOld <- rep(FALSE, length(self$whenToSaveTrees))
+      self$optimalNodes[["Iteration_0"]] <- currentTree$evaluateCurrentOptimalNode
+
 
       while (currentTree$iterationCounter < self$nIterOptimization) {
         if (self$verbose) {
