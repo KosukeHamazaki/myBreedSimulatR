@@ -332,7 +332,7 @@ stoSOO <- R6::R6Class(
       }
 
       if (length(optimalNodes) == 0) {
-        optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, self$paramLen))
+        optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, paramLen))
       } else {
         optimalHyperParamMat <- do.call(what = rbind,
                                         args = lapply(X = self$optimalNodes,
