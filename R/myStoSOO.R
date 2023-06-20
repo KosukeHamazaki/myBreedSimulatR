@@ -448,8 +448,8 @@ stoSOO <- R6::R6Class(
             self$optimalNodes[[paste0("Iteration_", currentTree$iterationCounter)]] <-
               currentOptimalNode
           } else {
-            saveOptimalNodes <- !identical(self$optimalNodes[[length(self$optimalNodes)]],
-                                           currentOptimalNode)
+            saveOptimalNodes <- !identical(self$optimalNodes[[length(self$optimalNodes)]]$xRepresentative,
+                                           currentOptimalNode$xRepresentative)
             if (saveOptimalNodes) {
               cat(paste0("\n------ Iteration ", currentTree$iterationCounter,
                          ": Optimal Parameters Updated ------\n"))
