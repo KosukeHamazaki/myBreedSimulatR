@@ -3444,7 +3444,8 @@ simBsOpt <- R6::R6Class(
           performMaximizeFuncForOneMrkEffect <- TRUE
 
           while (performMaximizeFuncForOneMrkEffect) {
-            maxEvalForOneMrkEffect <- maximizeFuncForOneMrkEffect(iterNoForMrkEffects = iterNoForMrkEffects)
+            maxEvalForOneMrkEffect <- try(maximizeFuncForOneMrkEffect(iterNoForMrkEffects = iterNoForMrkEffects),
+                                          silent = TRUE)
             performMaximizeFuncForOneMrkEffect <- "try-error" %in% class(maxEvalForOneMrkEffect)
           }
 
