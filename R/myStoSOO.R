@@ -514,7 +514,7 @@ stoSOO <- R6::R6Class(
         }
 
         self$currentTree <- currentTree
-        saveOptimalNodesOld <- saveOptimalNodes
+        # saveOptimalNodesOld <- saveOptimalNodes
         saveTreesOld <- saveTrees
         if (iterationCounterOld == currentTree$iterationCounter) {
           break
