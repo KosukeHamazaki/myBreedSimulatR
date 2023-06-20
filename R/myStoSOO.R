@@ -317,9 +317,9 @@ stoSOO <- R6::R6Class(
       if (is.list(optimalNodes)) {
         if (length(optimalNodes) != 0) {
           isNodeVec <- sapply(X = optimalNodes,
-                 FUN = function(optimalNode) {
-                   "node" %in% class(optimalNode)
-                 })
+                              FUN = function(optimalNode) {
+                                "node" %in% class(optimalNode)
+                              })
 
           if (!all(isNodeVec)) {
             optimalNodes <- list()
@@ -424,7 +424,6 @@ stoSOO <- R6::R6Class(
           withCheck = self$withCheck,
           verbose = self$verbose
         )
-      self$optimalNodes[["Iteration_0"]] <- currentTree$evaluateCurrentOptimalNode
       } else {
         currentTree <- self$currentTree
       }
@@ -443,46 +442,52 @@ stoSOO <- R6::R6Class(
         currentTree$performOneUpdate()
 
         currentOptimalNode <- currentTree$evaluateCurrentOptimalNode
-        saveOptimalNodes <- !identical(self$optimalNodes[[length(self$optimalNodes)]],
-                                       currentOptimalNode)
-        if (saveOptimalNodes) {
-          cat(paste0("\n------ Iteration ", currentTree$iterationCounter,
-                     ": Optimal Parameters Updated ------\n"))
-          self$optimalNodes[[paste0("Iteration_", currentTree$iterationCounter)]] <-
-            currentOptimalNode
 
-          optimalNodesList <- self$optimalNodes
-          optimalHyperParamMat <- do.call(what = rbind,
-                                          args = lapply(X = optimalNodesList,
-                                                        FUN = function(eachOptimalNode) {
-                                                          eachOptimalNode$xRepresentative
-                                                        }))
-          optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, ncol(optimalHyperParamMat)),
-                                        optimalHyperParamMat)
-          self$optimalHyperParamMat <- optimalHyperParamMat
+        if (!is.null(currentOptimalNode)) {
+          if (length(self$optimalNodes) == 0) {
+            self$optimalNodes[[paste0("Iteration_", currentTree$iterationCounter)]] <-
+              currentOptimalNode
+          } else {
+            saveOptimalNodes <- !identical(self$optimalNodes[[length(self$optimalNodes)]],
+                                           currentOptimalNode)
+            if (saveOptimalNodes) {
+              cat(paste0("\n------ Iteration ", currentTree$iterationCounter,
+                         ": Optimal Parameters Updated ------\n"))
+              self$optimalNodes[[paste0("Iteration_", currentTree$iterationCounter)]] <-
+                currentOptimalNode
 
-          print(optimalHyperParamMat)
+              optimalNodesList <- self$optimalNodes
+              optimalHyperParamMat <- do.call(what = rbind,
+                                              args = lapply(X = optimalNodesList,
+                                                            FUN = function(eachOptimalNode) {
+                                                              eachOptimalNode$xRepresentative
+                                                            }))
+              optimalHyperParamMat <- rbind(Iteration_0 = rep(0.5, ncol(optimalHyperParamMat)),
+                                            optimalHyperParamMat)
+              self$optimalHyperParamMat <- optimalHyperParamMat
 
-          if (!is.null(self$saveTreeNameBase)) {
-            fileNameOptimalNodes <- here::here(dirname(self$saveTreeNameBase),
-                                               paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
-                                                      "_StoSOO_optimal_nodes_list.rds"))
+              print(optimalHyperParamMat)
 
-            saveRDS(object = optimalNodesList,
-                    file = fileNameOptimalNodes)
+              if (!is.null(self$saveTreeNameBase)) {
+                fileNameOptimalNodes <- here::here(dirname(self$saveTreeNameBase),
+                                                   paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                                          "_StoSOO_optimal_nodes_list.rds"))
+
+                saveRDS(object = optimalNodesList,
+                        file = fileNameOptimalNodes)
 
 
-            fileNameOptimalParams <- here::here(dirname(self$saveTreeNameBase),
-                                                paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
-                                                       "_StoSOO_optimal_parameters.csv"))
+                fileNameOptimalParams <- here::here(dirname(self$saveTreeNameBase),
+                                                    paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                                           "_StoSOO_optimal_parameters.csv"))
 
-            write.csv(x = optimalHyperParamMat,
-                      file = fileNameOptimalParams,
-                      row.names = TRUE)
+                write.csv(x = optimalHyperParamMat,
+                          file = fileNameOptimalParams,
+                          row.names = TRUE)
+              }
+            }
           }
         }
-
-
         # saveOptimalNodes <- self$returnOptimalNodes <= currentTree$iterationCounter
         # whereToSave <- which(as.logical(saveOptimalNodes - saveOptimalNodesOld))
         # if (length(whereToSave) >= 1) {
