@@ -432,6 +432,20 @@ stoSOO <- R6::R6Class(
       # saveOptimalNodesOld <- rep(FALSE, length(self$returnOptimalNodes))
       saveTreesOld <- rep(FALSE, length(self$whenToSaveTrees))
 
+      if (!is.null(self$saveTreeNameBase)) {
+        splitSaveTreeNameBase <- stringr::str_split(string = self$saveTreeNameBase,
+                                                    pattern = "/")[[1]]
+
+        fileNameSaveTree <- here::here(dirname(self$saveTreeNameBase),
+                                       paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                              "_StoSOO_tree.rds"))
+        fileNameOptimalNodes <- here::here(dirname(self$saveTreeNameBase),
+                                           paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                                  "_StoSOO_optimal_nodes_list.rds"))
+        fileNameOptimalParams <- here::here(dirname(self$saveTreeNameBase),
+                                            paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
+                                                   "_StoSOO_optimal_parameters.csv"))
+      }
 
       while (currentTree$iterationCounter < self$nIterOptimization) {
         if (self$verbose) {
@@ -467,17 +481,8 @@ stoSOO <- R6::R6Class(
               print(optimalHyperParamMat)
 
               if (!is.null(self$saveTreeNameBase)) {
-                fileNameOptimalNodes <- here::here(dirname(self$saveTreeNameBase),
-                                                   paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
-                                                          "_StoSOO_optimal_nodes_list.rds"))
-
                 saveRDS(object = optimalNodesList,
                         file = fileNameOptimalNodes)
-
-
-                fileNameOptimalParams <- here::here(dirname(self$saveTreeNameBase),
-                                                    paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
-                                                           "_StoSOO_optimal_parameters.csv"))
 
                 write.csv(x = optimalHyperParamMat,
                           file = fileNameOptimalParams,
@@ -497,11 +502,6 @@ stoSOO <- R6::R6Class(
         whereToSaveTrees <- which(as.logical(saveTrees - saveTreesOld))
         if (length(whereToSaveTrees) >= 1) {
           if (!is.null(self$saveTreeNameBase)) {
-            splitSaveTreeNameBase <- stringr::str_split(string = self$saveTreeNameBase,
-                                                        pattern = "/")[[1]]
-            fileNameSaveTree <- here::here(dirname(self$saveTreeNameBase),
-                                           paste0(splitSaveTreeNameBase[length(splitSaveTreeNameBase)],
-                                                  "_StoSOO_tree.rds"))
             saveRDS(object = currentTree,
                     file = fileNameSaveTree)
 
