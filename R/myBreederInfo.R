@@ -274,16 +274,26 @@ breederInfo <- R6::R6Class(
       stopifnot(nRep >= 1)
 
 
-      if (length(populationsFB) < generationOfInterest) {
+      maxGenFB <- max(sapply(X = populationsFB,
+                             FUN = function(populationFB) {
+                               populationFB$generation
+                             },
+                             simplify = TRUE))
+      maxGen <- max(sapply(X = populations,
+                           FUN = function(population) {
+                             population$generation
+                           },
+                           simplify = TRUE))
+      if (maxGenFB < generationOfInterest) {
         stop(paste0("You haven't obtained the information of population of interest yet!! ",
                     "Please perform `self$getNewPopulation` first!!"))
-      } else if (length(populationsFB) > generationOfInterest) {
+      } else if (maxGenFB > generationOfInterest) {
         message("Population of your interest is not the latest population in breederInfo. OK?")
       }
 
-      if (length(populations) < generationOfInterest) {
+      if (maxGen < generationOfInterest) {
         stop("bsInfo object doesn't contain the information on population of your interest!")
-      } else if (length(populations) > generationOfInterest) {
+      } else if (maxGen > generationOfInterest) {
         message("Population of your interest is not the latest population in bsInfo. OK?")
       }
 
@@ -784,23 +794,23 @@ breederInfo <- R6::R6Class(
       if (nTraits == 1) {
         multiTrait <- FALSE
       }
-      
+
       supportedMethodsMLR <- c("Ridge", "LASSO", "ElasticNet", "RR-BLUP", "GBLUP",
                                "BayesA", "BayesB", "BayesC", "BRR", "BL", "SpikeSlab")
       supportedMethodsGlmnet <- c("Ridge", "LASSO", "ElasticNet")
       supportedMethodsBGLR <- c("BayesA", "BayesB", "BayesC", "BRR", "BL", "SpikeSlab")
-      
-      
+
+
       methodMLR <- methodMLR[methodMLR %in% supportedMethodsMLR]
       stopifnot(length(methodMLR) >= 1)
-      
+
       allPop <- 1:length(populationsFB)
       allPopNo <- unlist(lapply(populationsFB,
                                 function(popFB) popFB$generation))
       allPopName <- names(populationsFB)
       allIndNames <- unlist(lapply(populationsFB,
                                    function(popFB) popFB$indNames))
-      
+
       if (is.null(trainingPop)) {
         trainingPop <- allPop
         trainingPopNo <- allPopNo
@@ -812,7 +822,7 @@ breederInfo <- R6::R6Class(
       } else {
         stop("A class of `trainingPop` should be numeric or character!!")
       }
-      
+
       trainingPopulationsFB <- populationsFB[trainingPop]
       trainingPopName <- names(trainingPopulationsFB)
       trainingPopNo <- unlist(lapply(trainingPopulationsFB,
@@ -827,19 +837,19 @@ breederInfo <- R6::R6Class(
         stopifnot(length(trainingIndNames) >= 1)
       }
       nTrainingInds <- length(trainingIndNames)
-      
+
       if (length(trainingPop) >= 2) {
         trainingPopOG <- self$overGeneration(targetPop = trainingPop)
       } else if (length(trainingPop) == 1) {
         trainingPopOG <- trainingPopulationsFB[[1]]
       }
-      
+
       trainingIndNamesWithPheno <- trainingIndNames[trainingIndNames %in% rownames(trainingPopOG$estimatedGVByRep)]
       trainingEstimatedGVByRep <- trainingPopOG$estimatedGVByRep[trainingIndNamesWithPheno, , drop = FALSE]
-      
+
       trainingGenoMat <- trainingPopOG$genoMat[trainingIndNamesWithPheno, ]
-      
-      
+
+
       if (methodMLR %in% supportedMethodsGlmnet) {
         if (methodMLR == "Ridge") {
           alpha <- 0
@@ -854,8 +864,8 @@ breederInfo <- R6::R6Class(
           stopifnot(alpha > 0)
           stopifnot(alpha < 1)
         }
-        
-        
+
+
         if (!multiTrait) {
           if (self$verbose) {
             mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
@@ -865,7 +875,7 @@ breederInfo <- R6::R6Class(
                                                                             family = "gaussian", alpha = alpha,
                                                                             standardize = FALSE,
                                                                             standardize.response = TRUE)
-                                             
+
                                              return(glmnetRes)
                                            }, simplify = FALSE)
           } else {
@@ -876,15 +886,15 @@ breederInfo <- R6::R6Class(
                                                                  family = "gaussian", alpha = alpha,
                                                                  standardize = FALSE,
                                                                  standardize.response = TRUE)
-                                  
+
                                   return(glmnetRes)
                                 }, simplify = FALSE)
           }
-          
+
           mrkEffMat <- do.call(what = cbind,
                                args = lapply(X = mrkEstRes, FUN = function(glmnetRes) {
                                  mrkEffEst <- as.matrix(coef(glmnetRes, s = glmnetRes$lambda.min))
-                                 
+
                                  return(mrkEffEst)
                                }))
         } else {
@@ -897,15 +907,15 @@ breederInfo <- R6::R6Class(
           mrkEffMat <- do.call(what = cbind,
                                args = lapply(X = mrkEffList, FUN = function(mrkEffEach) {
                                  mrkEffEst <- as.matrix(mrkEffEach)
-                                 
+
                                  return(mrkEffEst)
                                }))
         }
-        
+
         mrkEffSdMat <- NULL
       } else if (methodMLR %in% supportedMethodsBGLR) {
-        
-        
+
+
         if (!multiTrait) {
           if (methodMLR == "SpikeSlab") {
             message(paste0("For uni-trait model, `methodMLR = 'SpikeSlab'` is not offered.\n",
@@ -933,7 +943,7 @@ breederInfo <- R6::R6Class(
                                              }
                                              BGLRRes$traceInfo <- traceInfo
                                              file.remove(listFilesRemove)
-                                             
+
                                              return(BGLRRes)
                                            }, simplify = FALSE)
           } else {
@@ -956,7 +966,7 @@ breederInfo <- R6::R6Class(
                                   }
                                   BGLRRes$traceInfo <- traceInfo
                                   file.remove(listFilesRemove)
-                                  
+
                                   return(BGLRRes)
                                 }, simplify = FALSE)
           }
@@ -965,7 +975,7 @@ breederInfo <- R6::R6Class(
                                              FUN = function(BGLRRes) {
                                                mrkEffEst <- c(Intercept = BGLRRes$mu,
                                                               BGLRRes$ETA$G$b)
-                                               
+
                                                return(mrkEffEst)
                                              }))
           mrkEffSdMat <- do.call(what = cbind,
@@ -973,7 +983,7 @@ breederInfo <- R6::R6Class(
                                                FUN = function(BGLRRes) {
                                                  mrkEffSd <- c(Intercept = BGLRRes$SD.mu,
                                                                BGLRRes$ETA$G$SD.b)
-                                                 
+
                                                  return(mrkEffSd)
                                                }))
         } else {
@@ -986,7 +996,7 @@ breederInfo <- R6::R6Class(
                            "We use `methodMLR = 'BRR'` instead."))
             methodMLR <- "BRR"
           }
-          
+
           ETA <- list(G = list(X = trainingGenoMat, model = methodMLR))
           mrkEstRes <- BGLR::Multitrait(y = trainingEstimatedGVByRep,
                                         ETA = ETA, nIter = nIter,
@@ -1009,23 +1019,23 @@ breederInfo <- R6::R6Class(
           mrkEstRes$traceInfo <- traceInfo
           file.remove(listFilesRemove)
         }
-        
-        
-        
+
+
+
       } else if (methodMLR == "RR-BLUP") {
         Z <- trainingGenoMat
         K <- diag(ncol(Z))
         rownames(K) <- colnames(K) <- colnames(Z)
-        
+
         if (!multiTrait) {
           ZETA <- list(M = list(Z = Z, K = K))
-          
+
           if (self$verbose) {
             mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
                                            FUN = function(traitName) {
                                              EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
                                                                          X = NULL, ZETA = ZETA, REML = TRUE)
-                                             
+
                                              return(EMMRes)
                                            }, simplify = FALSE)
           } else {
@@ -1033,17 +1043,17 @@ breederInfo <- R6::R6Class(
                                 FUN = function(traitName) {
                                   EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
                                                               X = NULL, ZETA = ZETA, REML = TRUE)
-                                  
+
                                   return(EMMRes)
                                 }, simplify = FALSE)
           }
-          
+
           mrkEffMat <- do.call(what = cbind,
                                args = lapply(X = mrkEstRes,
                                              FUN = function(EMMRes) {
                                                mrkEffEst <- c(Intercept = EMMRes$beta,
                                                               EMMRes$u)
-                                               
+
                                                return(mrkEffEst)
                                              }))
         } else {
@@ -1056,27 +1066,27 @@ breederInfo <- R6::R6Class(
                                                     X = X,
                                                     Z = t(Z),
                                                     K = K)
-          
+
           mrkEffMat <- t(cbind(mrkEstRes$Bhat, mrkEstRes$Gpred))
         }
-        
+
         mrkEffSdMat <- NULL
       } else if (methodMLR == "GBLUP") {
         K <- tcrossprod(trainingGenoMat) / ncol(trainingGenoMat)
         KInv <- MASS::ginv(K)
         Z <- diag(nrow(K))
         rownames(Z) <- colnames(Z) <- rownames(K)
-        
+
         if (!bayesian) {
           if (!multiTrait) {
             ZETA <- list(A = list(Z = Z, K = K))
-            
+
             if (self$verbose) {
               mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
                                              FUN = function(traitName) {
                                                EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
                                                                            X = NULL, ZETA = ZETA, REML = TRUE)
-                                               
+
                                                return(EMMRes)
                                              }, simplify = FALSE)
             } else {
@@ -1084,11 +1094,11 @@ breederInfo <- R6::R6Class(
                                   FUN = function(traitName) {
                                     EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
                                                                 X = NULL, ZETA = ZETA, REML = TRUE)
-                                    
+
                                     return(EMMRes)
                                   }, simplify = FALSE)
             }
-            
+
             mrkEffMat <- do.call(what = cbind,
                                  args = lapply(X = mrkEstRes,
                                                FUN = function(EMMRes) {
@@ -1097,7 +1107,7 @@ breederInfo <- R6::R6Class(
                                                  mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
                                                                          KInv) %*% gvEst)[, 1]
                                                  mrkEffEst <- c(Intercept = intercept, mrkEffEst)
-                                                 
+
                                                  return(mrkEffEst)
                                                }))
           } else {
@@ -1139,7 +1149,7 @@ breederInfo <- R6::R6Class(
                                                }
                                                BGLRRes$traceInfo <- traceInfo
                                                file.remove(listFilesRemove)
-                                               
+
                                                return(BGLRRes)
                                              }, simplify = FALSE)
             } else {
@@ -1162,7 +1172,7 @@ breederInfo <- R6::R6Class(
                                     }
                                     BGLRRes$traceInfo <- traceInfo
                                     file.remove(listFilesRemove)
-                                    
+
                                     return(BGLRRes)
                                   }, simplify = FALSE)
             }
@@ -1174,7 +1184,7 @@ breederInfo <- R6::R6Class(
                                                  mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
                                                                          KInv) %*% gvEst)[, 1]
                                                  mrkEffEst <- c(Intercept = intercept, mrkEffEst)
-                                                 
+
                                                  return(mrkEffEst)
                                                }))
           } else {
@@ -1194,7 +1204,7 @@ breederInfo <- R6::R6Class(
             }
             mrkEstRes$traceInfo <- traceInfo
             file.remove(listFilesRemove)
-            
+
             gvEst <- mrkEstRes$ETA$A$u
             intercept <- mrkEstRes$mu
             mrkEffMat <- crossprod(trainingGenoMat / ncol(trainingGenoMat),
@@ -1202,26 +1212,26 @@ breederInfo <- R6::R6Class(
             mrkEffMat <- rbind(Intercept = intercept, mrkEffMat)
           }
         }
-        
+
         mrkEffSdMat <- NULL
       }
       rownames(mrkEffMat) <- c("Intercept", colnames(trainingGenoMat))
       colnames(mrkEffMat) <- colnames(trainingEstimatedGVByRep)
-      
+
       if (!is.null(mrkEffSdMat)) {
         dimnames(mrkEffSdMat) <- dimnames(mrkEffMat)
       }
-      
+
       ends <- self$specie$lChr
       genoMap <- self$lociInfoFB$genoMapFB
       genoMap$rec <- round(genoMap$rec, 3)
       mrkEffSize <- apply(X = mrkEffMat[-1, , drop = FALSE], MARGIN = 1,
                           FUN = function(x) sqrt(sum(x ^ 2)))
-      
+
       mrkEffSizeScaled <- sizeMrkMin + (mrkEffSize - min(mrkEffSize)) *
         (sizeMrkMax - sizeMrkMin) / diff(range(mrkEffSize))
       genoMapWithSize <- data.frame(genoMap, round(mrkEffMat[-1, , drop = FALSE], 3))
-      
+
       plt <- plotly::plot_ly(data = genoMapWithSize,
                              x = ~ chr,
                              y = ~ pos,
@@ -1242,14 +1252,14 @@ breederInfo <- R6::R6Class(
                             text = paste(rep(names(ends), 2),
                                          ": length =",
                                          c(ends, rep(0, length(ends)))))
-      
+
       if (self$multiTraitsAsEnvs) {
         mrkEffMat <- matrix(data = rep(mrkEffMat, self$traitInfoFB$nTraits),
                             nrow = nrow(mrkEffMat), byrow = FALSE,
                             dimnames = list(rownames(mrkEffMat),
                                             self$traitInfoFB$traitNames))
       }
-      
+
       estimatedMrkEffInfoNow <- list(trainingPop = trainingPop,
                                      trainingPopName = trainingPopName,
                                      trainingPopNo = trainingPopNo,
@@ -1265,7 +1275,7 @@ breederInfo <- R6::R6Class(
                                      mrkEffMat = mrkEffMat,
                                      mrkEffSdMat = mrkEffSdMat,
                                      plot = plt)
-      
+
       infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
       self$estimatedMrkEffInfo[[infoName]] <- estimatedMrkEffInfoNow
     },
@@ -1654,14 +1664,14 @@ breederInfo <- R6::R6Class(
         estimatedGVByMLR = NULL,
 
         initialize = function(population,
-                               genotyping = TRUE,
-                               genotypedIndNames = NULL,
-                               mrkNames = NULL,
-                               mafThres = 0.05,
-                               heteroThres = 1,
-                               calculateGRM = TRUE,
-                               methodsGRM = "addNOIA",
-                               calcEpistasis = FALSE) {
+                              genotyping = TRUE,
+                              genotypedIndNames = NULL,
+                              mrkNames = NULL,
+                              mafThres = 0.05,
+                              heteroThres = 1,
+                              calculateGRM = TRUE,
+                              methodsGRM = "addNOIA",
+                              calcEpistasis = FALSE) {
           # population class
           if (class(population)[1] != "population") {
             stop(paste('class(population)[1] != "population"\n"population" must be a',
@@ -2344,7 +2354,7 @@ breederInfo <- R6::R6Class(
                            samplingMrkEff = FALSE,
                            seedMrkEffSampling = NA) {
       bayesianMLRMethods <- c("BayesA", "BayesB", "BayesC", "BRR", "BL", "SpikeSlab")
-      
+
       lociInfo <- bsInfo$lociInfo
       traitInfo <- bsInfo$traitInfo
       nLoci <- lociInfo$nLoci()
@@ -2353,7 +2363,7 @@ breederInfo <- R6::R6Class(
       nTraits <- traitInfo$nTraits
       traitNames <- traitInfo$traitNames
       populationsFB <- self$populationsFB
-      
+
       lociEffects <- matrix(data = 0,
                             nrow = nLoci,
                             ncol = nTraits,
@@ -2370,7 +2380,7 @@ breederInfo <- R6::R6Class(
         allPopNo <- unlist(lapply(populationsFB,
                                   function(popFB) popFB$generation))
         allPopName <- names(populationsFB)
-        
+
         if (is.null(trainingPop)) {
           trainingPop <- allPop
           trainingPopNo <- allPopNo
@@ -2384,26 +2394,26 @@ breederInfo <- R6::R6Class(
         }
         trainingPopulationsFB <- populationsFB[trainingPop]
         trainingPopName <- names(trainingPopulationsFB)
-        
+
         if (is.null(methodMLR)) {
           methodMLR <- "Ridge"
         }
-        
+
         infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
         mrkEffMat <- self$estimatedMrkEffInfo[[infoName]]$mrkEffMat
         mrkEffSdMat <- self$estimatedMrkEffInfo[[infoName]]$mrkEffSdMat
       }
-      
+
       if (!(methodMLR %in% bayesianMLRMethods)) {
         samplingMrkEff <- FALSE
       }
-      
-      
+
+
       if (samplingMrkEff) {
         if (is.na(seedMrkEffSampling)) {
           seedMrkEffSampling <- sample(x = 1:1e09, size = 1)
         }
-        
+
         set.seed(seedMrkEffSampling)
         mrkEffMatSampled <- sapply(X = 1:nTraits,
                                    FUN = function(traitNo) {
@@ -2413,7 +2423,7 @@ breederInfo <- R6::R6Class(
                                      mrkEffMat[, traitNo, drop = TRUE],
                                      mrkEffSdMat[, traitNo, drop = TRUE],
                                      SIMPLIFY = TRUE)
-                                     
+
                                      return(mrkEffVecSampled)
                                    }, simplify = TRUE)
         dimnames(mrkEffMatSampled) <- dimnames(mrkEffMat)
@@ -2422,12 +2432,12 @@ breederInfo <- R6::R6Class(
         seedMrkEffSampling <- NA
         mrkEffMatReplaced <- mrkEffMat
       }
-      
-      
+
+
       lociEffects[traitInfo$mrkPos, ] <- mrkEffMatReplaced[-1, ]
       lociEffects <- rbind(Intercept = mrkEffMatReplaced[1, ],
                            lociEffects)
-      
+
       return(lociEffects)
     },
 
