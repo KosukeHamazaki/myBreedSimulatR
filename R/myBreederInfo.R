@@ -1256,16 +1256,14 @@ breederInfo <- R6::R6Class(
         rownames(mrkEffMat0) <- c("Intercept", colnames(trainingGenoMat))
         colnames(mrkEffMat0) <- colnames(trainingEstimatedGVByRep)
 
+        mrkEffMat[, conductMrkEffEst] <- mrkEffMat0
+
         if (!is.null(mrkEffSdMat0)) {
           dimnames(mrkEffSdMat0) <- dimnames(mrkEffMat0)
+          mrkEffSdMat[, conductMrkEffEst] <- mrkEffSdMat0
         }
       }
 
-      mrkEffMat[, conductMrkEffEst] <- mrkEffMat0
-
-      if (!is.null(mrkEffSdMat0)) {
-        mrkEffSdMat[, conductMrkEffEst] <- mrkEffSdMat0
-      }
 
 
 
