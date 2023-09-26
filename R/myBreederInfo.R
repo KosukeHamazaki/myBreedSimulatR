@@ -845,290 +845,120 @@ breederInfo <- R6::R6Class(
       }
 
       trainingIndNamesWithPheno <- trainingIndNames[trainingIndNames %in% rownames(trainingPopOG$estimatedGVByRep)]
-      trainingEstimatedGVByRep <- trainingPopOG$estimatedGVByRep[trainingIndNamesWithPheno, , drop = FALSE]
+
+      trainingEstimatedGVByRepOri <- trainingPopOG$estimatedGVByRep[trainingIndNamesWithPheno, , drop = FALSE]
+      meanTrainingEstimatedGVByRep <- apply(X = trainingEstimatedGVByRepOri,
+                                            MARGIN = 2,
+                                            FUN = mean)
+      varTrainingEstimatedGVByRep <- apply(X = trainingEstimatedGVByRepOri,
+                                           MARGIN = 2,
+                                           FUN = var)
+      conductMrkEffEst <- varTrainingEstimatedGVByRep == 0
 
       trainingGenoMat <- trainingPopOG$genoMat[trainingIndNamesWithPheno, ]
 
 
-      if (methodMLR %in% supportedMethodsGlmnet) {
-        if (methodMLR == "Ridge") {
-          alpha <- 0
-        } else if (methodMLR == "LASSO") {
-          alpha <- 1
-        } else if (methodMLR == "ElasticNet") {
-          if (is.null(alpha)) {
-            message("You don't set `alpha`. We will set `alpha = 0.5` for Elastic Net instead.")
-            alpha <- 0.5
-          }
-          stopifnot(is.numeric(alpha))
-          stopifnot(alpha > 0)
-          stopifnot(alpha < 1)
-        }
+
+      mrkEffMatWoIntercept <- matrix(
+        data = 0,
+        nrow = ncol(trainingGenoMat),
+        ncol = ncol(trainingEstimatedGVByRepOri),
+        dimnames = list(
+          colnames(trainingGenoMat),
+          colnames(trainingEstimatedGVByRepOri)
+        )
+      )
+
+      mrkEffMat <- rbind(Intercept = meanTrainingEstimatedGVByRep,
+                         mrkEffMatWoIntercept)
+      mrkEffSdMat <- matrix(
+        data = 0,
+        nrow = ncol(trainingGenoMat) + 1,
+        ncol = ncol(trainingEstimatedGVByRepOri),
+        dimnames = list(
+          c("Intercept", colnames(trainingGenoMat)),
+          colnames(trainingEstimatedGVByRepOri)
+        )
+      )
 
 
-        if (!multiTrait) {
-          if (self$verbose) {
-            mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
-                                           FUN = function(traitName) {
-                                             glmnetRes <- glmnet::cv.glmnet(x = trainingGenoMat,
-                                                                            y = trainingEstimatedGVByRep[, traitName],
-                                                                            family = "gaussian", alpha = alpha,
-                                                                            standardize = FALSE,
-                                                                            standardize.response = TRUE)
-
-                                             return(glmnetRes)
-                                           }, simplify = FALSE)
-          } else {
-            mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
-                                FUN = function(traitName) {
-                                  glmnetRes <- glmnet::cv.glmnet(x = trainingGenoMat,
-                                                                 y = trainingEstimatedGVByRep[, traitName],
-                                                                 family = "gaussian", alpha = alpha,
-                                                                 standardize = FALSE,
-                                                                 standardize.response = TRUE)
-
-                                  return(glmnetRes)
-                                }, simplify = FALSE)
-          }
-
-          mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEstRes, FUN = function(glmnetRes) {
-                                 mrkEffEst <- as.matrix(coef(glmnetRes, s = glmnetRes$lambda.min))
-
-                                 return(mrkEffEst)
-                               }))
-        } else {
-          mrkEstRes <- glmnet::cv.glmnet(x = trainingGenoMat,
-                                         y = trainingEstimatedGVByRep,
-                                         family = "mgaussian", alpha = alpha,
-                                         standardize = FALSE,
-                                         standardize.response = TRUE)
-          mrkEffList <- coef(mrkEstRes, s = "lambda.min")
-          mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEffList, FUN = function(mrkEffEach) {
-                                 mrkEffEst <- as.matrix(mrkEffEach)
-
-                                 return(mrkEffEst)
-                               }))
-        }
-
-        mrkEffSdMat <- NULL
-      } else if (methodMLR %in% supportedMethodsBGLR) {
+      if (any(conductMrkEffEst)) {
+        trainingEstimatedGVByRep <- trainingEstimatedGVByRepOri[, conductMrkEffEst, drop = FALSE]
 
 
-        if (!multiTrait) {
-          if (methodMLR == "SpikeSlab") {
-            message(paste0("For uni-trait model, `methodMLR = 'SpikeSlab'` is not offered.\n",
-                           "We use `methodMLR = 'BayesC'` instead."))
-            methodMLR <- "BayesC"
-          }
-          ETA <- list(G = list(X = trainingGenoMat, model = methodMLR))
-          if (self$verbose) {
-            mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
-                                           FUN = function(traitName) {
-                                             BGLRRes <- BGLR::BGLR(y = trainingEstimatedGVByRep[, traitName],
-                                                                   response_type = "gaussian", ETA = ETA,
-                                                                   nIter = nIter, burnIn = burnIn, thin = thin,
-                                                                   saveAt = "", verbose = FALSE,
-                                                                   rmExistingFiles = TRUE)
-                                             listFiles <- list.files()
-                                             listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
-                                             listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
-                                                                                             pattern = ".dat")
-                                             traceInfo <- list()
-                                             for (listFileNo in 1:length(listFilesRemove)) {
-                                               datNow <- read.csv(file = listFilesRemove[listFileNo],
-                                                                  header = FALSE)
-                                               traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
-                                             }
-                                             BGLRRes$traceInfo <- traceInfo
-                                             file.remove(listFilesRemove)
-
-                                             return(BGLRRes)
-                                           }, simplify = FALSE)
-          } else {
-            mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
-                                FUN = function(traitName) {
-                                  BGLRRes <- BGLR::BGLR(y = trainingEstimatedGVByRep[, traitName],
-                                                        response_type = "gaussian", ETA = ETA,
-                                                        nIter = nIter, burnIn = burnIn, thin = thin,
-                                                        saveAt = "", verbose = FALSE,
-                                                        rmExistingFiles = TRUE)
-                                  listFiles <- list.files()
-                                  listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
-                                  listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
-                                                                                  pattern = ".dat")
-                                  traceInfo <- list()
-                                  for (listFileNo in 1:length(listFilesRemove)) {
-                                    datNow <- read.table(file = listFilesRemove[listFileNo],
-                                                         header = FALSE, sep = " ")
-                                    traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
-                                  }
-                                  BGLRRes$traceInfo <- traceInfo
-                                  file.remove(listFilesRemove)
-
-                                  return(BGLRRes)
-                                }, simplify = FALSE)
-          }
-          mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEstRes,
-                                             FUN = function(BGLRRes) {
-                                               mrkEffEst <- c(Intercept = BGLRRes$mu,
-                                                              BGLRRes$ETA$G$b)
-
-                                               return(mrkEffEst)
-                                             }))
-          mrkEffSdMat <- do.call(what = cbind,
-                                 args = lapply(X = mrkEstRes,
-                                               FUN = function(BGLRRes) {
-                                                 mrkEffSd <- c(Intercept = BGLRRes$SD.mu,
-                                                               BGLRRes$ETA$G$SD.b)
-
-                                                 return(mrkEffSd)
-                                               }))
-        } else {
-          if (methodMLR %in% c("BL", "BayesB", "BayesC")) {
-            message(paste0("For multi-trait model, `methodMLR = 'BL'`, `methodMLR = 'BayesB'`, `methodMLR = 'BayesC'` are not offered.\n",
-                           "We use `methodMLR = 'SpikeSlab'` instead. This is equivalent to BayesC model."))
-            methodMLR <- "SpikeSlab"
-          } else if (methodMLR == "BayesA") {
-            message(paste0("For multi-trait model, `methodMLR = 'BayesA'` is not offered.\n",
-                           "We use `methodMLR = 'BRR'` instead."))
-            methodMLR <- "BRR"
+        if (methodMLR %in% supportedMethodsGlmnet) {
+          if (methodMLR == "Ridge") {
+            alpha <- 0
+          } else if (methodMLR == "LASSO") {
+            alpha <- 1
+          } else if (methodMLR == "ElasticNet") {
+            if (is.null(alpha)) {
+              message("You don't set `alpha`. We will set `alpha = 0.5` for Elastic Net instead.")
+              alpha <- 0.5
+            }
+            stopifnot(is.numeric(alpha))
+            stopifnot(alpha > 0)
+            stopifnot(alpha < 1)
           }
 
-          ETA <- list(G = list(X = trainingGenoMat, model = methodMLR))
-          mrkEstRes <- BGLR::Multitrait(y = trainingEstimatedGVByRep,
-                                        ETA = ETA, nIter = nIter,
-                                        burnIn = burnIn, thin = thin,
-                                        saveAt = "", verbose = FALSE)
-          mrkEffMat <- rbind(mrkEstRes$mu,
-                             mrkEstRes$ETA$G$beta)
-          mrkEffSdMat <- rbind(mrkEstRes$SD.mu,
-                               mrkEstRes$ETA$G$SD.beta)
-          listFiles <- list.files()
-          listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
-          listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
-                                                          pattern = ".dat")
-          traceInfo <- list()
-          for (listFileNo in 1:length(listFilesRemove)) {
-            datNow <- read.table(file = listFilesRemove[listFileNo],
-                                 header = FALSE, sep = " ")
-            traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
-          }
-          mrkEstRes$traceInfo <- traceInfo
-          file.remove(listFilesRemove)
-        }
 
-
-
-      } else if (methodMLR == "RR-BLUP") {
-        Z <- trainingGenoMat
-        K <- diag(ncol(Z))
-        rownames(K) <- colnames(K) <- colnames(Z)
-
-        if (!multiTrait) {
-          ZETA <- list(M = list(Z = Z, K = K))
-
-          if (self$verbose) {
-            mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
-                                           FUN = function(traitName) {
-                                             EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
-                                                                         X = NULL, ZETA = ZETA, REML = TRUE)
-
-                                             return(EMMRes)
-                                           }, simplify = FALSE)
-          } else {
-            mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
-                                FUN = function(traitName) {
-                                  EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
-                                                              X = NULL, ZETA = ZETA, REML = TRUE)
-
-                                  return(EMMRes)
-                                }, simplify = FALSE)
-          }
-
-          mrkEffMat <- do.call(what = cbind,
-                               args = lapply(X = mrkEstRes,
-                                             FUN = function(EMMRes) {
-                                               mrkEffEst <- c(Intercept = EMMRes$beta,
-                                                              EMMRes$u)
-
-                                               return(mrkEffEst)
-                                             }))
-        } else {
-          X <- t(matrix(data = 1,
-                        nrow = nrow(Z),
-                        ncol = 1,
-                        dimnames = list(rownames(Z),
-                                        "Intercept")))
-          mrkEstRes <- EMMREML::emmremlMultivariate(Y = t(trainingEstimatedGVByRep),
-                                                    X = X,
-                                                    Z = t(Z),
-                                                    K = K)
-
-          mrkEffMat <- t(cbind(mrkEstRes$Bhat, mrkEstRes$Gpred))
-        }
-
-        mrkEffSdMat <- NULL
-      } else if (methodMLR == "GBLUP") {
-        K <- tcrossprod(trainingGenoMat) / ncol(trainingGenoMat)
-        KInv <- MASS::ginv(K)
-        Z <- diag(nrow(K))
-        rownames(Z) <- colnames(Z) <- rownames(K)
-
-        if (!bayesian) {
           if (!multiTrait) {
-            ZETA <- list(A = list(Z = Z, K = K))
-
             if (self$verbose) {
               mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
                                              FUN = function(traitName) {
-                                               EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
-                                                                           X = NULL, ZETA = ZETA, REML = TRUE)
+                                               glmnetRes <- glmnet::cv.glmnet(x = trainingGenoMat,
+                                                                              y = trainingEstimatedGVByRep[, traitName],
+                                                                              family = "gaussian", alpha = alpha,
+                                                                              standardize = FALSE,
+                                                                              standardize.response = TRUE)
 
-                                               return(EMMRes)
+                                               return(glmnetRes)
                                              }, simplify = FALSE)
             } else {
               mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
                                   FUN = function(traitName) {
-                                    EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
-                                                                X = NULL, ZETA = ZETA, REML = TRUE)
+                                    glmnetRes <- glmnet::cv.glmnet(x = trainingGenoMat,
+                                                                   y = trainingEstimatedGVByRep[, traitName],
+                                                                   family = "gaussian", alpha = alpha,
+                                                                   standardize = FALSE,
+                                                                   standardize.response = TRUE)
 
-                                    return(EMMRes)
+                                    return(glmnetRes)
                                   }, simplify = FALSE)
             }
 
-            mrkEffMat <- do.call(what = cbind,
-                                 args = lapply(X = mrkEstRes,
-                                               FUN = function(EMMRes) {
-                                                 gvEst <- EMMRes$u
-                                                 intercept <- EMMRes$beta
-                                                 mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
-                                                                         KInv) %*% gvEst)[, 1]
-                                                 mrkEffEst <- c(Intercept = intercept, mrkEffEst)
+            mrkEffMat0 <- do.call(what = cbind,
+                                  args = lapply(X = mrkEstRes, FUN = function(glmnetRes) {
+                                    mrkEffEst <- as.matrix(coef(glmnetRes, s = glmnetRes$lambda.min))
 
-                                                 return(mrkEffEst)
-                                               }))
+                                    return(mrkEffEst)
+                                  }))
           } else {
-            X <- t(matrix(data = 1,
-                          nrow = nrow(Z),
-                          ncol = 1,
-                          dimnames = list(rownames(Z),
-                                          "Intercept")))
-            mrkEstRes <- EMMREML::emmremlMultivariate(Y = t(trainingEstimatedGVByRep),
-                                                      X = X,
-                                                      Z = t(Z),
-                                                      K = K)
-            gvEst <- t(mrkEstRes$Gpred)
-            intercept <- t(mrkEstRes$Bhat)
-            mrkEffMat <- crossprod(trainingGenoMat / ncol(trainingGenoMat),
-                                   KInv) %*% gvEst
-            mrkEffMat <- rbind(Intercept = intercept, mrkEffEst)
+            mrkEstRes <- glmnet::cv.glmnet(x = trainingGenoMat,
+                                           y = trainingEstimatedGVByRep,
+                                           family = "mgaussian", alpha = alpha,
+                                           standardize = FALSE,
+                                           standardize.response = TRUE)
+            mrkEffList <- coef(mrkEstRes, s = "lambda.min")
+            mrkEffMat0 <- do.call(what = cbind,
+                                  args = lapply(X = mrkEffList, FUN = function(mrkEffEach) {
+                                    mrkEffEst <- as.matrix(mrkEffEach)
+
+                                    return(mrkEffEst)
+                                  }))
           }
-        } else {
-          ETA <- list(A = list(K = K, model = "RKHS"))
+
+          mrkEffSdMat0 <- NULL
+        } else if (methodMLR %in% supportedMethodsBGLR) {
+
+
           if (!multiTrait) {
+            if (methodMLR == "SpikeSlab") {
+              message(paste0("For uni-trait model, `methodMLR = 'SpikeSlab'` is not offered.\n",
+                             "We use `methodMLR = 'BayesC'` instead."))
+              methodMLR <- "BayesC"
+            }
+            ETA <- list(G = list(X = trainingGenoMat, model = methodMLR))
             if (self$verbose) {
               mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
                                              FUN = function(traitName) {
@@ -1176,22 +1006,42 @@ breederInfo <- R6::R6Class(
                                     return(BGLRRes)
                                   }, simplify = FALSE)
             }
-            mrkEffMat <- do.call(what = cbind,
-                                 args = lapply(X = mrkEstRes,
-                                               FUN = function(BGLRRes) {
-                                                 gvEst <- BGLRRes$ETA$A$u
-                                                 intercept <- BGLRRes$mu
-                                                 mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
-                                                                         KInv) %*% gvEst)[, 1]
-                                                 mrkEffEst <- c(Intercept = intercept, mrkEffEst)
+            mrkEffMat0 <- do.call(what = cbind,
+                                  args = lapply(X = mrkEstRes,
+                                                FUN = function(BGLRRes) {
+                                                  mrkEffEst <- c(Intercept = BGLRRes$mu,
+                                                                 BGLRRes$ETA$G$b)
 
-                                                 return(mrkEffEst)
-                                               }))
+                                                  return(mrkEffEst)
+                                                }))
+            mrkEffSdMat0 <- do.call(what = cbind,
+                                    args = lapply(X = mrkEstRes,
+                                                  FUN = function(BGLRRes) {
+                                                    mrkEffSd <- c(Intercept = BGLRRes$SD.mu,
+                                                                  BGLRRes$ETA$G$SD.b)
+
+                                                    return(mrkEffSd)
+                                                  }))
           } else {
+            if (methodMLR %in% c("BL", "BayesB", "BayesC")) {
+              message(paste0("For multi-trait model, `methodMLR = 'BL'`, `methodMLR = 'BayesB'`, `methodMLR = 'BayesC'` are not offered.\n",
+                             "We use `methodMLR = 'SpikeSlab'` instead. This is equivalent to BayesC model."))
+              methodMLR <- "SpikeSlab"
+            } else if (methodMLR == "BayesA") {
+              message(paste0("For multi-trait model, `methodMLR = 'BayesA'` is not offered.\n",
+                             "We use `methodMLR = 'BRR'` instead."))
+              methodMLR <- "BRR"
+            }
+
+            ETA <- list(G = list(X = trainingGenoMat, model = methodMLR))
             mrkEstRes <- BGLR::Multitrait(y = trainingEstimatedGVByRep,
                                           ETA = ETA, nIter = nIter,
                                           burnIn = burnIn, thin = thin,
                                           saveAt = "", verbose = FALSE)
+            mrkEffMat0 <- rbind(mrkEstRes$mu,
+                                mrkEstRes$ETA$G$beta)
+            mrkEffSdMat0 <- rbind(mrkEstRes$SD.mu,
+                                  mrkEstRes$ETA$G$SD.beta)
             listFiles <- list.files()
             listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
             listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
@@ -1204,23 +1054,220 @@ breederInfo <- R6::R6Class(
             }
             mrkEstRes$traceInfo <- traceInfo
             file.remove(listFilesRemove)
-
-            gvEst <- mrkEstRes$ETA$A$u
-            intercept <- mrkEstRes$mu
-            mrkEffMat <- crossprod(trainingGenoMat / ncol(trainingGenoMat),
-                                   KInv) %*% gvEst
-            mrkEffMat <- rbind(Intercept = intercept, mrkEffMat)
           }
+
+
+
+        } else if (methodMLR == "RR-BLUP") {
+          Z <- trainingGenoMat
+          K <- diag(ncol(Z))
+          rownames(K) <- colnames(K) <- colnames(Z)
+
+          if (!multiTrait) {
+            ZETA <- list(M = list(Z = Z, K = K))
+
+            if (self$verbose) {
+              mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
+                                             FUN = function(traitName) {
+                                               EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
+                                                                           X = NULL, ZETA = ZETA, REML = TRUE)
+
+                                               return(EMMRes)
+                                             }, simplify = FALSE)
+            } else {
+              mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
+                                  FUN = function(traitName) {
+                                    EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
+                                                                X = NULL, ZETA = ZETA, REML = TRUE)
+
+                                    return(EMMRes)
+                                  }, simplify = FALSE)
+            }
+
+            mrkEffMat0 <- do.call(what = cbind,
+                                  args = lapply(X = mrkEstRes,
+                                                FUN = function(EMMRes) {
+                                                  mrkEffEst <- c(Intercept = EMMRes$beta,
+                                                                 EMMRes$u)
+
+                                                  return(mrkEffEst)
+                                                }))
+          } else {
+            X <- t(matrix(data = 1,
+                          nrow = nrow(Z),
+                          ncol = 1,
+                          dimnames = list(rownames(Z),
+                                          "Intercept")))
+            mrkEstRes <- EMMREML::emmremlMultivariate(Y = t(trainingEstimatedGVByRep),
+                                                      X = X,
+                                                      Z = t(Z),
+                                                      K = K)
+
+            mrkEffMat0 <- t(cbind(mrkEstRes$Bhat, mrkEstRes$Gpred))
+          }
+
+          mrkEffSdMat0 <- NULL
+        } else if (methodMLR == "GBLUP") {
+          K <- tcrossprod(trainingGenoMat) / ncol(trainingGenoMat)
+          KInv <- MASS::ginv(K)
+          Z <- diag(nrow(K))
+          rownames(Z) <- colnames(Z) <- rownames(K)
+
+          if (!bayesian) {
+            if (!multiTrait) {
+              ZETA <- list(A = list(Z = Z, K = K))
+
+              if (self$verbose) {
+                mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
+                                               FUN = function(traitName) {
+                                                 EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
+                                                                             X = NULL, ZETA = ZETA, REML = TRUE)
+
+                                                 return(EMMRes)
+                                               }, simplify = FALSE)
+              } else {
+                mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
+                                    FUN = function(traitName) {
+                                      EMMRes <- RAINBOWR::EMM.cpp(y = trainingEstimatedGVByRep[, traitName],
+                                                                  X = NULL, ZETA = ZETA, REML = TRUE)
+
+                                      return(EMMRes)
+                                    }, simplify = FALSE)
+              }
+
+              mrkEffMat0 <- do.call(what = cbind,
+                                    args = lapply(X = mrkEstRes,
+                                                  FUN = function(EMMRes) {
+                                                    gvEst <- EMMRes$u
+                                                    intercept <- EMMRes$beta
+                                                    mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
+                                                                            KInv) %*% gvEst)[, 1]
+                                                    mrkEffEst <- c(Intercept = intercept, mrkEffEst)
+
+                                                    return(mrkEffEst)
+                                                  }))
+            } else {
+              X <- t(matrix(data = 1,
+                            nrow = nrow(Z),
+                            ncol = 1,
+                            dimnames = list(rownames(Z),
+                                            "Intercept")))
+              mrkEstRes <- EMMREML::emmremlMultivariate(Y = t(trainingEstimatedGVByRep),
+                                                        X = X,
+                                                        Z = t(Z),
+                                                        K = K)
+              gvEst <- t(mrkEstRes$Gpred)
+              intercept <- t(mrkEstRes$Bhat)
+              mrkEffMat0 <- crossprod(trainingGenoMat / ncol(trainingGenoMat),
+                                      KInv) %*% gvEst
+              mrkEffMat0 <- rbind(Intercept = intercept, mrkEffEst)
+            }
+          } else {
+            ETA <- list(A = list(K = K, model = "RKHS"))
+            if (!multiTrait) {
+              if (self$verbose) {
+                mrkEstRes <- pbapply::pbsapply(X = colnames(trainingEstimatedGVByRep),
+                                               FUN = function(traitName) {
+                                                 BGLRRes <- BGLR::BGLR(y = trainingEstimatedGVByRep[, traitName],
+                                                                       response_type = "gaussian", ETA = ETA,
+                                                                       nIter = nIter, burnIn = burnIn, thin = thin,
+                                                                       saveAt = "", verbose = FALSE,
+                                                                       rmExistingFiles = TRUE)
+                                                 listFiles <- list.files()
+                                                 listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
+                                                 listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
+                                                                                                 pattern = ".dat")
+                                                 traceInfo <- list()
+                                                 for (listFileNo in 1:length(listFilesRemove)) {
+                                                   datNow <- read.csv(file = listFilesRemove[listFileNo],
+                                                                      header = FALSE)
+                                                   traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
+                                                 }
+                                                 BGLRRes$traceInfo <- traceInfo
+                                                 file.remove(listFilesRemove)
+
+                                                 return(BGLRRes)
+                                               }, simplify = FALSE)
+              } else {
+                mrkEstRes <- sapply(X = colnames(trainingEstimatedGVByRep),
+                                    FUN = function(traitName) {
+                                      BGLRRes <- BGLR::BGLR(y = trainingEstimatedGVByRep[, traitName],
+                                                            response_type = "gaussian", ETA = ETA,
+                                                            nIter = nIter, burnIn = burnIn, thin = thin,
+                                                            saveAt = "", verbose = FALSE,
+                                                            rmExistingFiles = TRUE)
+                                      listFiles <- list.files()
+                                      listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
+                                      listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
+                                                                                      pattern = ".dat")
+                                      traceInfo <- list()
+                                      for (listFileNo in 1:length(listFilesRemove)) {
+                                        datNow <- read.table(file = listFilesRemove[listFileNo],
+                                                             header = FALSE, sep = " ")
+                                        traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
+                                      }
+                                      BGLRRes$traceInfo <- traceInfo
+                                      file.remove(listFilesRemove)
+
+                                      return(BGLRRes)
+                                    }, simplify = FALSE)
+              }
+              mrkEffMat0 <- do.call(what = cbind,
+                                    args = lapply(X = mrkEstRes,
+                                                  FUN = function(BGLRRes) {
+                                                    gvEst <- BGLRRes$ETA$A$u
+                                                    intercept <- BGLRRes$mu
+                                                    mrkEffEst <- (crossprod(trainingGenoMat / ncol(trainingGenoMat),
+                                                                            KInv) %*% gvEst)[, 1]
+                                                    mrkEffEst <- c(Intercept = intercept, mrkEffEst)
+
+                                                    return(mrkEffEst)
+                                                  }))
+            } else {
+              mrkEstRes <- BGLR::Multitrait(y = trainingEstimatedGVByRep,
+                                            ETA = ETA, nIter = nIter,
+                                            burnIn = burnIn, thin = thin,
+                                            saveAt = "", verbose = FALSE)
+              listFiles <- list.files()
+              listFilesRemove <- listFiles[grep(pattern = "*.dat", x = listFiles)]
+              listFilesRemoveNoDat <- stringr::str_remove_all(string = listFilesRemove,
+                                                              pattern = ".dat")
+              traceInfo <- list()
+              for (listFileNo in 1:length(listFilesRemove)) {
+                datNow <- read.table(file = listFilesRemove[listFileNo],
+                                     header = FALSE, sep = " ")
+                traceInfo[[listFilesRemoveNoDat[listFileNo]]] <- datNow
+              }
+              mrkEstRes$traceInfo <- traceInfo
+              file.remove(listFilesRemove)
+
+              gvEst <- mrkEstRes$ETA$A$u
+              intercept <- mrkEstRes$mu
+              mrkEffMat0 <- crossprod(trainingGenoMat / ncol(trainingGenoMat),
+                                      KInv) %*% gvEst
+              mrkEffMat0 <- rbind(Intercept = intercept, mrkEffMat0)
+            }
+          }
+
+          mrkEffSdMat0 <- NULL
         }
 
-        mrkEffSdMat <- NULL
-      }
-      rownames(mrkEffMat) <- c("Intercept", colnames(trainingGenoMat))
-      colnames(mrkEffMat) <- colnames(trainingEstimatedGVByRep)
 
-      if (!is.null(mrkEffSdMat)) {
-        dimnames(mrkEffSdMat) <- dimnames(mrkEffMat)
+        rownames(mrkEffMat0) <- c("Intercept", colnames(trainingGenoMat))
+        colnames(mrkEffMat0) <- colnames(trainingEstimatedGVByRep)
+
+        if (!is.null(mrkEffSdMat0)) {
+          dimnames(mrkEffSdMat0) <- dimnames(mrkEffMat0)
+        }
       }
+
+      mrkEffMat[, conductMrkEffEst] <- mrkEffMat0
+
+      if (!is.null(mrkEffSdMat0)) {
+        mrkEffSdMat[, conductMrkEffEst] <- mrkEffSdMat0
+      }
+
+
 
       ends <- self$specie$lChr
       genoMap <- self$lociInfoFB$genoMapFB
