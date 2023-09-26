@@ -853,7 +853,7 @@ breederInfo <- R6::R6Class(
       varTrainingEstimatedGVByRep <- apply(X = trainingEstimatedGVByRepOri,
                                            MARGIN = 2,
                                            FUN = var)
-      conductMrkEffEst <- varTrainingEstimatedGVByRep == 0
+      conductMrkEffEst <- varTrainingEstimatedGVByRep != 0
 
       trainingGenoMat <- trainingPopOG$genoMat[trainingIndNamesWithPheno, ]
 
