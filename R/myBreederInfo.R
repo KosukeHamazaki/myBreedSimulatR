@@ -1262,6 +1262,8 @@ breederInfo <- R6::R6Class(
           dimnames(mrkEffSdMat0) <- dimnames(mrkEffMat0)
           mrkEffSdMat[, conductMrkEffEst] <- mrkEffSdMat0
         }
+      } else {
+        mrkEstRes <- NULL
       }
 
 
