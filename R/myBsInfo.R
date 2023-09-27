@@ -360,7 +360,7 @@ bsInfo <- R6::R6Class(
 
 
       populations <- list()
-      initPopName <- paste0(popNameBase, "_", 1)
+      initPopName <- paste0(popNameBase, 1)
       initialPopulation <- createPop(geno = geno,
                                      haplo = haplo,
                                      lociInfo = lociInfo,
@@ -407,7 +407,7 @@ bsInfo <- R6::R6Class(
       crossInfoName <- paste0(generation, "_to_", generation + 1)
 
       generation <- generation + 1
-      newPopName <- paste0(self$popNameBase, "_", generation)
+      newPopName <- paste0(self$popNameBase, generation)
       newPop <- population$new(name = newPopName,
                                generation = generation,
                                traitInfo = self$traitInfo,
@@ -491,7 +491,7 @@ bsInfo <- R6::R6Class(
       targetPopNo <- unlist(lapply(stringr::str_split(string = targetPopName,
                                                       pattern = "_"),
                                    function(x) as.numeric(x[2])))
-      popOGName <- paste0(self$popNameBase, "_",
+      popOGName <- paste0(self$popNameBase,
                           paste(targetPopNo, collapse = "_"))
 
       popOverGeneration <- population$new(name = popOGName,

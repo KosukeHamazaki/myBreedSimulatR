@@ -2253,7 +2253,7 @@ breederInfo <- R6::R6Class(
       }
 
 
-      popOGName <- paste0(self$popNameBase, "_",
+      popOGName <- paste0(self$popNameBase,
                           paste(targetPopNo, collapse = "_"))
 
       traitInfo <- self$populationsFB[[1]]$population$traitInfo
