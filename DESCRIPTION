@@ -57,4 +57,4 @@ Maintainers@R: person(given = "Kosuke",
              family = "Hamazaki",
              role = c("aut", "ctb"),
              email = "hamazaki@ut-biomet.org")
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3

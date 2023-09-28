@@ -36,10 +36,24 @@ bsInfo <- R6::R6Class(
     traitInfo = NULL,
     #' @field founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
     founderIsInitPop = NULL,
+    #' @field nGenerationRM [numeric] In this simulation, if `founderIsInitPop = FALSE`, random mating is repeated before setting the initial population.
+    #' In more details, first random mating is repeated `nGenerationRM` times.
+    #' Then, random mating with random selection to resemble a population bottleneck is repeated `nGenerationRSM` times.
+    #' Finally, random mating is repeated `nGenerationRM2` times to remove close family relationships.
+    #' These procedures are similar to Müller et al, G3, 2018.
+    nGenerationRM = NULL,
+    #' @field nGenerationRSM [numeric] Number of generations for random selection and mating
+    nGenerationRSM = NULL,
+    #' @field nGenerationRM2 [numeric] Number of generations for second random mating
+    nGenerationRM2 = NULL,
+    #' @field propSelRS [numeric] Proportion of number p¥of selected individuals for random selection and mating
+    propSelRS = NULL,
     #' @field seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
     seedSimHaplo = NULL,
     #' @field seedSimRM [numeric] Random seed for mate pairs
     seedSimRM = NULL,
+    #' @field seedSimRS [numeric] Random seed for random selection
+    seedSimRS = NULL,
     #' @field seedSimMC [numeric] Random seed for make crosses
     seedSimMC = NULL,
     #' @field popNameBase [character] base of population's name.
@@ -73,8 +87,17 @@ bsInfo <- R6::R6Class(
     #' If you use real data, you must specify `geno` or `haplo` argument.
     #' @param haplo [array] haplotype of the individuals scored with 0 and 1 (3-dimensional array).
     #' @param founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
+    #' @param nGenerationRM [numeric] In this simulation, if `founderIsInitPop = FALSE`, random mating is repeated before setting the initial population.
+    #' In more details, first random mating is repeated `nGenerationRM` times.
+    #' Then, random mating with random selection to resemble a population bottleneck is repeated `nGenerationRSM` times.
+    #' Finally, random mating is repeated `nGenerationRM2` times to remove close family relationships.
+    #' These procedures are similar to Müller et al, G3, 2018.
+    #' @param nGenerationRSM [numeric] Number of generations for random selection and mating
+    #' @param nGenerationRM2 [numeric] Number of generations for second random mating
+    #' @param propSelRS [numeric] Proportion of number p¥of selected individuals for random selection and mating
     #' @param seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
     #' @param seedSimRM [numeric] Random seed for mate pairs
+    #' @param seedSimRS [numeric] Random seed for random selection
     #' @param seedSimMC [numeric] Random seed for make crosses
     #' @param popNameBase [character] base of population's name.
     #' @param initIndNames [character] NULL or character string vector specifying the individuals
@@ -166,9 +189,14 @@ bsInfo <- R6::R6Class(
                           traitInfo,
                           geno = NULL,
                           haplo = NULL,
-                          founderIsInitPop = TRUE,
+                          founderIsInitPop = FALSE,
+                          nGenerationRM = 100,
+                          nGenerationRSM = 10,
+                          nGenerationRM2 = 3,
+                          propSelRS = 0.1,
                           seedSimHaplo = NA,
                           seedSimRM = NA,
+                          seedSimRS = NA,
                           seedSimMC = NA,
                           popNameBase = "Population",
                           initIndNames = NULL,
@@ -213,6 +241,31 @@ bsInfo <- R6::R6Class(
           seedSimHaplo <- sample(x = 1e9, size = 1)
         }
       }
+
+
+      # nGenerationRM
+      if (!is.null(nGenerationRM)) {
+        stopifnot(is.numeric(nGenerationRM))
+        nGenerationRM <- floor(nGenerationRM)
+        stopifnot(nGenerationRM >= 0)
+      }
+
+
+      # nGenerationRSM
+      if (!is.null(nGenerationRSM)) {
+        stopifnot(is.numeric(nGenerationRSM))
+        nGenerationRSM <- floor(nGenerationRSM)
+        stopifnot(nGenerationRSM >= 0)
+      }
+
+
+      # nGenerationRM2
+      if (!is.null(nGenerationRM2)) {
+        stopifnot(is.numeric(nGenerationRM2))
+        nGenerationRM2 <- floor(nGenerationRM2)
+        stopifnot(nGenerationRM2 >= 0)
+      }
+
 
       if (!lociInfo$specie$simInfo$simGeno) {
         if (is.null(geno) & is.null(haplo)) {
@@ -340,6 +393,16 @@ bsInfo <- R6::R6Class(
         warning('Some markers of "lociInfo" are not in "geno"')
       }
 
+      # propSelRS
+      if (!is.null(propSelRS)) {
+        stopifnot(is.numeric(propSelRS))
+        stopifnot(propSelRS >= 0)
+        stopifnot(propSelRS <= 1)
+      }
+
+
+
+      # seedSimRM
       if (!is.null(seedSimRM)) {
         if (!is.na(seedSimRM)) {
           stopifnot(is.numeric(seedSimRM))
@@ -349,6 +412,17 @@ bsInfo <- R6::R6Class(
         }
       }
 
+      # seedSimRS
+      if (!is.null(seedSimRS)) {
+        if (!is.na(seedSimRS)) {
+          stopifnot(is.numeric(seedSimRS))
+          seedSimRS <- floor(seedSimRS)
+        } else {
+          seedSimRS <- sample(x = 1e9, size = 1)
+        }
+      }
+
+      # seedSimMC
       if (!is.null(seedSimMC)) {
         if (!is.na(seedSimMC)) {
           stopifnot(is.numeric(seedSimMC))
@@ -358,7 +432,6 @@ bsInfo <- R6::R6Class(
         }
       }
 
-
       populations <- list()
       initPopName <- paste0(popNameBase, 1)
       initialPopulation <- createPop(geno = geno,
@@ -366,7 +439,12 @@ bsInfo <- R6::R6Class(
                                      lociInfo = lociInfo,
                                      traitInfo = traitInfo,
                                      founderIsInitPop = founderIsInitPop,
+                                     nGenerationRM = nGenerationRM,
+                                     nGenerationRSM = nGenerationRSM,
+                                     nGenerationRM2 = nGenerationRM2,
+                                     propSelRS = propSelRS,
                                      seedSimRM = seedSimRM,
+                                     seedSimRS = seedSimRS,
                                      seedSimMC = seedSimMC,
                                      indNames = initIndNames,
                                      popName = initPopName,
@@ -384,8 +462,13 @@ bsInfo <- R6::R6Class(
       self$crossInfoList <- list()
       self$popNameBase <- popNameBase
       self$founderIsInitPop <- founderIsInitPop
+      self$nGenerationRM <- nGenerationRM
+      self$nGenerationRSM <- nGenerationRSM
+      self$nGenerationRM2 <- nGenerationRM2
+      self$propSelRS <- propSelRS
       self$seedSimHaplo <- seedSimHaplo
       self$seedSimRM <- seedSimRM
+      self$seedSimRS <- seedSimRS
       self$seedSimMC <- seedSimMC
       self$generation <- 1
       self$herit <- herit

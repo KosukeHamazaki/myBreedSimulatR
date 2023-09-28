@@ -179,6 +179,8 @@ simBsOpt <- R6::R6Class(
     weightedAllocationMethodList = NULL,
     #' @field traitNoRAList [list] (list of) Trait No of your interest for resource allocation for each generation
     traitNoRAList = NULL,
+    #' @field minimumUnitAllocateVec [numeric] (vector of) Minimum number of allocated progenies for each pair.
+    minimumUnitAllocateVec = NULL,
     #' @field includeGVPVec [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair for each generation
     includeGVPVec = NULL,
     #' @field nNextPopVec [numeric] Number of progenies for the next generation  for each generation
@@ -331,6 +333,7 @@ simBsOpt <- R6::R6Class(
     #' @param allocateMethodVec [character] Allocation method for each generation
     #' @param weightedAllocationMethodList [list] (list of) Which selection index will be used for weighted resource allocation for each generation
     #' @param traitNoRAList [list] (list of) Trait No of your interest for resource allocation for each generation
+    #' @param minimumUnitAllocateVec [numeric] (vector of) Minimum number of allocated progenies for each pair.
     #' @param includeGVPVec [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair for each generation
     #' @param nNextPopVec [numeric] Number of progenies for the next generation  for each generation
     #' @param nameMethod [character] Method for naming individuals
@@ -493,6 +496,7 @@ simBsOpt <- R6::R6Class(
                           allocateMethodVec = NULL,
                           weightedAllocationMethodList = NULL,
                           traitNoRAList = NULL,
+                          minimumUnitAllocateVec = NULL,
                           includeGVPVec = FALSE,
                           nNextPopVec = NULL,
                           nameMethod = "pairBase",
@@ -1681,6 +1685,25 @@ simBsOpt <- R6::R6Class(
       names(traitNoRAList) <- 1:nGenerationProceedSimulation
 
 
+      # minimumUnitAllocateVec
+      if (!is.null(minimumUnitAllocateVec)) {
+        stopifnot(is.numeric(minimumUnitAllocateVec))
+        minimumUnitAllocateVec <- floor(minimumUnitAllocateVec)
+        stopifnot(all(minimumUnitAllocateVec >= 1))
+      } else {
+        minimumUnitAllocateVec <- 1
+        message(paste0("`minimumUnitAllocateVec` is not specified. We substitute `minimumUnitAllocateVec = ",
+                       minimumUnitAllocateVec,"` instead."))
+      }
+
+      if (!(length(minimumUnitAllocateVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(minimumUnitAllocateVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(minimumUnitAllocateVec) == 1) {
+        minimumUnitAllocateVec <- rep(minimumUnitAllocateVec, nGenerationProceed)
+      }
+      names(minimumUnitAllocateVec) <- 1:nGenerationProceed
+
+
       # includeGVPVec
       stopifnot(is.logical(includeGVPVec))
 
@@ -2101,6 +2124,7 @@ simBsOpt <- R6::R6Class(
       self$allocateMethodVec <- allocateMethodVec
       self$weightedAllocationMethodList <- weightedAllocationMethodList
       self$traitNoRAList <- traitNoRAList
+      self$minimumUnitAllocateVec <- minimumUnitAllocateVec
       self$includeGVPVec <- includeGVPVec
       self$nNextPopVec <- nNextPopVec
       self$nameMethod <- nameMethod
@@ -2277,6 +2301,7 @@ simBsOpt <- R6::R6Class(
       allocateMethodVec <- self$allocateMethodVec
       weightedAllocationMethodList <- self$weightedAllocationMethodList
       traitNoRAList <- self$traitNoRAList
+      minimumUnitAllocateVec <- self$minimumUnitAllocateVec
       includeGVPVec <- self$includeGVPVec
       nNextPopVec <- self$nNextPopVec
       nameMethod <- self$nameMethod
@@ -2448,6 +2473,7 @@ simBsOpt <- R6::R6Class(
                                                includeGVPVec = includeGVPVec,
                                                traitNoRAList = traitNoRAList,
                                                hList = hListOpt,
+                                               minimumUnitAllocateVec = minimumUnitAllocateVec,
                                                nNextPopVec = nNextPopVec,
                                                nameMethod = nameMethod,
                                                nCores = nCoresPerOptimization,
@@ -2681,6 +2707,7 @@ simBsOpt <- R6::R6Class(
                                                                nProgenies = NULL,
                                                                traitNoRA = traitNoRAList[[hCount]],
                                                                h = hListOpt[[hCount]],
+                                                               minimumUnitAllocate = minimumUnitAllocateVec[hCount],
                                                                includeGVP = includeGVPVec[hCount],
                                                                nNextPop = nNextPopVec[hCount],
                                                                nPairs = NULL,
@@ -3384,6 +3411,7 @@ simBsOpt <- R6::R6Class(
                                                includeGVPVec = self$includeGVPVec[1:nGenerationProceedSimulation],
                                                traitNoRAList = self$traitNoRAList[1:nGenerationProceedSimulation],
                                                hList = hList[1:nGenerationProceedSimulation],
+                                               minimumUnitAllocateVec = self$minimumUnitAllocateVec[1:nGenerationProceedSimulation],
                                                nNextPopVec = self$nNextPopVec[1:nGenerationProceedSimulation],
                                                nameMethod = self$nameMethod,
                                                nCores = nCoresForOneMrkEff,
@@ -3567,6 +3595,7 @@ simBsOpt <- R6::R6Class(
       allocateMethodVec <- self$allocateMethodVec
       weightedAllocationMethodList <- self$weightedAllocationMethodList
       traitNoRAList <- self$traitNoRAList
+      minimumUnitAllocateVec <- self$minimumUnitAllocateVec
       includeGVPVec <- self$includeGVPVec
       nNextPopVec <- self$nNextPopVec
       nameMethod <- self$nameMethod
@@ -3715,6 +3744,7 @@ simBsOpt <- R6::R6Class(
                                                        nProgenies = NULL,
                                                        traitNoRA = traitNoRAList[[hCount]],
                                                        h = hListOpt[[hCount]],
+                                                       minimumUnitAllocate = minimumUnitAllocateVec[hCount],
                                                        includeGVP = includeGVPVec[hCount],
                                                        nNextPop = nNextPopVec[hCount],
                                                        nPairs = NULL,

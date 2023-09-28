@@ -76,6 +76,8 @@ crossInfo <- R6::R6Class(
     traitNoRA = NULL,
     #' @field h [numeric] Hyperprameter which determines how parent pair with high BV is emphasized when producing progenies
     h = NULL,
+    #' @field minimumUnitAllocate [numeric] Minimum number of allocated progenies for each pair.
+    minimumUnitAllocate = NULL,
     #' @field includeGVP [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair
     includeGVP = NULL,
     #' @field nNextPop [numeric] Number of progenies for the next generation
@@ -145,6 +147,7 @@ crossInfo <- R6::R6Class(
     #' @param nProgenies [numeric] Number of progenies for each pair
     #' @param traitNoRA [numeric] Trait No of your interest for resource allocation
     #' @param h [numeric] Hyperparameter which determines how parent pair with high BV is emphasized when producing progenies
+    #' @param minimumUnitAllocate [numeric] Minimum number of allocated progenies for each pair.
     #' @param includeGVP [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair
     #' @param nNextPop [numeric] Number of progenies for the next generation
     #' @param nPairs [numeric] Number of parent pairs for the next generation
@@ -233,6 +236,7 @@ crossInfo <- R6::R6Class(
                           nProgenies = NULL,
                           traitNoRA = NULL,
                           h = NULL,
+                          minimumUnitAllocate = NULL,
                           includeGVP = FALSE,
                           nNextPop = NULL,
                           nPairs = NULL,
@@ -743,6 +747,16 @@ crossInfo <- R6::R6Class(
       }
 
 
+      # minimumUnitAllocate
+      if (!is.na(minimumUnitAllocate)) {
+        stopifnot(is.numeric(minimumUnitAllocate))
+        minimumUnitAllocate <- floor(minimumUnitAllocate)
+        stopifnot(minimumUnitAllocate >= 1)
+      } else {
+        minimumUnitAllocate <- 1
+        message(paste0("`minimumUnitAllocate` is not specified. We substitute `minimumUnitAllocate = ",
+                       minimumUnitAllocate,"` instead."))
+      }
 
 
 
@@ -1021,6 +1035,7 @@ crossInfo <- R6::R6Class(
       self$weightedAllocationMethod <- weightedAllocationMethod
       self$nProgenies <- nProgenies
       self$h <- h
+      self$minimumUnitAllocate <- minimumUnitAllocate
       self$includeGVP <- includeGVP
       self$nNextPop <- nNextPop
       self$nPairs <- nPairs
@@ -1561,19 +1576,28 @@ crossInfo <- R6::R6Class(
       allocateMethod <- self$allocateMethod
       nNextPop <- self$nNextPop
       h <- self$h
+      minimumUnitAllocate <- self$minimumUnitAllocate
       nameMethod <- self$nameMethod
       weightedAllocationMethod <- self$weightedAllocationMethod
       nPairs <- nrow(crosses0)
 
       if (allocateMethod == "equalAllocation") {
-        crossesSorted <- crosses0
+        crossesSorted <- crosses0[sample(1:nrow(crosses0)), , drop = FALSE]
 
         nProgenyPerPair <- nNextPop %/% nPairs
         nProgenies <- rep(nProgenyPerPair, nPairs)
         nResids <- nNextPop %% nPairs
 
         if (nResids > 0) {
-          nProgenies[1:nResids] <- nProgenies[1:nResids] + 1
+          nResidsSurplus <- nResids %% minimumUnitAllocate
+          nResidsQuotient <- nResids %/% minimumUnitAllocate
+          residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+
+          if (nResidsSurplus > 0) {
+            residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
+          }
+
+          nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
         }
       } else if (allocateMethod == "weightedAllocation") {
         BVAll <- NULL
@@ -1656,15 +1680,36 @@ crossInfo <- R6::R6Class(
 
 
         weightedBVEachPair <- as.numeric(BVEachPair %*% as.matrix(h))
-        nProgenies0 <- floor(nNextPop * exp(weightedBVEachPair) / sum(exp(weightedBVEachPair)))
+
+        nProgenies0 <- round(nNextPop * exp(weightedBVEachPair) / sum(exp(weightedBVEachPair)) / minimumUnitAllocate) * minimumUnitAllocate
+
         crossesSorted <- crosses0[order(weightedBVEachPair, decreasing = TRUE), ]
         nProgenies <- nProgenies0[order(weightedBVEachPair, decreasing = TRUE)]
-
         nResids <- nNextPop - sum(nProgenies0)
 
         if (nResids > 0) {
-          nProgenies[1:nResids] <- nProgenies[1:nResids] + 1
+          nResidsSurplus <- nResids %% minimumUnitAllocate
+          nResidsQuotient <- nResids %/% minimumUnitAllocate
+          residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+
+          if (nResidsSurplus > 0) {
+            residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
+          }
+
+          nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+        } else if (nResids < 0) {
+          nResidsSurplus <- abs(nResids) %% minimumUnitAllocate
+          nResidsQuotient <- abs(nResids) %/% minimumUnitAllocate
+
+          residsMinus <- c(rep(1, nResidsSurplus),
+                           rep(minimumUnitAllocate, nResidsQuotient))
+
+          crossNoWithNonZero <- which(nProgenies != 0)
+
+          nProgenies[rev(rev(crossNoWithNonZero)[1:length(residsMinus)])] <-
+            nProgenies[rev(rev(crossNoWithNonZero)[1:length(residsMinus)])] - residsMinus
         }
+
       } else if (allocateMethod == "userSpecific") {
         crossesSorted <- crosses0
         nProgenies <- self$nProgenies

@@ -1167,8 +1167,17 @@ population <- R6::R6Class(
 #' @param traitInfo [traitInfo class] Specific information of traits
 #'   (see:\link[myBreedSimulatR]{traitInfo})
 #' @param founderIsInitPop [logical] Founder haplotype will be regarded as first population or not.
+#' @param nGenerationRM [numeric] In this simulation, if `founderIsInitPop = FALSE`, random mating is repeated before setting the initial population.
+#' In more details, first random mating is repeated `nGenerationRM` times.
+#' Then, random mating with random selection to resemble a population bottleneck is repeated `nGenerationRSM` times.
+#' Finally, random mating is repeated `nGenerationRM2` times to remove close family relationships.
+#' These procedures are similar to Müller et al, G3, 2018.
+#' @param nGenerationRSM [numeric] Number of generations for random selection and mating
+#' @param nGenerationRM2 [numeric] Number of generations for second random mating
+#' @param propSelRS [numeric] Proportion of number p¥of selected individuals for random selection and mating
 #' @param seedSimHaplo [numeric] Random seed for selecting haplotype from founder haplotype
 #' @param seedSimRM [numeric] Random seed for mate pairs
+#' @param seedSimRS [numeric] Random seed for random selection
 #' @param seedSimMC [numeric] Random seed for make crosses
 #' @param indNames [character] NULL or character string vector specifying the individuals
 #'   names. If NULL, \code{rownames(geno)} will be used.
@@ -1239,14 +1248,19 @@ createPop <- function(geno = NULL,
                       lociInfo,
                       traitInfo = NULL,
                       founderIsInitPop = FALSE,
+                      nGenerationRM = 100,
+                      nGenerationRSM = 10,
+                      nGenerationRM2 = 3,
+                      propSelRS = 0.1,
                       seedSimHaplo = NA,
                       seedSimRM = NA,
+                      seedSimRS = NA,
                       seedSimMC = NA,
                       indNames = NULL,
                       popName = NULL,
                       verbose = TRUE) {
   if (verbose) {
-    cat("Create population: Initialisation...\n")
+    cat("Create population: Initialization...\n")
   }
   # check parameters:
   if (class(lociInfo)[1] != "lociInfo") {
@@ -1272,6 +1286,55 @@ createPop <- function(geno = NULL,
     }
   }
 
+  # seedSimHaplo
+  if (!is.null(seedSimHaplo)) {
+    if (!is.na(seedSimHaplo)) {
+      stopifnot(is.numeric(seedSimHaplo))
+      seedSimHaplo <- floor(seedSimHaplo)
+    } else {
+      seedSimHaplo <- sample(x = 1e9, size = 1)
+    }
+  }
+
+
+  # nGenerationRM
+  if (!is.null(nGenerationRM)) {
+    stopifnot(is.numeric(nGenerationRM))
+    nGenerationRM <- floor(nGenerationRM)
+    stopifnot(nGenerationRM >= 0)
+  }
+
+
+  # nGenerationRSM
+  if (!is.null(nGenerationRSM)) {
+    stopifnot(is.numeric(nGenerationRSM))
+    nGenerationRSM <- floor(nGenerationRSM)
+    stopifnot(nGenerationRSM >= 0)
+  }
+
+
+  # nGenerationRM2
+  if (!is.null(nGenerationRM2)) {
+    stopifnot(is.numeric(nGenerationRM2))
+    nGenerationRM2 <- floor(nGenerationRM2)
+    stopifnot(nGenerationRM2 >= 0)
+  }
+
+
+  if (all(c(nGenerationRM, nGenerationRSM, nGenerationRM2) == 0)) {
+    if (!founderIsInitPop) {
+      message("Because you set all the generations for random mating = 0, `founderIsInitPop` is set as TRUE.")
+    }
+    founderIsInitPop <- TRUE
+  }
+
+  if (founderIsInitPop) {
+    if (!all(c(nGenerationRM, nGenerationRSM, nGenerationRM2) == 0)) {
+      message("Because you set `founderIsInitPop = TRUE`, all the generations for random mating is replaced by 0")
+    }
+  }
+
+  # geno & haplo
   if (!lociInfo$specie$simInfo$simGeno) {
     if (is.null(geno) & is.null(haplo)) {
       stop("If you use real data, you must specify `geno` or `haplo` argument!")
@@ -1288,6 +1351,7 @@ createPop <- function(geno = NULL,
         stop("`haplo` object must be 3-dimensional array!")
       }
     }
+
 
     if (is.null(haplo)) {
       if (is.data.frame(geno)) {
@@ -1484,18 +1548,28 @@ createPop <- function(geno = NULL,
   }
 
   if (founderIsInitPop) {
-    newPop <- population$new(name = popName, generation = 1,
+    popNow <- population$new(name = popName, generation = 1,
                              traitInfo = traitInfo, crossInfo = NULL,
                              inds = listInds, verbose = verbose)
   } else {
     if (verbose) {
       cat("\nCreate population: Create initial population object (generation = 0)...\n")
     }
+
     initPop <- population$new(name = "0th population", generation = 0,
                               traitInfo = traitInfo, crossInfo = NULL,
                               inds = listInds, verbose = verbose)
 
+    # propSelRS
+    if (!is.null(propSelRS)) {
+      stopifnot(is.numeric(propSelRS))
+      stopifnot(propSelRS >= 0)
+      stopifnot(propSelRS <= 1)
+    }
 
+
+
+    # seedSimRM
     if (!is.null(seedSimRM)) {
       if (!is.na(seedSimRM)) {
         stopifnot(is.numeric(seedSimRM))
@@ -1505,6 +1579,17 @@ createPop <- function(geno = NULL,
       }
     }
 
+    # seedSimRS
+    if (!is.null(seedSimRS)) {
+      if (!is.na(seedSimRS)) {
+        stopifnot(is.numeric(seedSimRS))
+        seedSimRS <- floor(seedSimRS)
+      } else {
+        seedSimRS <- sample(x = 1e9, size = 1)
+      }
+    }
+
+    # seedSimMC
     if (!is.null(seedSimMC)) {
       if (!is.na(seedSimMC)) {
         stopifnot(is.numeric(seedSimMC))
@@ -1516,51 +1601,124 @@ createPop <- function(geno = NULL,
 
     if (verbose) {
       cat("\nCreate population: Initialize population by random mating...\n")
+      cat(paste0("Number of first random mating: ", nGenerationRM, "\n"))
     }
-    crossInfoNow <- crossInfo$new(parentPopulation = initPop,
-                                  nSelectionWays = 1,
-                                  selectionMethod = "nonSelection",
-                                  traitNoSel = 1,
-                                  userSI = NULL,
-                                  lociEffects = NULL,
-                                  blockSplitMethod = "nMrkInBlock",
-                                  nMrkInBlock = 10,
-                                  minimumSegmentLength = 5,
-                                  nSelInitOPV = nrow(haplo),
-                                  nIterOPV = 1e04,
-                                  nProgeniesEMBV = 50,
-                                  nIterEMBV = 5,
-                                  nCoresEMBV = 1,
-                                  clusteringForSel = FALSE,
-                                  nCluster = 1,
-                                  nTopCluster = 1,
-                                  nTopEach = nrow(haplo),
-                                  nSel = nrow(haplo),
-                                  multiTraitsEvalMethod = "sum",
-                                  hSel = 1,
-                                  matingMethod = "randomMate",
-                                  allocateMethod = "equalAllocation",
-                                  weightedAllocationMethod = NULL,
-                                  nProgenies = NULL,
-                                  traitNoRA = 1,
-                                  h = 0.1,
-                                  includeGVP = FALSE,
-                                  nNextPop = nrow(haplo),
-                                  nPairs = NULL,
-                                  nameMethod = "individualBase",
-                                  indNames = indNames,
-                                  seedSimRM = seedSimRM,
-                                  seedSimMC = seedSimMC,
-                                  selCands = NULL,
-                                  crosses = NULL,
-                                  verbose = verbose)
 
-    newPop <- population$new(name = popName,
-                             generation = 1,
-                             traitInfo = crossInfoNow$parentPopulation$traitInfo,
-                             crossInfo = crossInfoNow,
-                             verbose = verbose)
+
+    proceedGen <- function(proceedType) {
+      nNextPop <- nrow(haplo)
+      if (proceedType == "randomMate") {
+        selectionMethod <- "nonSelection"
+        nSel <- nNextPop
+        nGenerationProceed <- nGenerationRM
+      } else if (proceedType == "randomSelMate") {
+        selectionMethod <- "userSpecific"
+        nSel <- round(nNextPop * propSelRS)
+        nGenerationProceed <- nGenerationRSM
+      } else if (proceedType == "randomMate2") {
+        selectionMethod <- "nonSelection"
+        nSel <- nNextPop
+        nGenerationProceed <- nGenerationRM2
+      }
+
+      for (generationProceedNo in 1:nGenerationProceed) {
+        generation <- popNow$generation + 1
+        if (generation == nGenerationTotal) {
+          generation <- 1
+          indNamesNow <- indNames
+        } else {
+          indNamesNow <- .charSeq(paste0("G", generation, "_"),
+                                  seq(nNextPop))
+        }
+
+        if (proceedType == "randomSelMate") {
+          set.seed(seedSimRS)
+          selCands <- sample(x = names(popNow$inds),
+                             size = nSel,
+                             replace = FALSE)
+        } else {
+          selCands <- NULL
+        }
+
+
+        crossInfoNow <- crossInfo$new(parentPopulation = popNow,
+                                      nSelectionWays = 1,
+                                      selectionMethod = selectionMethod,
+                                      traitNoSel = 1,
+                                      userSI = NULL,
+                                      lociEffects = NULL,
+                                      blockSplitMethod = "nMrkInBlock",
+                                      nMrkInBlock = 1,
+                                      minimumSegmentLength = 1,
+                                      nSelInitOPV = nNextPop,
+                                      nIterOPV = 1e04,
+                                      nProgeniesEMBV = 50,
+                                      nIterEMBV = 5,
+                                      nCoresEMBV = 1,
+                                      clusteringForSel = FALSE,
+                                      nCluster = 1,
+                                      nTopCluster = 1,
+                                      nTopEach = nNextPop,
+                                      nSel = nSel,
+                                      multiTraitsEvalMethod = "sum",
+                                      hSel = 1,
+                                      matingMethod = "randomMate",
+                                      allocateMethod = "equalAllocation",
+                                      weightedAllocationMethod = NULL,
+                                      nProgenies = NULL,
+                                      traitNoRA = 1,
+                                      h = 0.1,
+                                      minimumUnitAllocate = 1,
+                                      includeGVP = FALSE,
+                                      nNextPop = nNextPop,
+                                      nPairs = NULL,
+                                      nameMethod = "individualBase",
+                                      indNames = indNamesNow,
+                                      seedSimRM = seedSimRM,
+                                      seedSimMC = seedSimMC,
+                                      selCands = selCands,
+                                      crosses = NULL,
+                                      verbose = FALSE)
+
+        popNow <- population$new(name = popName,
+                                 generation = generation,
+                                 traitInfo = crossInfoNow$parentPopulation$traitInfo,
+                                 crossInfo = crossInfoNow,
+                                 verbose = FALSE)
+      }
+
+      return(popNow)
+    }
+
+    nGenerationTotal <- nGenerationRM + nGenerationRSM + nGenerationRM2
+
+    if (verbose) {
+      cat("\nCreate population: Initialize population by random mating...\n")
+    }
+    popNow <- initPop
+
+    if (nGenerationRM > 0) {
+      if (verbose) {
+        cat(paste0("Number of first random mating: ", nGenerationRM, "\n"))
+      }
+      popNow <- proceedGen("randomMate")
+    }
+
+    if (nGenerationRSM > 0) {
+      if (verbose) {
+        cat(paste0("Number of random selection and mating: ", nGenerationRSM, "\n"))
+      }
+      popNow <- proceedGen("randomSelMate")
+    }
+
+    if (nGenerationRM2 > 0) {
+      if (verbose) {
+        cat(paste0("Number of second random mating: ", nGenerationRM2, "\n"))
+      }
+      popNow <- proceedGen("randomMate2")
+    }
   }
 
-  return(newPop)
+
+  return(popNow)
 }
