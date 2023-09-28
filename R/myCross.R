@@ -748,7 +748,7 @@ crossInfo <- R6::R6Class(
 
 
       # minimumUnitAllocate
-      if (!is.na(minimumUnitAllocate)) {
+      if (!is.null(minimumUnitAllocate)) {
         stopifnot(is.numeric(minimumUnitAllocate))
         minimumUnitAllocate <- floor(minimumUnitAllocate)
         stopifnot(minimumUnitAllocate >= 1)
