@@ -1599,12 +1599,6 @@ createPop <- function(geno = NULL,
       }
     }
 
-    if (verbose) {
-      cat("\nCreate population: Initialize population by random mating...\n")
-      cat(paste0("Number of first random mating: ", nGenerationRM, "\n"))
-    }
-
-
     proceedGen <- function(proceedType) {
       nNextPop <- nrow(haplo)
       if (proceedType == "randomMate") {
