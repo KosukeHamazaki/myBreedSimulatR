@@ -224,11 +224,13 @@ bsInfo <- R6::R6Class(
       }
 
       # traitInfo class
-      if (class(traitInfo)[1] != "traitInfo") {
-        stop(paste('class(traitInfo)[1] != "traitInfo"\n"traitInfo" must be a',
-                   'traitInfo object see: ?traitInfo'))
+      if (!is.null(traitInfo)) {
+        if (class(traitInfo)[1] != "traitInfo") {
+          stop(paste('class(traitInfo)[1] != "traitInfo"\n"traitInfo" must be a',
+                     'traitInfo object see: ?traitInfo'))
+        }
       }
-
+      
 
       ploidy <- lociInfo$specie$ploidy
 
