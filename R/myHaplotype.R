@@ -59,7 +59,7 @@ haplotype <- R6::R6Class(
     #' myLoci <- lociInfo$new(genoMap = NULL, specie = mySpec)
     #'
     #' ### simulate haplotype
-    #' rawHaplo <- matrix(sample(c(0, 1), (3 + 4 + 5) * 3, replace = TRUE),
+    #' rawHaplo <- matrix(sample(c(0, 1), (3 + 4 + 5) * 2, replace = TRUE),
     #'                    nrow = 2)
     #' colnames(rawHaplo) <- paste0("Locus_", 1:(3 + 4 + 5))
     #'

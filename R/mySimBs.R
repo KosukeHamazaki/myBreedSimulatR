@@ -1602,12 +1602,12 @@ simBs <- R6::R6Class(
       # estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]]$testingEstimatedGVByMLR)
 
       self$computeLociEffInit()
-      lociEffectsInit <- self$lociEffectsInit
+      lociEffects <- self$lociEffectsInit
       genoMatNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$genoMat
       genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                  genoMatNow)
 
-      estimatedGVMatInit <- list(genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit)
+      estimatedGVMatInit <- list(genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects)
       names(estimatedGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
       names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
@@ -1929,7 +1929,7 @@ simBs <- R6::R6Class(
                 genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                            genoMatNow)
 
-                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
+                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
             }
@@ -1983,7 +1983,7 @@ simBs <- R6::R6Class(
                 genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                            genoMatNow)
 
-                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
+                estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
 
@@ -2660,7 +2660,7 @@ simBs <- R6::R6Class(
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
 
-          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
+          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
       }
@@ -2714,7 +2714,7 @@ simBs <- R6::R6Class(
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
 
-          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
+          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
 
@@ -2898,7 +2898,7 @@ simBs <- R6::R6Class(
                                          genoMatNow <- eachPop$genoMat
                                          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                                                     genoMatNow)
-                                         estimatedGVMatEachPop <- genoMatWithIntNow[, rownames(lociEffectsInit)] %*% lociEffectsInit
+                                         estimatedGVMatEachPop <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
 
                                          return(estimatedGVMatEachPop)
                                        })
