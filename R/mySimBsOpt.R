@@ -2559,6 +2559,8 @@ simBsOpt <- R6::R6Class(
             # }
 
             iterName <- iterNames[iterNo]
+            hVecOpt <- hVecOptsList[["Initial"]]
+            optimalHyperParamMat <- self$optimalHyperParamMatsList[["Initial"]]
             if (is.null(hVecOptsList[[iterName]])) {
               hVecOptsList[[iterName]] <- list()
             }
@@ -3216,7 +3218,7 @@ simBsOpt <- R6::R6Class(
         trueGVSummaryMeanDf$Population <- factor(trueGVSummaryMeanDf$Population, levels = dimnamesSummaryMean[[3]])
 
         trueGVSummaryMeanDfTarget <- trueGVSummaryMeanDf[trueGVSummaryMeanDf$Trait %in% targetTraitName, ]
-        trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget, 3)
+        trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget$Value, 3)
         plt <- plot_ly(
           data = trueGVSummaryMeanDfTarget,
           x = ~ Population,
@@ -3622,6 +3624,7 @@ simBsOpt <- R6::R6Class(
       soln <- self$solnInit
       hVecOpt <- soln$par
       hVecOptsList[["Initial"]] <- hVecOpt
+      optimalHyperParamMat <- self$optimalHyperParamMatsList[["Initial"]]
 
 
       iterName <- iterNames[iterNo]
@@ -3704,6 +3707,7 @@ simBsOpt <- R6::R6Class(
           hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
           hCount <- hCount + 1
         }
+        self$hVecOptsList <- hVecOptsList
 
 
         if (sameAcrossGeneration) {
@@ -3918,7 +3922,11 @@ simBsOpt <- R6::R6Class(
       }
 
       if (iterNo %% nRefreshMemoryEvery == 0) {
-        rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
+        rm(trueGVMat); rm(estimatedGVMat); rm(bsInfo); rm(breederInfo)
+        if (!all(returnMethod == "all")) {
+          rm(trueGVMatNow); rm(trueGVMatScaled)
+        }
+
         gc(reset = TRUE); gc(reset = TRUE)
       }
 

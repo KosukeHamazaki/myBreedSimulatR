@@ -2371,7 +2371,7 @@ simBs <- R6::R6Class(
         trueGVSummaryMeanDf$Population <- factor(trueGVSummaryMeanDf$Population, levels = dimnamesSummaryMean[[3]])
 
         trueGVSummaryMeanDfTarget <- trueGVSummaryMeanDf[trueGVSummaryMeanDf$Trait %in% targetTraitName, ]
-        trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget, 3)
+        trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget$Value, 3)
         plt <- plot_ly(
           data = trueGVSummaryMeanDfTarget,
           x = ~ Population,
