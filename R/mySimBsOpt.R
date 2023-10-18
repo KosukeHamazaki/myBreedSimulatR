@@ -1696,12 +1696,12 @@ simBsOpt <- R6::R6Class(
                        minimumUnitAllocateVec,"` instead."))
       }
 
-      if (!(length(minimumUnitAllocateVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(minimumUnitAllocateVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(minimumUnitAllocateVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(minimumUnitAllocateVec) must be equal to 1 or equal to nGenerationProceedSimulation"))
       } else if (length(minimumUnitAllocateVec) == 1) {
-        minimumUnitAllocateVec <- rep(minimumUnitAllocateVec, nGenerationProceed)
+        minimumUnitAllocateVec <- rep(minimumUnitAllocateVec, nGenerationProceedSimulation)
       }
-      names(minimumUnitAllocateVec) <- 1:nGenerationProceed
+      names(minimumUnitAllocateVec) <- 1:nGenerationProceedSimulation
 
 
       # includeGVPVec
