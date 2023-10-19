@@ -2884,8 +2884,10 @@ simBsOpt <- R6::R6Class(
 
 
               if (simulationCounts %% nRefreshMemoryEvery == 0) {
-                rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
-                gc(reset = TRUE); gc(reset = TRUE)
+                rm(trueGVMat); rm(estimatedGVMat); rm(bsInfo); rm(breederInfo)
+                if (!all(returnMethod == "all")) {
+                  rm(trueGVMatNow); rm(trueGVMatScaled)
+                }
               }
             }
 
