@@ -2634,11 +2634,12 @@ simBsOpt <- R6::R6Class(
                   # hVecOpt <- soln$par
 
 
-                  stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
+                  hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+                  stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                            optimizeFunc = private$maximizeFunc,
                                                            nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-                                                           lowerBound = hMin,
-                                                           upperBound = hMax,
+                                                           lowerBound = hMin[1:hVecLenNow],
+                                                           upperBound = hMax[1:hVecLenNow],
                                                            nIterOptimization = nIterOptimization,
                                                            nMaxEvalPerNode = nMaxEvalPerNode,
                                                            maxDepth = maxDepth,
@@ -2673,12 +2674,14 @@ simBsOpt <- R6::R6Class(
 
 
                 if (sameAcrossGeneration) {
-                  hListOpt <- sapply(X = hLens,
+                  hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
                                      FUN = function(hLen) {
                                        hVecOpt[1:hLen]
                                      }, simplify = FALSE)
                 } else {
-                  hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
+                  hListOpt <- split(x = hVecOpt,
+                                    f = rep(1:nGenerationProceedSimulationNow,
+                                            hLens[1:nGenerationProceedSimulationNow]))
                 }
 
 
@@ -3103,11 +3106,11 @@ simBsOpt <- R6::R6Class(
     #' (see: `adjust` in \link[stats]{density})
     #'
     plot = function(targetTrait = 1,
-                     targetPopulation = NULL,
-                     plotType = "box",
-                     plotTargetDensity = "max",
-                     plotGVMethod = "true",
-                     adjust = 1e-05) {
+                    targetPopulation = NULL,
+                    plotType = "box",
+                    plotTargetDensity = "max",
+                    plotGVMethod = "true",
+                    adjust = 1e-05) {
       lociEffMethodsOffered <- c("true", "estimated")
       # targetTrait
       if (is.numeric(targetTrait)) {
@@ -3288,12 +3291,12 @@ simBsOpt <- R6::R6Class(
     # @param names [character] names of the descendants
     # @param n [numeric] number of descendants
     lociEffects = function(bsInfo,
-                            breederInfo,
-                            alpha = 0.5,
-                            nIter = 5000,
-                            burnIn = 1000,
-                            thin = 5,
-                            bayesian = FALSE) {
+                           breederInfo,
+                           alpha = 0.5,
+                           nIter = 5000,
+                           burnIn = 1000,
+                           thin = 5,
+                           bayesian = FALSE) {
       # Read arguments from `self`
       lociEffMethod <- self$lociEffMethod
       trainingPopType <- self$trainingPopType
@@ -3671,11 +3674,12 @@ simBsOpt <- R6::R6Class(
           #
           # hVecOpt <- soln$par
 
-          stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
+          hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+          stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                    optimizeFunc = private$maximizeFunc,
                                                    nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-                                                   lowerBound = hMin,
-                                                   upperBound = hMax,
+                                                   lowerBound = hMin[1:hVecLenNow],
+                                                   upperBound = hMax[1:hVecLenNow],
                                                    nIterOptimization = nIterOptimization,
                                                    nMaxEvalPerNode = nMaxEvalPerNode,
                                                    maxDepth = maxDepth,
@@ -3713,12 +3717,14 @@ simBsOpt <- R6::R6Class(
 
 
         if (sameAcrossGeneration) {
-          hListOpt <- sapply(X = hLens,
+          hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
                              FUN = function(hLen) {
                                hVecOpt[1:hLen]
                              }, simplify = FALSE)
         } else {
-          hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
+          hListOpt <- split(x = hVecOpt,
+                            f = rep(1:nGenerationProceedSimulationNow,
+                                    hLens[1:nGenerationProceedSimulationNow]))
         }
 
 
