@@ -2374,19 +2374,26 @@ simBsOpt <- R6::R6Class(
           print("Perform optimization of hyperparameters once.")
         }
 
-        # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
+        if (setGoalAsFinalGeneration) {
+          nGenerationProceedSimulationNow <- min(nGenerationProceed, nGenerationProceedSimulation)
+        } else {
+          nGenerationProceedSimulationNow <- nGenerationProceedSimulation
+        }
+        hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+
+        # soln <- OOR::StoSOO(par = hStart[1:hVecLenNow], fn = private$maximizeFunc,
         #                     nGenerationProceedSimulation = nGenerationProceedSimulation,
-        #                     lower = hMin, upper = hMax,
+        #                     lower = hMin[1:hVecLenNow], upper = hMax[1:hVecLenNow],
         #                     nb_iter = nIterOptimization,
         #                     control = list(type = "sto", verbose = showProgress, max = TRUE))
         # self$solnInit <- soln
         # hVecOpt <- soln$par
 
-        stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
+        stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                  optimizeFunc = private$maximizeFunc,
                                                  nGenerationProceedSimulation = nGenerationProceedSimulation,
-                                                 lowerBound = hMin,
-                                                 upperBound = hMax,
+                                                 lowerBound = hMin[1:hVecLenNow],
+                                                 upperBound = hMax[1:hVecLenNow],
                                                  nIterOptimization = nIterOptimization,
                                                  nMaxEvalPerNode = nMaxEvalPerNode,
                                                  maxDepth = maxDepth,
@@ -2415,12 +2422,14 @@ simBsOpt <- R6::R6Class(
         rm(stoSOONow)
         gc(reset = TRUE); gc(reset = TRUE)
         if (sameAcrossGeneration) {
-          hListOpt <- sapply(X = hLens,
+          hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
                              FUN = function(hLen) {
                                hVecOpt[1:hLen]
                              }, simplify = FALSE)
         } else {
-          hListOpt <- split(x = hVecOpt, f = rep(1:nGenerationProceedSimulation, hLens))
+          hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                            f = rep(1:nGenerationProceedSimulationNow,
+                                    hLens[1:nGenerationProceedSimulationNow]))
         }
 
 
@@ -2502,21 +2511,21 @@ simBsOpt <- R6::R6Class(
                        ";  Perform optimization of hyperparameters."))
         }
 
-        # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
+        # soln <- OOR::StoSOO(par = hStart[1:hVecLenNow], fn = private$maximizeFunc,
         #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-        #                     lower = hMin, upper = hMax,
+        #                     lower = hMin[1:hVecLenNow], upper = hMax[1:hVecLenNow],
         #                     nb_iter = nIterOptimization,
         #                     control = list(type = "sto", verbose = showProgress, max = TRUE))
         #
         # self$solnInit <- soln
         # hVecOpt <- soln$par
 
-
-        stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart,
+        hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+        stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                  optimizeFunc = private$maximizeFunc,
                                                  nGenerationProceedSimulation = nGenerationProceedSimulation,
-                                                 lowerBound = hMin,
-                                                 upperBound = hMax,
+                                                 lowerBound = hMin[1:hVecLenNow],
+                                                 upperBound = hMax[1:hVecLenNow],
                                                  nIterOptimization = nIterOptimization,
                                                  nMaxEvalPerNode = nMaxEvalPerNode,
                                                  maxDepth = maxDepth,
@@ -2538,6 +2547,17 @@ simBsOpt <- R6::R6Class(
         hVecOpt <- stoSOONow$optimalParameter
         self$solnInit <- list(value = stoSOONow$optimalValue,
                               par = hVecOpt)
+
+        if (sameAcrossGeneration) {
+          hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
+                             FUN = function(hLen) {
+                               hVecOpt[1:hLen]
+                             }, simplify = FALSE)
+        } else {
+          hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                            f = rep(1:nGenerationProceedSimulationNow,
+                                    hLens[1:nGenerationProceedSimulationNow]))
+        }
 
         self$optimalHyperParamMatsList[["Initial"]] <- optimalHyperParamMat
         hVecOptsList[["Initial"]] <- hVecOpt
@@ -2563,6 +2583,17 @@ simBsOpt <- R6::R6Class(
             optimalHyperParamMat <- self$optimalHyperParamMatsList[["Initial"]]
             if (is.null(hVecOptsList[[iterName]])) {
               hVecOptsList[[iterName]] <- list()
+            }
+
+            if (sameAcrossGeneration) {
+              hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
+                                 FUN = function(hLen) {
+                                   hVecOpt[1:hLen]
+                                 }, simplify = FALSE)
+            } else {
+              hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                                f = rep(1:nGenerationProceedSimulationNow,
+                                        hLens[1:nGenerationProceedSimulationNow]))
             }
 
             if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
@@ -2612,29 +2643,28 @@ simBsOpt <- R6::R6Class(
               }
 
               for (genProceedNo in 1:nGenerationProceed) {
-                if (setGoalAsFinalGeneration) {
-                  nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
-                                                         nGenerationProceedSimulation)
-                } else {
-                  nGenerationProceedSimulationNow <- nGenerationProceedSimulation
-                }
-                hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
-
                 if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
                   if (verbose) {
                     print(paste0("Iteration: ", iterNo, ", Generation: ", genProceedNo,
                                  ";  Perform optimization of hyperparameters."))
                   }
 
-                  # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
+                  if (setGoalAsFinalGeneration) {
+                    nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
+                                                           nGenerationProceedSimulation)
+                  } else {
+                    nGenerationProceedSimulationNow <- nGenerationProceedSimulation
+                  }
+                  hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+
+
+                  # soln <- OOR::StoSOO(par = hStart[1:hVecLenNow], fn = private$maximizeFunc,
                   #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-                  #                     lower = hMin, upper = hMax,
+                  #                     lower = hMin[1:hVecLenNow], upper = hMax[1:hVecLenNow],
                   #                     nb_iter = nIterOptimization,
                   #                     control = list(type = "sto", verbose = showProgress, max = TRUE))
                   #
                   # hVecOpt <- soln$par
-
-
 
                   stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                            optimizeFunc = private$maximizeFunc,
@@ -2660,6 +2690,17 @@ simBsOpt <- R6::R6Class(
 
                   hVecOpt <- stoSOONow$optimalParameter
 
+                  if (sameAcrossGeneration) {
+                    hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
+                                       FUN = function(hLen) {
+                                         hVecOpt[1:hLen]
+                                       }, simplify = FALSE)
+                  } else {
+                    hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                                      f = rep(1:nGenerationProceedSimulationNow,
+                                              hLens[1:nGenerationProceedSimulationNow]))
+                  }
+
                   self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
                   hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
 
@@ -2674,16 +2715,7 @@ simBsOpt <- R6::R6Class(
                 }
 
 
-                if (sameAcrossGeneration) {
-                  hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
-                                     FUN = function(hLen) {
-                                       hVecOpt[1:hLen]
-                                     }, simplify = FALSE)
-                } else {
-                  hListOpt <- split(x = hVecOpt[1:hVecLenNow],
-                                    f = rep(1:nGenerationProceedSimulationNow,
-                                            hLens[1:nGenerationProceedSimulationNow]))
-                }
+
 
 
                 crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
@@ -3627,11 +3659,27 @@ simBsOpt <- R6::R6Class(
 
       lociEffectsInit <- self$lociEffectsInit
 
+      if (setGoalAsFinalGeneration) {
+        nGenerationProceedSimulationNow <- min(nGenerationProceed, nGenerationProceedSimulation)
+      } else {
+        nGenerationProceedSimulationNow <- nGenerationProceedSimulation
+      }
+
       soln <- self$solnInit
       hVecOpt <- soln$par
       hVecOptsList[["Initial"]] <- hVecOpt
       optimalHyperParamMat <- self$optimalHyperParamMatsList[["Initial"]]
 
+      if (sameAcrossGeneration) {
+        hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
+                           FUN = function(hLen) {
+                             hVecOpt[1:hLen]
+                           }, simplify = FALSE)
+      } else {
+        hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                          f = rep(1:nGenerationProceedSimulationNow,
+                                  hLens[1:nGenerationProceedSimulationNow]))
+      }
 
       iterName <- iterNames[iterNo]
       simRes <- list()
@@ -3659,18 +3707,19 @@ simBsOpt <- R6::R6Class(
 
 
       for (genProceedNo in 1:nGenerationProceed) {
-        if (setGoalAsFinalGeneration) {
-          nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
-                                                 nGenerationProceedSimulation)
-        } else {
-          nGenerationProceedSimulationNow <- nGenerationProceedSimulation
-        }
-        hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
-
         if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
-          # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
+          if (setGoalAsFinalGeneration) {
+            nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
+                                                   nGenerationProceedSimulation)
+          } else {
+            nGenerationProceedSimulationNow <- nGenerationProceedSimulation
+          }
+          hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+
+
+          # soln <- OOR::StoSOO(par = hStart[1:hVecLenNow], fn = private$maximizeFunc,
           #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-          #                     lower = hMin, upper = hMax,
+          #                     lower = hMin[1:hVecLenNow], upper = hMax[1:hVecLenNow],
           #                     nb_iter = nIterOptimization,
           #                     control = list(type = "sto", verbose = 0, max = TRUE))
           #
@@ -3700,6 +3749,16 @@ simBsOpt <- R6::R6Class(
           optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
 
           hVecOpt <- stoSOONow$optimalParameter
+          if (sameAcrossGeneration) {
+            hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
+                               FUN = function(hLen) {
+                                 hVecOpt[1:hLen]
+                               }, simplify = FALSE)
+          } else {
+            hListOpt <- split(x = hVecOpt[1:hVecLenNow],
+                              f = rep(1:nGenerationProceedSimulationNow,
+                                      hLens[1:nGenerationProceedSimulationNow]))
+          }
 
           self$optimalHyperParamMatsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- optimalHyperParamMat
           hVecOptsList[[iterName]][[paste0("Generation_", genProceedNo)]] <- hVecOpt
@@ -3716,18 +3775,6 @@ simBsOpt <- R6::R6Class(
           hCount <- hCount + 1
         }
         self$hVecOptsList <- hVecOptsList
-
-
-        if (sameAcrossGeneration) {
-          hListOpt <- sapply(X = hLens[1:nGenerationProceedSimulationNow],
-                             FUN = function(hLen) {
-                               hVecOpt[1:hLen]
-                             }, simplify = FALSE)
-        } else {
-          hListOpt <- split(x = hVecOpt[1:hVecLenNow],
-                            f = rep(1:nGenerationProceedSimulationNow,
-                                    hLens[1:nGenerationProceedSimulationNow]))
-        }
 
 
 
