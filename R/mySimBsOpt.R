@@ -2618,6 +2618,7 @@ simBsOpt <- R6::R6Class(
                 } else {
                   nGenerationProceedSimulationNow <- nGenerationProceedSimulation
                 }
+                hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
 
                 if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
                   if (verbose) {
@@ -2634,7 +2635,7 @@ simBsOpt <- R6::R6Class(
                   # hVecOpt <- soln$par
 
 
-                  hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+
                   stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                            optimizeFunc = private$maximizeFunc,
                                                            nGenerationProceedSimulation = nGenerationProceedSimulationNow,
@@ -2679,7 +2680,7 @@ simBsOpt <- R6::R6Class(
                                        hVecOpt[1:hLen]
                                      }, simplify = FALSE)
                 } else {
-                  hListOpt <- split(x = hVecOpt,
+                  hListOpt <- split(x = hVecOpt[1:hVecLenNow],
                                     f = rep(1:nGenerationProceedSimulationNow,
                                             hLens[1:nGenerationProceedSimulationNow]))
                 }
@@ -3664,6 +3665,7 @@ simBsOpt <- R6::R6Class(
         } else {
           nGenerationProceedSimulationNow <- nGenerationProceedSimulation
         }
+        hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
 
         if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
           # soln <- OOR::StoSOO(par = hStart, fn = private$maximizeFunc,
@@ -3674,7 +3676,7 @@ simBsOpt <- R6::R6Class(
           #
           # hVecOpt <- soln$par
 
-          hVecLenNow <- sum(hLens[1:nGenerationProceedSimulationNow])
+
           stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                    optimizeFunc = private$maximizeFunc,
                                                    nGenerationProceedSimulation = nGenerationProceedSimulationNow,
@@ -3722,7 +3724,7 @@ simBsOpt <- R6::R6Class(
                                hVecOpt[1:hLen]
                              }, simplify = FALSE)
         } else {
-          hListOpt <- split(x = hVecOpt,
+          hListOpt <- split(x = hVecOpt[1:hVecLenNow],
                             f = rep(1:nGenerationProceedSimulationNow,
                                     hLens[1:nGenerationProceedSimulationNow]))
         }
