@@ -3375,14 +3375,20 @@ simBsOpt <- R6::R6Class(
     maximizeFunc = function(hVec, nGenerationProceedSimulation) {
       performRobustOptimization <- self$performRobustOptimization
 
+
       if (self$sameAcrossGeneration) {
-        hList <- sapply(X = self$hLens,
+        hList <- sapply(X = self$hLens[1:nGenerationProceedSimulation],
                         FUN = function(hLen) {
                           hVec[1:hLen]
                         }, simplify = FALSE)
       } else {
-        hList <- split(x = hVec, f = rep(1:self$nGenerationProceedSimulation, self$hLens))
+        hVecLenNow <- sum(self$hLens[1:nGenerationProceedSimulation])
+        hList <- split(x = hVec[1:hVecLenNow],
+                       f = rep(1:nGenerationProceedSimulation,
+                               self$hLens[1:nGenerationProceedSimulation]))
       }
+
+
       rewardWeightVec <- self$rewardWeightVec[(self$nGenerationProceedSimulation - nGenerationProceedSimulation + 1):self$nGenerationProceedSimulation]
       rewardWeightVec <- rewardWeightVec / sum(rewardWeightVec)
 
