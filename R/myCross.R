@@ -1584,20 +1584,36 @@ crossInfo <- R6::R6Class(
       if (allocateMethod == "equalAllocation") {
         crossesSorted <- crosses0[sample(1:nrow(crosses0)), , drop = FALSE]
 
-        nProgenyPerPair <- nNextPop %/% nPairs
-        nProgenies <- rep(nProgenyPerPair, nPairs)
-        nResids <- nNextPop %% nPairs
+        nPairsNow <- nNextPop %/% minimumUnitAllocate
+
+        if (nPairs < nPairsNow) {
+          nUnitAllocate <- nPairsNow %/% nPairs
+          nProgenyPerPair <- minimumUnitAllocate * nUnitAllocate
+          nProgenies <- rep(nProgenyPerPair, nPairs)
+        } else {
+          nProgenyPerPair <- minimumUnitAllocate
+          nProgenies <- rep(nProgenyPerPair, nPairsNow)
+        }
+        nResids <- nNextPop - sum(nProgenies)
 
         if (nResids > 0) {
           nResidsSurplus <- nResids %% minimumUnitAllocate
           nResidsQuotient <- nResids %/% minimumUnitAllocate
-          residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+          if (nResidsQuotient >= 1) {
+            residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+          } else {
+            residsPlus <- rep(0, nResidsSurplus)
+          }
 
           if (nResidsSurplus > 0) {
             residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
           }
 
           nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+        }
+
+        if (nPairs > nPairsNow) {
+          nProgenies <- c(nProgenies, rep(0, nPairs - nPairsNow))
         }
       } else if (allocateMethod == "weightedAllocation") {
         BVAll <- NULL
@@ -1690,7 +1706,11 @@ crossInfo <- R6::R6Class(
         if (nResids > 0) {
           nResidsSurplus <- nResids %% minimumUnitAllocate
           nResidsQuotient <- nResids %/% minimumUnitAllocate
-          residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+          if (nResidsQuotient >= 1) {
+            residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+          } else {
+            residsPlus <- rep(0, nResidsSurplus)
+          }
 
           if (nResidsSurplus > 0) {
             residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
@@ -1701,8 +1721,12 @@ crossInfo <- R6::R6Class(
           nResidsSurplus <- abs(nResids) %% minimumUnitAllocate
           nResidsQuotient <- abs(nResids) %/% minimumUnitAllocate
 
-          residsMinus <- c(rep(1, nResidsSurplus),
-                           rep(minimumUnitAllocate, nResidsQuotient))
+          if (nResidsQuotient >= 1) {
+            residsMinus <- c(rep(1, nResidsSurplus),
+                             rep(minimumUnitAllocate, nResidsQuotient))
+          } else {
+            residsMinus <- rep(1, nResidsSurplus)
+          }
 
           crossNoWithNonZero <- which(nProgenies != 0)
 

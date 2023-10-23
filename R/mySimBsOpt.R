@@ -2316,6 +2316,7 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
+      saveTreeNameBase <- self$saveTreeNameBase
 
 
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
@@ -2402,7 +2403,7 @@ simBsOpt <- R6::R6Class(
                                                  maximize = TRUE,
                                                  optimizeType = "stochastic",
                                                  returnOptimalNodes = returnOptimalNodes,
-                                                 saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
+                                                 saveTreeNameBase = paste0(saveTreeNameBase, "_Initial"),
                                                  whenToSaveTrees = self$whenToSaveTrees,
                                                  currentTree = self$currentTreeMid,
                                                  optimalNodes = self$optimalNodesMid,
@@ -2534,7 +2535,7 @@ simBsOpt <- R6::R6Class(
                                                  maximize = TRUE,
                                                  optimizeType = "stochastic",
                                                  returnOptimalNodes = returnOptimalNodes,
-                                                 saveTreeNameBase = paste0(self$saveTreeNameBase, "_Initial"),
+                                                 saveTreeNameBase = paste0(saveTreeNameBase, "_Initial"),
                                                  whenToSaveTrees = self$whenToSaveTrees,
                                                  currentTree = self$currentTreeMid,
                                                  optimalNodes = self$optimalNodesMid,
@@ -2566,19 +2567,13 @@ simBsOpt <- R6::R6Class(
         gc(reset = TRUE); gc(reset = TRUE)
 
         if (nCores == 1) {
-          # if (showProgress) {
-          #   pb <- utils::txtProgressBar(min = 0, max = nIterSimulation, style = 3)
-          # }
-
-
-
           simulationCounts <- 0
-          for (iterNo in 1:nIterSimulation) {
-            # if (showProgress) {
-            #   utils::setTxtProgressBar(pb, iterNo)
-            # }
+          # iterNo <- 1
+          savedTreeFilesAll <- list.files(dirname(saveTreeNameBase))
 
+          for (iterNo in 1:nIterSimulation) {
             iterName <- iterNames[iterNo]
+
             hVecOpt <- hVecOptsList[["Initial"]]
             optimalHyperParamMat <- self$optimalHyperParamMatsList[["Initial"]]
             if (is.null(hVecOptsList[[iterName]])) {
@@ -2649,6 +2644,31 @@ simBsOpt <- R6::R6Class(
                                  ";  Perform optimization of hyperparameters."))
                   }
 
+                  saveTreeNameIterGen <- paste0(saveTreeNameBase, "_", iterName, "_Generation_", genProceedNo)
+                  saveTreeNameIterGenBase <- basename(saveTreeNameIterGen)
+
+                  wherePastTreeFiles <- grep(pattern = saveTreeNameIterGenBase,
+                                             x = savedTreeFilesAll)
+                  if (length(wherePastTreeFiles) >= 1) {
+                    savedTreeFilesNow <- savedTreeFilesAll[wherePastTreeFiles]
+                    savedCurrentTreeFile <- savedTreeFilesNow[
+                      grep(pattern = ".*_tree.rds",
+                           x = savedTreeFilesNow)
+                    ]
+                    savedOptimalNodesFile <- savedTreeFilesNow[
+                      grep(pattern = ".*_optimal_nodes_list.rds",
+                           x = savedTreeFilesNow)
+                    ]
+
+                    currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
+                                                               savedCurrentTreeFile))
+                    optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
+                                                                    savedCurrentTreeFile))
+                  } else {
+                    currentTreeMidNow <- NULL
+                    optimalNodesListMidNow <- NULL
+                  }
+
                   if (setGoalAsFinalGeneration) {
                     nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
                                                            nGenerationProceedSimulation)
@@ -2669,6 +2689,8 @@ simBsOpt <- R6::R6Class(
                   stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                            optimizeFunc = private$maximizeFunc,
                                                            nGenerationProceedSimulation = nGenerationProceedSimulationNow,
+                                                           bsInfo = bsInfo$clone(deep = FALSE),
+                                                           breederInfo = breederInfo$clone(deep = FALSE),
                                                            lowerBound = hMin[1:hVecLenNow],
                                                            upperBound = hMax[1:hVecLenNow],
                                                            nIterOptimization = nIterOptimization,
@@ -2679,9 +2701,10 @@ simBsOpt <- R6::R6Class(
                                                            maximize = TRUE,
                                                            optimizeType = "stochastic",
                                                            returnOptimalNodes = returnOptimalNodes,
-                                                           saveTreeNameBase = paste0(self$saveTreeNameBase, "_",
-                                                                                     iterName, "_Generation_", genProceedNo),
+                                                           saveTreeNameBase = saveTreeNameIterGen,
                                                            whenToSaveTrees = self$whenToSaveTrees,
+                                                           currentTree = currentTreeMidNow,
+                                                           optimalNodes = optimalNodesListMidNow,
                                                            withCheck = TRUE,
                                                            verbose = showProgress)
                   stoSOONow$startOptimization()
@@ -2772,6 +2795,27 @@ simBsOpt <- R6::R6Class(
                                            nRep = nRepForPheno[genProceedNo])
 
                     if (updateModels[genProceedNo]) {
+                      if (performOptimization[genProceedNo + 1]) {
+                        fileNameBsInfoIterGen <- paste0(saveTreeNameBase, "_", iterName,
+                                                        "_Generation_", genProceedNo,
+                                                        "_bsInfo.rds")
+                        fileNameBreederInfoIterGen <- paste0(saveTreeNameBase, "_", iterName,
+                                                             "_Generation_", genProceedNo,
+                                                             "_breederInfo.rds")
+
+                        if (file.exists(fileNameBsInfoIterGen)) {
+                          bsInfo <- readRDS(file = fileNameBsInfoIterGen)
+                        } else {
+                          saveRDS(object = bsInfo, file = fileNameBsInfoIterGen)
+                        }
+
+                        if (file.exists(fileNameBreederInfoIterGen)) {
+                          breederInfo <- readRDS(file = fileNameBreederInfoIterGen)
+                        } else {
+                          saveRDS(object = breederInfo, file = fileNameBreederInfoIterGen)
+                        }
+                      }
+
                       lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                          breederInfo = breederInfo$clone(deep = FALSE))
                     }
@@ -3372,7 +3416,8 @@ simBsOpt <- R6::R6Class(
 
     # @description marker and QTL effects used for crossInfo object
     # @param hVec [numeric] hyperparameter to be optimized
-    maximizeFunc = function(hVec, nGenerationProceedSimulation) {
+    maximizeFunc = function(hVec, nGenerationProceedSimulation,
+                            bsInfo = NULL, breederInfo = NULL) {
       performRobustOptimization <- self$performRobustOptimization
 
 
@@ -3410,11 +3455,18 @@ simBsOpt <- R6::R6Class(
         nCoresForOneMrkEff <- self$nCoresPerOptimization
       }
 
+      if (is.null(bsInfo)) {
+        bsInfo <- self$bsInfoInit$clone(deep = FALSE)
+      }
+
+      if (is.null(breederInfo)) {
+        breederInfo <- self$breederInfoInit$clone(deep = FALSE)
+      }
 
       maximizeFuncForOneMrkEffect <- function(iterNoForMrkEffects) {
         simBsNow <- myBreedSimulatR::simBs$new(simBsName = self$simBsName,
-                                               bsInfoInit = self$bsInfoInit,
-                                               breederInfoInit = self$breederInfoInit,
+                                               bsInfoInit = bsInfo,
+                                               breederInfoInit = breederInfo,
                                                lociEffMethod = self$lociEffMethod,
                                                trainingPopType = self$trainingPopType,
                                                trainingPopInit = self$trainingPopInit,
@@ -3656,7 +3708,8 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
-
+      saveTreeNameBase <- self$saveTreeNameBase
+      savedTreeFilesAll <- list.files(dirname(saveTreeNameBase))
 
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
 
@@ -3714,6 +3767,32 @@ simBsOpt <- R6::R6Class(
 
       for (genProceedNo in 1:nGenerationProceed) {
         if ((genProceedNo >= 2) & (performOptimization[genProceedNo])) {
+          saveTreeNameIterGen <- paste0(saveTreeNameBase, "_", iterName, "_Generation_", genProceedNo)
+          saveTreeNameIterGenBase <- basename(saveTreeNameIterGen)
+
+          wherePastTreeFiles <- grep(pattern = saveTreeNameIterGenBase,
+                                     x = savedTreeFilesAll)
+          if (length(wherePastTreeFiles) >= 1) {
+            savedTreeFilesNow <- savedTreeFilesAll[wherePastTreeFiles]
+            savedCurrentTreeFile <- savedTreeFilesNow[
+              grep(pattern = ".*_tree.rds",
+                   x = savedTreeFilesNow)
+            ]
+            savedOptimalNodesFile <- savedTreeFilesNow[
+              grep(pattern = ".*_optimal_nodes_list.rds",
+                   x = savedTreeFilesNow)
+            ]
+
+            currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
+                                                       savedCurrentTreeFile))
+            optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
+                                                            savedCurrentTreeFile))
+          } else {
+            currentTreeMidNow <- NULL
+            optimalNodesListMidNow <- NULL
+          }
+
+
           if (setGoalAsFinalGeneration) {
             nGenerationProceedSimulationNow <- min(nGenerationProceed - genProceedNo + 1,
                                                    nGenerationProceedSimulation)
@@ -3735,6 +3814,8 @@ simBsOpt <- R6::R6Class(
           stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
                                                    optimizeFunc = private$maximizeFunc,
                                                    nGenerationProceedSimulation = nGenerationProceedSimulationNow,
+                                                   bsInfo = bsInfo$clone(deep = FALSE),
+                                                   breederInfo = breederInfo$clone(deep = FALSE),
                                                    lowerBound = hMin[1:hVecLenNow],
                                                    upperBound = hMax[1:hVecLenNow],
                                                    nIterOptimization = nIterOptimization,
@@ -3745,9 +3826,10 @@ simBsOpt <- R6::R6Class(
                                                    maximize = TRUE,
                                                    optimizeType = "stochastic",
                                                    returnOptimalNodes = returnOptimalNodes,
-                                                   saveTreeNameBase = paste0(self$saveTreeNameBase, "_",
-                                                                             iterName, "_Generation_", genProceedNo),
+                                                   saveTreeNameBase = saveTreeNameIterGen,
                                                    whenToSaveTrees = self$whenToSaveTrees,
+                                                   currentTree = currentTreeMidNow,
+                                                   optimalNodes = optimalNodesListMidNow,
                                                    withCheck = TRUE,
                                                    verbose = showProgress)
           stoSOONow$startOptimization()
@@ -3838,6 +3920,27 @@ simBsOpt <- R6::R6Class(
                                    nRep = nRepForPheno[genProceedNo])
 
             if (updateModels[genProceedNo]) {
+              if (performOptimization[genProceedNo + 1]) {
+                fileNameBsInfoIterGen <- paste0(saveTreeNameBase, "_", iterName,
+                                                "_Generation_", genProceedNo,
+                                                "_bsInfo.rds")
+                fileNameBreederInfoIterGen <- paste0(saveTreeNameBase, "_", iterName,
+                                                     "_Generation_", genProceedNo,
+                                                     "_breederInfo.rds")
+
+                if (file.exists(fileNameBsInfoIterGen)) {
+                  bsInfo <- readRDS(file = fileNameBsInfoIterGen)
+                } else {
+                  saveRDS(object = bsInfo, file = fileNameBsInfoIterGen)
+                }
+
+                if (file.exists(fileNameBreederInfoIterGen)) {
+                  breederInfo <- readRDS(file = fileNameBreederInfoIterGen)
+                } else {
+                  saveRDS(object = breederInfo, file = fileNameBreederInfoIterGen)
+                }
+              }
+
               lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                  breederInfo = breederInfo$clone(deep = FALSE))
             }
