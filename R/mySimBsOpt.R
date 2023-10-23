@@ -2666,7 +2666,7 @@ simBsOpt <- R6::R6Class(
                                                                     savedCurrentTreeFile))
                   } else {
                     currentTreeMidNow <- NULL
-                    optimalNodesListMidNow <- NULL
+                    optimalNodesListMidNow <- list()
                   }
 
                   if (setGoalAsFinalGeneration) {
