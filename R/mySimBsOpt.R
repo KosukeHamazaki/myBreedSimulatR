@@ -2663,7 +2663,9 @@ simBsOpt <- R6::R6Class(
                     currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
                                                                savedCurrentTreeFile))
                     optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                                    savedCurrentTreeFile))
+                                                                    savedOptimalNodesFile))
+
+                    gc(reset = TRUE); gc(reset = TRUE)
                   } else {
                     currentTreeMidNow <- NULL
                     optimalNodesListMidNow <- list()
@@ -2818,6 +2820,7 @@ simBsOpt <- R6::R6Class(
 
                       lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                          breederInfo = breederInfo$clone(deep = FALSE))
+                      gc(reset = TRUE); gc(reset = TRUE)
                     }
                   }
                 }
@@ -3786,10 +3789,11 @@ simBsOpt <- R6::R6Class(
             currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
                                                        savedCurrentTreeFile))
             optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                            savedCurrentTreeFile))
+                                                            savedOptimalNodesFile))
+            gc(reset = TRUE); gc(reset = TRUE)
           } else {
             currentTreeMidNow <- NULL
-            optimalNodesListMidNow <- NULL
+            optimalNodesListMidNow <- list()
           }
 
 
@@ -3943,6 +3947,7 @@ simBsOpt <- R6::R6Class(
 
               lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                  breederInfo = breederInfo$clone(deep = FALSE))
+              gc(reset = TRUE); gc(reset = TRUE)
             }
           }
         }
