@@ -91,10 +91,6 @@ simBsOpt <- R6::R6Class(
     saveTreeNameBase = NULL,
     #' @field whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
     whenToSaveTrees = NULL,
-    #' @field currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
-    currentTreeMid = NULL,
-    #' @field optimalNodesMid [list] tree class object that is saved as a `optimalNodes` in the previous analysis
-    optimalNodesMid = list(),
     #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -283,8 +279,6 @@ simBsOpt <- R6::R6Class(
     #' @param returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
     #' @param saveTreeNameBase [character] Base name of the tree to be saved
     #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
-    #' @param currentTreeMid [tree] tree class object that is saved as a `currentTree` in the previous analysis
-    #' @param optimalNodesMid [list] tree class object that is saved as a `optimalNodes` in the previous analysis
     #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -457,8 +451,6 @@ simBsOpt <- R6::R6Class(
                           returnOptimalNodes = NULL,
                           saveTreeNameBase = NULL,
                           whenToSaveTrees = NA,
-                          currentTreeMid = NULL,
-                          optimalNodesMid = list(),
                           nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
@@ -841,33 +833,6 @@ simBsOpt <- R6::R6Class(
         }
       }
 
-
-      # currentTreeMid
-      if (!is.null(currentTreeMid)) {
-        if (!("tree" %in% class(currentTreeMid))) {
-          currentTreeMid <- NULL
-          message(paste0("Your `currentTreeMid` object is not `tree` class. We set `currentTreeMid = NULL`."))
-        }
-      }
-
-
-      # optimalNodesMid
-      if (is.list(optimalNodesMid)) {
-        if (length(optimalNodesMid) != 0) {
-          isNodeVec <- sapply(X = optimalNodesMid,
-                              FUN = function(optimalNode) {
-                                "node" %in% class(optimalNode)
-                              })
-
-          if (!all(isNodeVec)) {
-            optimalNodesMid <- list()
-            message(paste0("Your `optimalNodesMid` object does not consist of the objects of `node` class. We set `optimalNodesMid = list()`."))
-          }
-        }
-      } else {
-        optimalNodesMid <- list()
-        message(paste0("Your `optimalNodesMid` object is not `list` class. We set `optimalNodesMid = list()`."))
-      }
 
 
       # rewardWeightVec
@@ -2083,8 +2048,6 @@ simBsOpt <- R6::R6Class(
       self$returnOptimalNodes <- returnOptimalNodes
       self$saveTreeNameBase <- saveTreeNameBase
       self$whenToSaveTrees <- whenToSaveTrees
-      self$currentTreeMid <- currentTreeMid
-      self$optimalNodesMid <- optimalNodesMid
       self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
@@ -2650,17 +2613,15 @@ simBsOpt <- R6::R6Class(
                 self$simBsRes[[simBsName]]$var[iterName] <- simRes$var
               }
 
-              trueGVMatListNow <- simRes$trueGVMatList
               self$trueGVMatList[[iterName]] <- c(self$trueGVMatList[[iterName]],
-                                                  trueGVMatListNow[[iterName]])
-              estimatedGVMatListNow <- simRes$estimatedGVMatList
+                                                  simRes$trueGVMatList)
               self$estimatedGVMatList[[iterName]] <- c(self$estimatedGVMatList[[iterName]],
-                                                       estimatedGVMatListNow[[iterName]])
-
+                                                       simRes$estimatedGVMatList)
 
 
               if (simulationCounts %% nRefreshMemoryEvery == 0) {
-                rm(trueGVMatListNow); rm(estimatedGVMatListNow); rm(simRes)
+                rm(simRes); rm(bsInfo); rm(breederInfo)
+                gc(reset = TRUE); gc(reset = TRUE)
               }
             }
 
@@ -3467,6 +3428,8 @@ simBsOpt <- R6::R6Class(
         saveTreeNameIter <- paste0(saveTreeNameBase, "_", iterName)
         saveTreeNameIterBase <- basename(saveTreeNameIter)
 
+        fileNameSimResIter <- paste0(saveTreeNameIter, "_simulation_results.rds")
+
 
         fileNameBreederInfoIters <- savedTreeFilesAll[
           grep(pattern = paste0(saveTreeNameIterBase, ".*_breederInfo.rds"),
@@ -3486,8 +3449,12 @@ simBsOpt <- R6::R6Class(
           genSavedBreederInfoIterMax <- max(genSavedBreederInfoIters)
         }
       } else {
+        fileNameSimResIter <- NULL
         genSavedBreederInfoIterMax <- 0
       }
+
+
+
 
       for (genProceedNo in 1:nGenerationProceed) {
         if (is.null(saveTreeNameBase)) {
@@ -3626,237 +3593,245 @@ simBsOpt <- R6::R6Class(
         }
         self$hVecOptsList <- hVecOptsList
 
+        if (!file.exists(fileNameSimResIter)) {
+          if (genProceedNo > genSavedBreederInfoIterMax) {
+            crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
+                                                           nSelectionWays = nSelectionWaysVec[hCount],
+                                                           selectionMethod = selectionMethodList[[hCount]],
+                                                           traitNoSel = traitNoSelList[[hCount]],
+                                                           userSI = NULL,
+                                                           lociEffects = lociEffects,
+                                                           blockSplitMethod = blockSplitMethod,
+                                                           nMrkInBlock = nMrkInBlock,
+                                                           minimumSegmentLength = minimumSegmentLength,
+                                                           nSelInitOPV = nSelInitOPVList[[hCount]],
+                                                           nIterOPV = nIterOPV,
+                                                           nProgeniesEMBV = nProgeniesEMBVVec[hCount],
+                                                           nIterEMBV = nIterEMBV,
+                                                           nCoresEMBV = nCoresEMBV,
+                                                           clusteringForSel = clusteringForSelList[[hCount]],
+                                                           nCluster = nClusterList[[hCount]],
+                                                           nTopCluster = nTopClusterList[[hCount]],
+                                                           nTopEach = nTopEachList[[hCount]],
+                                                           nSel = nSelList[[hCount]],
+                                                           multiTraitsEvalMethod = multiTraitsEvalMethodList[[hCount]],
+                                                           hSel = hSelList[[hCount]],
+                                                           matingMethod = matingMethodVec[hCount],
+                                                           allocateMethod = allocateMethodVec[hCount],
+                                                           weightedAllocationMethod = weightedAllocationMethodList[[hCount]],
+                                                           nProgenies = NULL,
+                                                           traitNoRA = traitNoRAList[[hCount]],
+                                                           h = hListOpt[[hCount]],
+                                                           minimumUnitAllocate = minimumUnitAllocateVec[hCount],
+                                                           includeGVP = includeGVPVec[hCount],
+                                                           nNextPop = nNextPopVec[hCount],
+                                                           nPairs = NULL,
+                                                           nameMethod = nameMethod,
+                                                           indNames = NULL,
+                                                           seedSimRM = NA,
+                                                           seedSimMC = NA,
+                                                           selCands = NULL,
+                                                           crosses = NULL,
+                                                           verbose = verbose)
+            bsInfo$nextGeneration(crossInfo = crossInfoNow)
 
-        if (genProceedNo > genSavedBreederInfoIterMax) {
-          crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
-                                                         nSelectionWays = nSelectionWaysVec[hCount],
-                                                         selectionMethod = selectionMethodList[[hCount]],
-                                                         traitNoSel = traitNoSelList[[hCount]],
-                                                         userSI = NULL,
-                                                         lociEffects = lociEffects,
-                                                         blockSplitMethod = blockSplitMethod,
-                                                         nMrkInBlock = nMrkInBlock,
-                                                         minimumSegmentLength = minimumSegmentLength,
-                                                         nSelInitOPV = nSelInitOPVList[[hCount]],
-                                                         nIterOPV = nIterOPV,
-                                                         nProgeniesEMBV = nProgeniesEMBVVec[hCount],
-                                                         nIterEMBV = nIterEMBV,
-                                                         nCoresEMBV = nCoresEMBV,
-                                                         clusteringForSel = clusteringForSelList[[hCount]],
-                                                         nCluster = nClusterList[[hCount]],
-                                                         nTopCluster = nTopClusterList[[hCount]],
-                                                         nTopEach = nTopEachList[[hCount]],
-                                                         nSel = nSelList[[hCount]],
-                                                         multiTraitsEvalMethod = multiTraitsEvalMethodList[[hCount]],
-                                                         hSel = hSelList[[hCount]],
-                                                         matingMethod = matingMethodVec[hCount],
-                                                         allocateMethod = allocateMethodVec[hCount],
-                                                         weightedAllocationMethod = weightedAllocationMethodList[[hCount]],
-                                                         nProgenies = NULL,
-                                                         traitNoRA = traitNoRAList[[hCount]],
-                                                         h = hListOpt[[hCount]],
-                                                         minimumUnitAllocate = minimumUnitAllocateVec[hCount],
-                                                         includeGVP = includeGVPVec[hCount],
-                                                         nNextPop = nNextPopVec[hCount],
-                                                         nPairs = NULL,
-                                                         nameMethod = nameMethod,
-                                                         indNames = NULL,
-                                                         seedSimRM = NA,
-                                                         seedSimMC = NA,
-                                                         selCands = NULL,
-                                                         crosses = NULL,
-                                                         verbose = verbose)
-          bsInfo$nextGeneration(crossInfo = crossInfoNow)
 
+            if (updateBreederInfo[genProceedNo]) {
+              breederInfo$getNewPopulation(bsInfo = bsInfo,
+                                           generationNew = NULL,
+                                           genotyping = TRUE,
+                                           genotypedIndNames = NULL)
+              if (phenotypingInds[genProceedNo]) {
+                breederInfo$phenotyper(bsInfo = bsInfo,
+                                       generationOfInterest = NULL,
+                                       estimateGV = TRUE,
+                                       estimatedGVMethod = "lme4",
+                                       nRep = nRepForPheno[genProceedNo])
+                breederInfo$populationsFB[[genProceedNo]]$lmerResList <- NULL
+                gc(reset = TRUE); gc(reset = TRUE)
 
-          if (updateBreederInfo[genProceedNo]) {
-            breederInfo$getNewPopulation(bsInfo = bsInfo,
-                                         generationNew = NULL,
-                                         genotyping = TRUE,
-                                         genotypedIndNames = NULL)
-            if (phenotypingInds[genProceedNo]) {
-              breederInfo$phenotyper(bsInfo = bsInfo,
-                                     generationOfInterest = NULL,
-                                     estimateGV = TRUE,
-                                     estimatedGVMethod = "lme4",
-                                     nRep = nRepForPheno[genProceedNo])
-              breederInfo$populationsFB[[genProceedNo]]$lmerResList <- NULL
-              gc(reset = TRUE); gc(reset = TRUE)
+                if (updateModels[genProceedNo]) {
+                  if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
+                    saveRDS(object = bsInfo, file = fileNameBsInfoIterGen)
+                    saveRDS(object = breederInfo, file = fileNameBreederInfoIterGen)
+                  }
 
-              if (updateModels[genProceedNo]) {
-                if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
-                  saveRDS(object = bsInfo, file = fileNameBsInfoIterGen)
-                  saveRDS(object = breederInfo, file = fileNameBreederInfoIterGen)
+                  lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
+                                                     breederInfo = breederInfo$clone(deep = FALSE),
+                                                     gcReset = TRUE)
                 }
-
-                lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
-                                                   breederInfo = breederInfo$clone(deep = FALSE),
-                                                   gcReset = TRUE)
               }
             }
-          }
-        } else if (genProceedNo == genSavedBreederInfoIterMax) {
-          if (updateModels[genProceedNo]) {
-            if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
-              bsInfo <- readRDS(file = fileNameBsInfoIterGen)
-              breederInfo <- readRDS(file = fileNameBreederInfoIterGen)
+          } else if (genProceedNo == genSavedBreederInfoIterMax) {
+            if (updateModels[genProceedNo]) {
+              if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
+                bsInfo <- readRDS(file = fileNameBsInfoIterGen)
+                breederInfo <- readRDS(file = fileNameBreederInfoIterGen)
+              }
+
+              lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
+                                                 breederInfo = breederInfo$clone(deep = FALSE),
+                                                 gcReset = TRUE)
             }
+          }
 
-            lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
-                                               breederInfo = breederInfo$clone(deep = FALSE),
-                                               gcReset = TRUE)
+
+
+          if (any(c("all", "summary") %in% returnMethod)) {
+            populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
+            trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
+            simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
+
+            # if (breederInfo$generation < bsInfo$generation) {
+            #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+            #                                generationNew = bsInfo$generation,
+            #                                genotyping = TRUE,
+            #                                genotypedIndNames = NULL)
+            # }
+            #
+            # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+            #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+            #                               trainingIndNames = self$trainingIndNamesInit,
+            #                               testingPop = length(breederInfo$populationsFB),
+            #                               methodMLR = self$methodMLRInit,
+            #                               multiTrait = self$multiTraitInit,
+            #                               alpha = 0.5,
+            #                               nIter = 12000,
+            #                               burnIn = 3000,
+            #                               thin = 5,
+            #                               bayesian = TRUE)
+            # }
+            # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
+
+            genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+            genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                       genoMatNow)
+
+            estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
+            simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
+          }
+        }
+      }
+
+
+      if (!file.exists(fileNameSimResIter)) {
+        if (!is.null(saveAllResAt)) {
+          fileNameBsInfoRes <- here::here(saveAllResAt,
+                                          paste0(simBsName, "_bsInfo_", iterName, ".rds"))
+          fileNameBreederInfoRes <- here::here(saveAllResAt,
+                                               paste0(simBsName, "_breederInfo_", iterName, ".rds"))
+
+          saveRDS(object = bsInfo, file = fileNameBsInfoRes)
+          saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
+        }
+
+
+        if ("all" %in% returnMethod) {
+          simRes$all <- list(bsInfo = bsInfo,
+                             breederInfo = breederInfo)
+        }
+        if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
+          populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
+          if (any(c("all", "summary") %in% returnMethod)) {
+            trueGVMat <- simRes$trueGVMatList[[populationNameNow]]
+            estimatedGVMat <- simRes$estimatedGVMatList[[populationNameNow]]
+          } else {
+            trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
+            simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
+
+            # if (breederInfo$generation < bsInfo$generation) {
+            #   breederInfo$getNewPopulation(bsInfo = bsInfo,
+            #                                generationNew = bsInfo$generation,
+            #                                genotyping = TRUE,
+            #                                genotypedIndNames = NULL)
+            # }
+            #
+            # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
+            #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
+            #                               trainingIndNames = self$trainingIndNamesInit,
+            #                               testingPop = length(breederInfo$populationsFB),
+            #                               methodMLR = self$methodMLRInit,
+            #                               multiTrait = self$multiTraitInit,
+            #                               alpha = 0.5,
+            #                               nIter = 12000,
+            #                               burnIn = 3000,
+            #                               thin = 5,
+            #                               bayesian = TRUE)
+            # }
+            # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
+
+            genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
+            genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
+                                       genoMatNow)
+
+            estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
+            simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
+          }
+
+
+          if (evaluateGVMethod == "true") {
+            trueGVMatNow <- trueGVMat
+          } else {
+            trueGVMatNow <- estimatedGVMat
+          }
+
+          # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
+          #                          FUN = function(trueGV) {
+          #                            return(scale(x = trueGV, center = TRUE,
+          #                                         scale = as.logical(sd(trueGV))))
+          #                          })
+          trueGVMatInit <- self$trueGVMatInit
+          trueGVMatScaled <- do.call(what = cbind,
+                                     args = sapply(X = 1:ncol(trueGVMatNow),
+                                                   FUN = function(traitNo) {
+                                                     trueGVMean <- mean(trueGVMatInit[, traitNo])
+                                                     trueGVSd <- sd(trueGVMatInit[, traitNo])
+                                                     if (trueGVSd != 0) {
+                                                       trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean) / trueGVSd
+                                                     } else {
+                                                       trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
+                                                     }
+
+                                                     return(trueGVScaled)
+                                                   }, simplify = FALSE))
+          rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
+          colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
+
+          trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
+
+          if ("max" %in% returnMethod) {
+            simRes$max <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
+          }
+
+          if ("mean" %in% returnMethod) {
+            simRes$mean <- mean(x = trueEvals)
+          }
+
+          if ("median" %in% returnMethod) {
+            simRes$median <- median(x = trueEvals)
+          }
+
+          if ("min" %in% returnMethod) {
+            simRes$min <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
+          }
+
+          if ("var" %in% returnMethod) {
+            simRes$var <- var(x = trueEvals)
           }
         }
 
+        if (iterNo %% nRefreshMemoryEvery == 0) {
+          rm(trueGVMat); rm(estimatedGVMat); rm(bsInfo); rm(breederInfo)
+          if (!all(returnMethod == "all")) {
+            rm(trueGVMatNow); rm(trueGVMatScaled)
+          }
 
-
-        if (any(c("all", "summary") %in% returnMethod)) {
-          populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
-          trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
-          simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-
-          # if (breederInfo$generation < bsInfo$generation) {
-          #   breederInfo$getNewPopulation(bsInfo = bsInfo,
-          #                                generationNew = bsInfo$generation,
-          #                                genotyping = TRUE,
-          #                                genotypedIndNames = NULL)
-          # }
-          #
-          # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
-          #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-          #                               trainingIndNames = self$trainingIndNamesInit,
-          #                               testingPop = length(breederInfo$populationsFB),
-          #                               methodMLR = self$methodMLRInit,
-          #                               multiTrait = self$multiTraitInit,
-          #                               alpha = 0.5,
-          #                               nIter = 12000,
-          #                               burnIn = 3000,
-          #                               thin = 5,
-          #                               bayesian = TRUE)
-          # }
-          # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-
-          genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
-          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
-                                     genoMatNow)
-
-          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
-          simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
-        }
-      }
-
-      if (!is.null(saveAllResAt)) {
-        fileNameBsInfoRes <- here::here(saveAllResAt,
-                                        paste0(simBsName, "_bsInfo_", iterName, ".rds"))
-        fileNameBreederInfoRes <- here::here(saveAllResAt,
-                                             paste0(simBsName, "_breederInfo_", iterName, ".rds"))
-
-        saveRDS(object = bsInfo, file = fileNameBsInfoRes)
-        saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
-      }
-
-
-      if ("all" %in% returnMethod) {
-        simRes$all <- list(bsInfo = bsInfo,
-                           breederInfo = breederInfo)
-      }
-      if (any(returnMethod %in% c("summary", "max", "mean", "median", "min", "var"))) {
-        populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
-        if (any(c("all", "summary") %in% returnMethod)) {
-          trueGVMat <- simRes$trueGVMatList[[populationNameNow]]
-          estimatedGVMat <- simRes$estimatedGVMatList[[populationNameNow]]
-        } else {
-          trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
-          simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-
-          # if (breederInfo$generation < bsInfo$generation) {
-          #   breederInfo$getNewPopulation(bsInfo = bsInfo,
-          #                                generationNew = bsInfo$generation,
-          #                                genotyping = TRUE,
-          #                                genotypedIndNames = NULL)
-          # }
-          #
-          # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
-          #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
-          #                               trainingIndNames = self$trainingIndNamesInit,
-          #                               testingPop = length(breederInfo$populationsFB),
-          #                               methodMLR = self$methodMLRInit,
-          #                               multiTrait = self$multiTraitInit,
-          #                               alpha = 0.5,
-          #                               nIter = 12000,
-          #                               burnIn = 3000,
-          #                               thin = 5,
-          #                               bayesian = TRUE)
-          # }
-          # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-
-          genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
-          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
-                                     genoMatNow)
-
-          estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
-          simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
+          gc(reset = TRUE); gc(reset = TRUE)
         }
 
-
-        if (evaluateGVMethod == "true") {
-          trueGVMatNow <- trueGVMat
-        } else {
-          trueGVMatNow <- estimatedGVMat
-        }
-
-        # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
-        #                          FUN = function(trueGV) {
-        #                            return(scale(x = trueGV, center = TRUE,
-        #                                         scale = as.logical(sd(trueGV))))
-        #                          })
-        trueGVMatInit <- self$trueGVMatInit
-        trueGVMatScaled <- do.call(what = cbind,
-                                   args = sapply(X = 1:ncol(trueGVMatNow),
-                                                 FUN = function(traitNo) {
-                                                   trueGVMean <- mean(trueGVMatInit[, traitNo])
-                                                   trueGVSd <- sd(trueGVMatInit[, traitNo])
-                                                   if (trueGVSd != 0) {
-                                                     trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean) / trueGVSd
-                                                   } else {
-                                                     trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
-                                                   }
-
-                                                   return(trueGVScaled)
-                                                 }, simplify = FALSE))
-        rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
-        colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
-
-        trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
-
-        if ("max" %in% returnMethod) {
-          simRes$max <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
-        }
-
-        if ("mean" %in% returnMethod) {
-          simRes$mean <- mean(x = trueEvals)
-        }
-
-        if ("median" %in% returnMethod) {
-          simRes$median <- median(x = trueEvals)
-        }
-
-        if ("min" %in% returnMethod) {
-          simRes$min <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
-        }
-
-        if ("var" %in% returnMethod) {
-          simRes$var <- var(x = trueEvals)
-        }
-      }
-
-      if (iterNo %% nRefreshMemoryEvery == 0) {
-        rm(trueGVMat); rm(estimatedGVMat); rm(bsInfo); rm(breederInfo)
-        if (!all(returnMethod == "all")) {
-          rm(trueGVMatNow); rm(trueGVMatScaled)
-        }
-
-        gc(reset = TRUE); gc(reset = TRUE)
+        saveRDS(object = simRes, file = fileNameSimResIter)
+      } else {
+        simRes <- readRDS(file = fileNameSimResIter)
       }
 
       return(simRes)
