@@ -1502,7 +1502,12 @@ crossInfo <- R6::R6Class(
               BVPositive <- t(t(BVNow) - apply(BVNow, 2, min))
               BVSel <- apply(X = BVPositive, MARGIN = 1, FUN = prod)
             } else {
-              BVSel <- as.numeric(BVNow %*% as.matrix(hSel[[selectionWayNo]]))
+              BVScaled <- apply(X = BVNow, MARGIN = 2,
+                                FUN = function(BV) {
+                                  return(scale(x = BV, center = TRUE,
+                                               scale = as.logical(sd(BV))))
+                                })
+              BVSel <- as.numeric(BVScaled %*% as.matrix(hSel[[selectionWayNo]]))
               names(BVSel) <- rownames(BVNow)
             }
 
@@ -1596,7 +1601,7 @@ crossInfo <- R6::R6Class(
         }
         nResids <- nNextPop - sum(nProgenies)
 
-        if (nResids > 0) {
+        while (nResids > 0) {
           nResidsSurplus <- nResids %% minimumUnitAllocate
           nResidsQuotient <- nResids %/% minimumUnitAllocate
           if (nResidsQuotient >= 1) {
@@ -1609,7 +1614,13 @@ crossInfo <- R6::R6Class(
             residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
           }
 
-          nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+          if (length(nProgenies) >= length(nResids)) {
+            nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+            nResids <- 0
+          } else {
+            nProgenies <- nProgenies + residsPlus[1:length(nProgenies)]
+            nResids <- nNextPop - sum(nProgenies)
+          }
         }
 
         if (nPairs > nPairsNow) {
