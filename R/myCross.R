@@ -1715,19 +1715,27 @@ crossInfo <- R6::R6Class(
         nResids <- nNextPop - sum(nProgenies0)
 
         if (nResids > 0) {
-          nResidsSurplus <- nResids %% minimumUnitAllocate
-          nResidsQuotient <- nResids %/% minimumUnitAllocate
-          if (nResidsQuotient >= 1) {
-            residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
-          } else {
-            residsPlus <- rep(0, nResidsSurplus)
-          }
+          while (nResids > 0) {
+            nResidsSurplus <- nResids %% minimumUnitAllocate
+            nResidsQuotient <- nResids %/% minimumUnitAllocate
+            if (nResidsQuotient >= 1) {
+              residsPlus <- rep(minimumUnitAllocate, nResidsQuotient)
+            } else {
+              residsPlus <- rep(0, nResidsSurplus)
+            }
 
-          if (nResidsSurplus > 0) {
-            residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
-          }
+            if (nResidsSurplus > 0) {
+              residsPlus[1:nResidsSurplus] <- residsPlus[1:nResidsSurplus] + 1
+            }
 
-          nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+            if (length(nProgenies) >= length(nResids)) {
+              nProgenies[1:length(residsPlus)] <- nProgenies[1:length(residsPlus)] + residsPlus
+              nResids <- 0
+            } else {
+              nProgenies <- nProgenies + residsPlus[1:length(nProgenies)]
+              nResids <- nNextPop - sum(nProgenies)
+            }
+          }
         } else if (nResids < 0) {
           nResidsSurplus <- abs(nResids) %% minimumUnitAllocate
           nResidsQuotient <- abs(nResids) %/% minimumUnitAllocate
