@@ -1,8 +1,8 @@
 Type: Package
 Package: myBreedSimulatR
 Title: R Breeding Simulator for K.Hamazaki
-Version: 0.2.3
-Date: 2023-06-20
+Version: 0.2.4
+Date: 2024-04-20
 Authors@R: 
     c(person(given = "Kosuke",
              family = "Hamazaki",
@@ -57,4 +57,4 @@ Maintainers@R: person(given = "Kosuke",
              family = "Hamazaki",
              role = c("aut", "ctb"),
              email = "hamazaki@ut-biomet.org")
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

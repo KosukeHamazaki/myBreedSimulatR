@@ -181,6 +181,26 @@ simBsOpt <- R6::R6Class(
     includeGVPVec = NULL,
     #' @field nNextPopVec [numeric] Number of progenies for the next generation  for each generation
     nNextPopVec = NULL,
+    #' @field targetGenGVPVec [numeric] Vector of target generation of selfing when evaluating the genetic variance of progenies (F#)
+    targetGenGVPVec = NULL,
+    #' @field performOCSVec [logical] Vector of whether or not performing OCS before allocation
+    performOCSVec = NULL,
+    #' @field targetGenOCSVec [numeric] Vector of target generation in OCS
+    targetGenOCSVec = NULL,
+    #' @field HeStarRatioVec [numeric] Vector of ratio of He0 to HeStar
+    HeStarRatioVec = NULL,
+    #' @field degreeOCSVec [numeric] Vector of how generation effect is emphasized when computing He(t)
+    degreeOCSVec = NULL,
+    #' @field includeGVPOCSVec [logical] Vector of whether or not to consider genetic variance of progenies of each pair when evaluating each pair in OCS
+    includeGVPOCSVec = NULL,
+    #' @field hOCSList [list] List of weight for each trait/criterion to evaluate each mating pair
+    hOCSList = NULL,
+    #' @field weightedAllocationMethodOCSList [list] List of which selection index will be used to evaluate mating pair in OCS
+    weightedAllocationMethodOCSList = NULL,
+    #' @field traitNoOCSList [list] List of trait No to evaluate mating pair in OCS
+    traitNoOCSList = NULL,
+    #' @field nCrossesOCSVec [numeric] Vector of number of crosses that will be selected in OCS
+    nCrossesOCSVec = NULL,
     #' @field nameMethod [character] Method for naming individuals
     nameMethod = NULL,
     #' @field nCores [numeric] Number of cores used for simulations of breeding scheme
@@ -329,7 +349,17 @@ simBsOpt <- R6::R6Class(
     #' @param traitNoRAList [list] (list of) Trait No of your interest for resource allocation for each generation
     #' @param minimumUnitAllocateVec [numeric] (vector of) Minimum number of allocated progenies for each pair.
     #' @param includeGVPVec [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair for each generation
-    #' @param nNextPopVec [numeric] Number of progenies for the next generation  for each generation
+    #' @param targetGenGVPVec [numeric] Vector of target generation of selfing when evaluating the genetic variance of progenies (F#)
+    #' @param nNextPopVec [numeric] Vector of number of progenies for the next generation  for each generation
+    #' @param performOCSVec [logical] Vector of whether or not performing OCS before allocation
+    #' @param targetGenOCSVec [numeric] Vector of target generation in OCS
+    #' @param HeStarRatioVec [numeric] Vector of ratio of He0 to HeStar
+    #' @param degreeOCSVec [numeric] Vector of how generation effect is emphasized when computing He(t)
+    #' @param includeGVPOCSVec [logical] Vector of whether or not to consider genetic variance of progenies of each pair when evaluating each pair in OCS
+    #' @param hOCSList [list] List of weight for each trait/criterion to evaluate each mating pair
+    #' @param weightedAllocationMethodOCSList [list] List of which selection index will be used to evaluate mating pair in OCS
+    #' @param traitNoOCSList [list] List of trait No to evaluate mating pair in OCS
+    #' @param nCrossesOCSVec [numeric] Vector of number of crosses that will be selected in OCS
     #' @param nameMethod [character] Method for naming individuals
     #' @param nCores [numeric] Number of cores used for simulations of breeding scheme
     #' @param nCoresPerOptimization [numeric] Number of cores used for simulations of breeding scheme when optimizing hyperparameters
@@ -490,7 +520,17 @@ simBsOpt <- R6::R6Class(
                           traitNoRAList = NULL,
                           minimumUnitAllocateVec = NULL,
                           includeGVPVec = FALSE,
+                          targetGenGVPVec = NULL,
                           nNextPopVec = NULL,
+                          performOCSVec = NULL,
+                          targetGenOCSVec = NULL,
+                          HeStarRatioVec = NULL,
+                          degreeOCSVec = NULL,
+                          includeGVPOCSVec = FALSE,
+                          hOCSList = NULL,
+                          weightedAllocationMethodOCSList = NULL,
+                          traitNoOCSList = NULL,
+                          nCrossesOCSVec = NULL,
                           nameMethod = "pairBase",
                           nCores = NULL,
                           nCoresPerOptimization = NULL,
@@ -1680,6 +1720,206 @@ simBsOpt <- R6::R6Class(
       names(includeGVPVec) <- 1:nGenerationProceedSimulation
 
 
+
+      # targetGenGVPVec
+      if (!is.null(targetGenGVPVec)) {
+        stopifnot(is.numeric(targetGenGVPVec))
+        targetGenGVPVec <- floor(targetGenGVPVec)
+        stopifnot(all(targetGenGVPVec >= 0))
+      } else {
+        targetGenGVPVec <- 0
+        message(paste0("`targetGenGVPVec` is not specified. We substitute `targetGenGVPVec = ",
+                       targetGenGVPVec,"` instead."))
+      }
+
+      if (!(length(targetGenGVPVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(targetGenGVPVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(targetGenGVPVec) == 1) {
+        targetGenGVPVec <- rep(targetGenGVPVec, nGenerationProceed)
+      }
+      names(targetGenGVPVec) <- 1:nGenerationProceed
+
+
+
+      # performOCSVec
+      stopifnot(is.logical(performOCSVec))
+
+      if (!(length(performOCSVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(performOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(performOCSVec) == 1) {
+        performOCSVec <- rep(performOCSVec, nGenerationProceed)
+      }
+      names(performOCSVec) <- 1:nGenerationProceed
+
+
+      # targetGenOCSVec
+      if (!is.null(targetGenOCSVec)) {
+        stopifnot(is.numeric(targetGenOCSVec))
+        targetGenOCSVec <- floor(targetGenOCSVec)
+        stopifnot(all(targetGenOCSVec >= 1))
+      } else {
+        targetGenOCSVec <- nGenerationProceed
+        message(paste0("`targetGenOCSVec` is not specified. We substitute `targetGenOCSVec = ",
+                       targetGenOCSVec,"` instead."))
+      }
+
+      if (!(length(targetGenOCSVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(targetGenOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(targetGenOCSVec) == 1) {
+        targetGenOCSVec <- rep(targetGenOCSVec, nGenerationProceed)
+      }
+      names(targetGenOCSVec) <- 1:nGenerationProceed
+
+
+
+      # HeStarRatioVec
+      if (!is.null(HeStarRatioVec)) {
+        stopifnot(is.numeric(HeStarRatioVec))
+        stopifnot(all(HeStarRatioVec > 0))
+      } else {
+        HeStarRatioVec <- 0.1
+        message(paste0("`HeStarRatioVec` is not specified. We substitute `HeStarRatioVec = ",
+                       HeStarRatioVec,"` instead."))
+      }
+
+      if (!(length(HeStarRatioVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(HeStarRatioVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(HeStarRatioVec) == 1) {
+        HeStarRatioVec <- rep(HeStarRatioVec, nGenerationProceed)
+      }
+      names(HeStarRatioVec) <- 1:nGenerationProceed
+
+
+      # degreeOCSVec
+      if (!is.null(degreeOCSVec)) {
+        stopifnot(is.numeric(degreeOCSVec))
+        stopifnot(all(degreeOCSVec > 0))
+      } else {
+        degreeOCSVec <- 1
+        message(paste0("`degreeOCSVec` is not specified. We substitute `degreeOCSVec = ",
+                       degreeOCSVec,"` instead."))
+      }
+
+      if (!(length(degreeOCSVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(degreeOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(degreeOCSVec) == 1) {
+        degreeOCSVec <- rep(degreeOCSVec, nGenerationProceed)
+      }
+      names(degreeOCSVec) <- 1:nGenerationProceed
+
+
+      # includeGVPOCSVec
+      stopifnot(is.logical(includeGVPOCSVec))
+
+      if (!(length(includeGVPOCSVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(includeGVPOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(includeGVPOCSVec) == 1) {
+        includeGVPOCSVec <- rep(includeGVPOCSVec, nGenerationProceed)
+      }
+      names(includeGVPOCSVec) <- 1:nGenerationProceed
+
+
+      # hOCSList
+      if (!is.null(hOCSList)) {
+        if (!is.list(hOCSList)) {
+          hOCSList <- list(hOCSList)
+        }
+      } else {
+        hOCSList <- 1
+        message(paste0("`hList` is not specified. We substitute `hList = list(",
+                       hList,")` instead."))
+        hOCSList <- sapply(X = 1:nGenerationProceed,
+                           FUN = function(generationProceedNo) {
+                             hOCSLenNow <- length(traitNoRAOCSList[[generationProceedNo]]) *
+                               (length(weightedAllocationMethodOCSList[[generationProceedNo]]) +
+                                  includeGVPOCSVec[generationProceedNo])
+
+                             return(rep(hOCSList, hLenOCSNow))
+                           }, simplify = FALSE)
+      }
+
+      if (!(length(hOCSList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(hOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(hOCSList) == 1) {
+        hOCSList <- rep(hOCSList, nGenerationProceed)
+      }
+      stopifnot(all(unlist(lapply(hOCSList, is.numeric))))
+      stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
+      stopifnot(all(sapply(hOCSList, function(h) all(h <= 10))))
+      stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoRAOCSList, length)) *
+                                                           (unlist(lapply(weightedAllocationMethodOCSList, length)) + includeGVPOCSVec))))
+
+      names(hOCSList) <- 1:nGenerationProceed
+
+
+      # weightedAllocationMethodOCSList
+      if (!is.null(weightedAllocationMethodOCSList)) {
+        if (!is.list(weightedAllocationMethodOCSList)) {
+          weightedAllocationMethodOCSList <- list(weightedAllocationMethodOCSList)
+        }
+      } else {
+        weightedAllocationMethodOCSList <- "selectBV"
+        message(paste0("`weightedAllocationMethodOCSList` is not specified. We substitute `weightedAllocationMethodOCSList = list(",
+                       weightedAllocationMethodOCSList,")` instead."))
+        weightedAllocationMethodOCSList <- list(weightedAllocationMethodOCSList)
+      }
+
+      if (!(length(weightedAllocationMethodOCSList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(weightedAllocationMethodOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(weightedAllocationMethodOCSList) == 1) {
+        weightedAllocationMethodOCSList <- rep(weightedAllocationMethodOCSList, nGenerationProceed)
+      }
+      weightedAllocationMethodOCSList <- lapply(weightedAllocationMethodOCSList, function(x) x[x %in% selectionMethodsWithSelection])
+
+      names(weightedAllocationMethodOCSList) <- 1:nGenerationProceed
+      stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, is.character))))
+      stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, length)) >= 1))
+
+
+
+      # traitNoOCSList
+      if (!is.null(traitNoOCSList)) {
+        if (!is.list(traitNoOCSList)) {
+          traitNoOCSList <- list(traitNoOCSList)
+        }
+      } else {
+        traitNoOCSList <- 1
+        message(paste0("`traitNoOCSList` is not specified. We substitute `traitNoRAList = list(",
+                       traitNoOCSList,")` instead."))
+        traitNoOCSList <- list(traitNoOCSList)
+      }
+
+      if (!(length(traitNoOCSList) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(traitNoOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(traitNoOCSList) == 1) {
+        traitNoOCSList <- rep(traitNoOCSList, nGenerationProceed)
+      }
+      stopifnot(all(unlist(lapply(traitNoOCSList, is.numeric))))
+      stopifnot(all(sapply(traitNoOCSList, function(traitNoOCS) all(traitNoOCS >= 1))))
+
+      names(traitNoOCSList) <- 1:nGenerationProceed
+
+
+      # nCrossesOCSVec
+      if (!is.null(nCrossesOCSVec)) {
+        stopifnot(is.numeric(nCrossesOCSVec))
+        nCrossesOCSVec <- floor(nCrossesOCSVec)
+        stopifnot(all(nCrossesOCSVec >= 1))
+      } else {
+        nCrossesOCSVec <- 0
+        message(paste0("`nCrossesOCSVec` is not specified. We substitute `nCrossesOCSVec = ",
+                       nCrossesOCSVec,"` instead."))
+      }
+
+      if (!(length(nCrossesOCSVec) %in% c(1, nGenerationProceed))) {
+        stop(paste("length(nCrossesOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      } else if (length(nCrossesOCSVec) == 1) {
+        nCrossesOCSVec <- rep(nCrossesOCSVec, nGenerationProceed)
+      }
+      names(nCrossesOCSVec) <- 1:nGenerationProceed
+
+
+
       # hLens
       hLens <- sapply(X = 1:nGenerationProceedSimulation,
                       FUN = function(genNow) {
@@ -2090,6 +2330,16 @@ simBsOpt <- R6::R6Class(
       self$minimumUnitAllocateVec <- minimumUnitAllocateVec
       self$includeGVPVec <- includeGVPVec
       self$nNextPopVec <- nNextPopVec
+      self$targetGenGVPVec <- targetGenGVPVec
+      self$performOCSVec <- performOCSVec
+      self$targetGenOCSVec <- targetGenOCSVec
+      self$HeStarRatioVec <- HeStarRatioVec
+      self$degreeOCSVec <- degreeOCSVec
+      self$includeGVPOCSVec <- includeGVPOCSVec
+      self$hOCSList <- hOCSList
+      self$weightedAllocationMethodOCSList <- weightedAllocationMethodOCSList
+      self$traitNoOCSList <- traitNoOCSList
+      self$nCrossesOCSVec <- nCrossesOCSVec
       self$nameMethod <- nameMethod
       self$nCores <- nCores
       self$nCoresPerOptimization <- nCoresPerOptimization
@@ -2505,6 +2755,16 @@ simBsOpt <- R6::R6Class(
                                                allocateMethodVec = allocateMethodVec,
                                                weightedAllocationMethodList = weightedAllocationMethodList,
                                                includeGVPVec = includeGVPVec,
+                                               targetGenGVPVec = targetGenGVPVec,
+                                               performOCSVec = performOCSVec,
+                                               targetGenOCSVec = targetGenOCSVec,
+                                               HeStarRatioVec = HeStarRatioVec,
+                                               degreeOCSVec = degreeOCSVec,
+                                               includeGVPOCSVec = includeGVPOCSVec,
+                                               hOCSList = hOCSList,
+                                               weightedAllocationMethodOCSList = weightedAllocationMethodOCSList,
+                                               traitNoOCSList = traitNoOCSList,
+                                               nCrossesOCSVec = nCrossesOCSVec,
                                                traitNoRAList = traitNoRAList,
                                                hList = hListOpt,
                                                minimumUnitAllocateVec = minimumUnitAllocateVec,
@@ -3164,6 +3424,16 @@ simBsOpt <- R6::R6Class(
                                                allocateMethodVec = self$allocateMethodVec[1:nGenerationProceedSimulation],
                                                weightedAllocationMethodList = self$weightedAllocationMethodList[1:nGenerationProceedSimulation],
                                                includeGVPVec = self$includeGVPVec[1:nGenerationProceedSimulation],
+                                               targetGenGVPVec = targetGenGVPVec[1:nGenerationProceedSimulation],
+                                               performOCSVec = performOCSVec[1:nGenerationProceedSimulation],
+                                               targetGenOCSVec = targetGenOCSVec[1:nGenerationProceedSimulation],
+                                               HeStarRatioVec = HeStarRatioVec[1:nGenerationProceedSimulation],
+                                               degreeOCSVec = degreeOCSVec[1:nGenerationProceedSimulation],
+                                               includeGVPOCSVec = includeGVPOCSVec[1:nGenerationProceedSimulation],
+                                               hOCSList = hOCSList[1:nGenerationProceedSimulation],
+                                               weightedAllocationMethodOCSList = weightedAllocationMethodOCSList[1:nGenerationProceedSimulation],
+                                               traitNoOCSList = traitNoOCSList[1:nGenerationProceedSimulation],
+                                               nCrossesOCSVec = nCrossesOCSVec[1:nGenerationProceedSimulation],
                                                traitNoRAList = self$traitNoRAList[1:nGenerationProceedSimulation],
                                                hList = hList[1:nGenerationProceedSimulation],
                                                minimumUnitAllocateVec = self$minimumUnitAllocateVec[1:nGenerationProceedSimulation],
@@ -3624,7 +3894,17 @@ simBsOpt <- R6::R6Class(
                                                            h = hListOpt[[hCount]],
                                                            minimumUnitAllocate = minimumUnitAllocateVec[hCount],
                                                            includeGVP = includeGVPVec[hCount],
+                                                           targetGenGVP = targetGenGVPVec[hCount],
                                                            nNextPop = nNextPopVec[hCount],
+                                                           performOCS = performOCSVec[hCount],
+                                                           targetGenOCS = targetGenOCSVec[hCount],
+                                                           HeStarRatio = HeStarRatioVec[hCount],
+                                                           degreeOCS = degreeOCSVec[hCount],
+                                                           includeGVPOCS = includeGVPOCSVec[hCount],
+                                                           hOCS = hOCSList[[hCount]],
+                                                           weightedAllocationMethodOCS = weightedAllocationMethodOCSList[[hCount]],
+                                                           traitNoOCS = traitNoOCSList[[hCount]],
+                                                           nCrossesOCS = nCrossesOCSVec[hCount],
                                                            nPairs = NULL,
                                                            nameMethod = nameMethod,
                                                            indNames = NULL,

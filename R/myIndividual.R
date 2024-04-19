@@ -151,48 +151,117 @@ individual <- R6::R6Class(
     #' @examples
     #' myInd$generateGametes()
     #' myInd$generateGametes(2)
+    #'
+    # generateGametes = function(n = 1) {
+    #   gametes <- lapply(1:n, function(x) {
+    #     gamete <- mapply(function(haploNow, genoMap) {
+    #       chrName <- genoMap$chr[1]
+    #       chrLen <- self$specie$lChr[chrName]
+    #
+    #       if (self$specie$recombRateOneVal) {
+    #         if (is.na(self$specie$recombRate)) {
+    #           stop('specie$recombRate must be specify in order to generate gemtes')
+    #         }
+    #         # number of recombination events:
+    #         nRecomb <- rbinom(1, chrLen, self$specie$recombRate)
+    #
+    #         Rpos <- sample.int(chrLen, nRecomb)
+    #
+    #         gamHaplo <- integer(ncol(haploNow))
+    #         # split SNP beetween two chromosome
+    #         g <- runif(1) + 1
+    #         if (length(Rpos) == 0) {
+    #           gamHaplo <- haploNow[g, ]
+    #         } else {
+    #           ids <- unique(c(0,
+    #                           sort(findInterval(Rpos, genoMap$pos)),
+    #                           length(genoMap$pos))
+    #           )
+    #           for (i in seq_len(length(ids) - 1)) {
+    #             gamHaplo[(ids[[i]] + 1):ids[[i + 1]]] <-
+    #               haploNow[g, (ids[[i]] + 1):ids[[i + 1]]]
+    #             g <- - g + 3
+    #           }
+    #         }
+    #         names(gamHaplo) <- colnames(haploNow)
+    #       } else {
+    #         rec <- genoMap$rec
+    #         samples <- runif(length(rec))
+    #         crossOver <- ((rec - samples) >= 0)
+    #         selectHaplo <- cumsum(crossOver) %% 2
+    #         selectHaplo <- selectHaplo + 1
+    #         whichHaplo <- (runif(1) < 0.5) + 1
+    #         gamHaplo <- haploNow[whichHaplo, ]
+    #         gamHaplo[selectHaplo == 2] <- haploNow[3 - whichHaplo, selectHaplo == 2]
+    #       }
+    #
+    #       return(gamHaplo)
+    #     },
+    #     self$haplo$values,
+    #     self$haplo$lociInfo$genoMapList,
+    #     SIMPLIFY = FALSE)
+    #
+    #     gamete <- unlist(gamete, use.names = FALSE)
+    #     names(gamete) <- names(self$haplo$allelDose)
+    #     gamete
+    #
+    #   })
+    #
+    #   gametes
+    # }
+
     generateGametes = function(n = 1) {
       gametes <- lapply(1:n, function(x) {
         gamete <- mapply(function(haploNow, genoMap) {
           chrName <- genoMap$chr[1]
           chrLen <- self$specie$lChr[chrName]
 
-          if (self$specie$recombRateOneVal) {
-            if (is.na(self$specie$recombRate)) {
-              stop('specie$recombRate must be specify in order to generate gemtes')
-            }
-            # number of recombination events:
-            nRecomb <- rbinom(1, chrLen, self$specie$recombRate)
+          isCrossOver <- runif(1) >= 0.5
 
-            Rpos <- sample.int(chrLen, nRecomb)
-
-            gamHaplo <- integer(ncol(haploNow))
-            # split SNP beetween two chromosome
-            g <- runif(1) + 1
-            if (length(Rpos) == 0) {
-              gamHaplo <- haploNow[g, ]
-            } else {
-              ids <- unique(c(0,
-                              sort(findInterval(Rpos, genoMap$pos)),
-                              length(genoMap$pos))
-              )
-              for (i in seq_len(length(ids) - 1)) {
-                gamHaplo[(ids[[i]] + 1):ids[[i + 1]]] <-
-                  haploNow[g, (ids[[i]] + 1):ids[[i + 1]]]
-                g <- - g + 3
+          if (isCrossOver) {
+            if (self$specie$recombRateOneVal) {
+              if (is.na(self$specie$recombRate)) {
+                stop('specie$recombRate must be specify in order to generate gemtes')
               }
+              # number of recombination events:
+              nRecomb <- rbinom(1, chrLen, 2 * self$specie$recombRate)
+
+              Rpos <- sample.int(chrLen, nRecomb)
+
+              gamHaplo <- integer(ncol(haploNow))
+              # split SNP beetween two chromosome
+              g <- runif(1) + 1
+              if (length(Rpos) == 0) {
+                gamHaplo <- (runif(1) < 0.5) + 1
+              } else {
+                ids <- unique(c(0,
+                                sort(findInterval(Rpos, genoMap$pos)),
+                                length(genoMap$pos))
+                )
+                for (i in seq_len(length(ids) - 1)) {
+                  gamHaplo[(ids[[i]] + 1):ids[[i + 1]]] <-
+                    haploNow[g, (ids[[i]] + 1):ids[[i + 1]]]
+                  g <- - g + 3
+                }
+              }
+              names(gamHaplo) <- colnames(haploNow)
+            } else {
+              rec <- genoMap$rec
+              samples <- runif(length(rec))
+              crossOverProb <- rec
+              crossOverProb[2:length(rec)] <- 2 * crossOverProb[2:length(rec)]
+              crossOver <- ((crossOverProb - samples) >= 0)
+              selectHaplo <- cumsum(crossOver) %% 2
+              selectHaplo <- selectHaplo + 1
+              whichHaplo <- (runif(1) < 0.5) + 1
+              gamHaplo <- haploNow[whichHaplo, ]
+              gamHaplo[selectHaplo == 2] <- haploNow[3 - whichHaplo, selectHaplo == 2]
             }
-            names(gamHaplo) <- colnames(haploNow)
           } else {
-            rec <- genoMap$rec
-            samples <- runif(length(rec))
-            crossOver <- ((rec - samples) >= 0)
-            selectHaplo <- cumsum(crossOver) %% 2
-            selectHaplo <- selectHaplo + 1
             whichHaplo <- (runif(1) < 0.5) + 1
             gamHaplo <- haploNow[whichHaplo, ]
-            gamHaplo[selectHaplo == 2] <- haploNow[3 - whichHaplo, selectHaplo == 2]
           }
+
 
           return(gamHaplo)
         },
@@ -202,11 +271,11 @@ individual <- R6::R6Class(
 
         gamete <- unlist(gamete, use.names = FALSE)
         names(gamete) <- names(self$haplo$allelDose)
-        gamete
 
+        return(gamete)
       })
 
-      gametes
+      return(gametes)
     }
   ),
   active = list(

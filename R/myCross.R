@@ -113,6 +113,42 @@ crossInfo <- R6::R6Class(
     EMBV = NULL,
     #' @field haploEffMaxArray [array] haploid value of each segment (haplotype block) for each individual
     haploEffMaxArray = NULL,
+    #' @field K [matrix] genomic relationship matrix computed by linear kernel
+    K = NULL,
+    #' @field He0 [numeric] initial neutral diversity
+    He0 = NULL,
+    #' @field performOCS [logical] whether or not performing OCS before allocation
+    performOCS = NULL,
+    #' @field targetGenOCS [numeric] target generation in OCS
+    targetGenOCS = NULL,
+    #' @field HeStarRatio [numeric] ratio of He0 to HeStar
+    HeStarRatio = NULL,
+    #' @field degreeOCS [numeric] how generation effect is emphasized when computing He(t)
+    degreeOCS = NULL,
+    #' @field includeGVPOCS [logical] Whether or not to consider genetic variance of progenies of each pair when evaluating each pair in OCS
+    includeGVPOCS = NULL,
+    #' @field hOCS [numeric] weight for each trait/criterion to evaluate each mating pair
+    hOCS = NULL,
+    #' @field weightedAllocationMethodOCS [character] Which selection index will be used to evaluate mating pair in OCS
+    weightedAllocationMethodOCS = NULL,
+    #' @field traitNoOCS [numeric] trait No to evaluate mating pair in OCS
+    traitNoOCS = NULL,
+    #' @field nCrossesOCS [numeric] number of crosses that will be selected in OCS
+    nCrossesOCS = NULL,
+    #' @field indicesChrList [list] list of marker position indices for each chromosome to evaluate the genetic variance of progenies
+    indicesChrList = NULL,
+    #' @field d12Mat1List [list] list of D12 matrix 1 to evaluate the genetic variance of progenies
+    d12Mat1List = NULL,
+    #' @field d12Mat2List [list] list of D12 matrix 2 to evaluate the genetic variance of progenies
+    d12Mat2List = NULL,
+    #' @field d13Mat1List [list] list of D13 matrix 1 to evaluate the genetic variance of progenies
+    d13Mat1List = NULL,
+    #' @field d13Mat2List [list] list of D13 matrix 2 to evaluate the genetic variance of progenies
+    d13Mat2List = NULL,
+    #' @field targetGenGVP [numeric] target generation of selfing when evaluating the genetic variance of progenies (F#)
+    targetGenGVP = NULL,
+
+
 
     #' @description Create a new population object.
     #' @param parentPopulation [population class] Parent population that will generate a new population of the next generation
@@ -149,8 +185,18 @@ crossInfo <- R6::R6Class(
     #' @param h [numeric] Hyperparameter which determines how parent pair with high BV is emphasized when producing progenies
     #' @param minimumUnitAllocate [numeric] Minimum number of allocated progenies for each pair.
     #' @param includeGVP [logical] Whether or not to consider genetic variance of progenies of each pair when determining the number of progenies per each pair
+    #' @param targetGenGVP [numeric] target generation of selfing when evaluating the genetic variance of progenies (F#)
     #' @param nNextPop [numeric] Number of progenies for the next generation
     #' @param nPairs [numeric] Number of parent pairs for the next generation
+    #' @param targetGenOCS [numeric] target generation in OCS
+    #' @param performOCS [logical] whether or not performing OCS before allocation
+    #' @param HeStarRatio [numeric] ratio of He0 to HeStar
+    #' @param degreeOCS [numeric] how generation effect is emphasized when computing He(t)
+    #' @param includeGVPOCS [logical] Whether or not to consider genetic variance of progenies of each pair when evaluating each pair in OCS
+    #' @param hOCS [numeric] weight for each trait/criterion to evaluate each mating pair
+    #' @param weightedAllocationMethodOCS [character] Which selection index will be used to evaluate mating pair in OCS
+    #' @param traitNoOCS [numeric] trait No to evaluate mating pair in OCS
+    #' @param nCrossesOCS [numeric] number of crosses that will be selected in OCS
     #' @param nameMethod [character] Method for naming individuals
     #' @param indNames [character] Character string vector specifying the individuals names
     #' of the new population
@@ -238,8 +284,18 @@ crossInfo <- R6::R6Class(
                           h = NULL,
                           minimumUnitAllocate = NULL,
                           includeGVP = FALSE,
+                          targetGenGVP = NULL,
                           nNextPop = NULL,
                           nPairs = NULL,
+                          performOCS = FALSE,
+                          targetGenOCS = NULL,
+                          HeStarRatio = NULL,
+                          degreeOCS = NULL,
+                          includeGVPOCS = FALSE,
+                          hOCS = NULL,
+                          weightedAllocationMethodOCS = NULL,
+                          traitNoOCS = NULL,
+                          nCrossesOCS = NULL,
                           nameMethod = "pairBase",
                           indNames = NULL,
                           seedSimRM = NA,
@@ -730,6 +786,17 @@ crossInfo <- R6::R6Class(
       }
 
 
+      # targetGenGVP
+      if (!is.null(targetGenGVP)) {
+        stopifnot(is.numeric(targetGenGVP))
+        targetGenGVP <- floor(targetGenGVP)
+        stopifnot(targetGenGVP >= 0)
+      } else {
+        targetGenGVP <- 0
+        message(paste0("`targetGenOCS` is not specified. We substitute `targetGenGVP = ", targetGenGVP,"` instead."))
+      }
+
+
       if (!is.null(h)) {
         stopifnot(is.numeric(h))
         stopifnot(all(h >= 0))
@@ -1011,6 +1078,100 @@ crossInfo <- R6::R6Class(
       }
 
 
+      # performOCS
+      stopifnot(is.logical(performOCS))
+
+
+      # targetGenOCS
+      if (!is.null(targetGenOCS)) {
+        stopifnot(is.numeric(targetGenOCS))
+        targetGenOCS <- floor(targetGenOCS)
+        stopifnot(targetGenOCS >= 1)
+      } else {
+        targetGenOCS <- 10
+        message(paste0("`targetGenOCS` is not specified. We substitute `targetGenOCS = ", targetGenOCS,"` instead."))
+      }
+
+      # HeStarRatio
+      if (!is.null(HeStarRatio)) {
+        stopifnot(is.numeric(HeStarRatio))
+        stopifnot(all(HeStarRatio >= 0))
+      } else {
+        HeStarRatio <- 0.1
+        message(paste0("`HeStarRatio` is not specified. We substitute `HeStarRatio = ", HeStarRatio, "` instead."))
+      }
+
+      # degreeOCS
+      if (!is.null(degreeOCS)) {
+        stopifnot(is.numeric(degreeOCS))
+        stopifnot(all(degreeOCS >= 0))
+      } else {
+        degreeOCS <- 1
+        message(paste0("`degreeOCS` is not specified. We substitute `degreeOCS = ", degreeOCS, "` instead."))
+      }
+
+      # includeGVPOCS
+      stopifnot(is.logical(includeGVPOCS))
+      if (matingMethod == "makeDH") {
+        includeGVPOCS <- FALSE
+        message("If you use `makeDH` option for mating method, you cannot include genetic variance of progenies for OCS.")
+      }
+
+      # weightedAllocationMethodOCS
+      if (!is.null(weightedAllocationMethodOCS)) {
+        if (!(all(weightedAllocationMethodOCS %in% selectionMethodsWithSelection))) {
+          weightedAllocationMethodOCS <- weightedAllocationMethodOCS[weightedAllocationMethodOCS %in% selectionMethodsWithSelection]
+          message(paste0("We only offer the following weighted allocation methods: ",
+                         paste(selectionMethodsWithSelection, collapse = "; ")))
+          stopifnot(length(weightedAllocationMethodOCS) >= 1)
+        }
+      } else {
+        weightedAllocationMethodOCS <- "selectBV"
+        message("You do not specify the weighted allocation method for OCS. 'selectBV' will be used.")
+      }
+
+      # traitNoOCS
+      if (!is.null(traitNoOCS)) {
+        stopifnot(is.numeric(traitNoOCS))
+        traitNoOCS <- floor(traitNoOCS)
+        stopifnot(all(traitNoOCS >= 1))
+        stopifnot(all(traitNoOCS <= nTraits))
+      } else {
+        traitNoOCS <- 1
+        message(paste0("`traitNoOCS` is not specified. We substitute `traitNoOCS = ", traitNoOCS, "` instead."))
+      }
+
+
+
+      # hOCS
+      if (!is.null(hOCS)) {
+        stopifnot(is.numeric(hOCS))
+        stopifnot(all(hOCS >= 0))
+      } else {
+        hOCS <- 1
+        message(paste0("`hOCS` is not specified. We substitute `hOCS = ", hOCS, "` instead."))
+      }
+
+      hOCSLen <- length(traitNoOCS) * (length(weightedAllocationMethodOCS) + includeGVPOCS)
+
+      if (!(length(hOCS) %in% c(1, hOCS))) {
+        stop(paste("length(hOCS) must be equal to 1 or equal to `length(traitNoOCS) * (length(weightedAllocationMethodOCS) + includeGVPOCS)`"))
+      } else if (length(hOCS) == 1) {
+        hOCS <- rep(hOCS, hOCSLen)
+      }
+
+
+      # nCrossesOCS
+      if (!is.null(nCrossesOCS)) {
+        stopifnot(is.numeric(nCrossesOCS))
+        nCrossesOCS <- floor(nCrossesOCS)
+        stopifnot(nCrossesOCS >= 1)
+      } else {
+        nCrossesOCS <- 10
+        message(paste0("`nCrossesOCS` is not specified. We substitute `nCrossesOCS = ", nCrossesOCS, "` instead."))
+      }
+
+
       self$parentPopulation <- parentPopulation
       self$nSelectionWays <- nSelectionWays
       self$selectionMethod <- selectionMethod
@@ -1037,6 +1198,7 @@ crossInfo <- R6::R6Class(
       self$h <- h
       self$minimumUnitAllocate <- minimumUnitAllocate
       self$includeGVP <- includeGVP
+      self$targetGenGVP <- targetGenGVP
       self$nNextPop <- nNextPop
       self$nPairs <- nPairs
       self$nameMethod <- nameMethod
@@ -1048,6 +1210,15 @@ crossInfo <- R6::R6Class(
       self$nProgeniesEMBV <- nProgeniesEMBV
       self$nIterEMBV <- nIterEMBV
       self$nCoresEMBV <- nCoresEMBV
+      self$performOCS <- performOCS
+      self$targetGenOCS <- targetGenOCS
+      self$HeStarRatio <- HeStarRatio
+      self$degreeOCS <- degreeOCS
+      self$includeGVPOCS <- includeGVPOCS
+      self$hOCS <- hOCS
+      self$weightedAllocationMethodOCS <- weightedAllocationMethodOCS
+      self$traitNoOCS <- traitNoOCS
+      self$nCrossesOCS <- nCrossesOCS
       self$verbose <- verbose
     },
 
@@ -1627,86 +1798,11 @@ crossInfo <- R6::R6Class(
           nProgenies <- c(nProgenies, rep(0, nPairs - nPairsNow))
         }
       } else if (allocateMethod == "weightedAllocation") {
-        BVAll <- NULL
-
-        if ("selectBV" %in% weightedAllocationMethod) {
-          if (is.null(self$BV)) {
-            BVNow <- self$computeBV[, self$traitNoRA, drop = FALSE]
-          } else {
-            BVNow <- self$BV[, self$traitNoRA, drop = FALSE]
-          }
-          BVAll <- cbind(BVAll, BVNow)
-        }
-
-        if ("selectWBV" %in% weightedAllocationMethod) {
-          if (is.null(self$WBV)) {
-            BVNow <- self$computeWBV[, self$traitNoRA, drop = FALSE]
-          } else {
-            BVNow <- self$WBV[, self$traitNoRA, drop = FALSE]
-          }
-          BVAll <- cbind(BVAll, BVNow)
-        }
-
-        if ("selectOHV" %in% weightedAllocationMethod) {
-          if (is.null(self$OHV)) {
-            BVNow <- self$computeOHV[, self$traitNoRA, drop = FALSE]
-          } else {
-            BVNow <- self$OHV[, self$traitNoRA, drop = FALSE]
-          }
-          BVAll <- cbind(BVAll, BVNow)
-        }
-
-        if ("selectEMBV" %in% weightedAllocationMethod) {
-          if (is.null(self$EMBV)) {
-            BVNow <- self$computeEMBV[, self$traitNoRA, drop = FALSE]
-          } else {
-            BVNow <- self$EMBV[, self$traitNoRA, drop = FALSE]
-          }
-          BVAll <- cbind(BVAll, BVNow)
-        }
-
-        if ("userSI" %in% weightedAllocationMethod) {
-          BVNow <- self$userSI[, self$traitNoRA, drop = FALSE]
-          BVAll <- cbind(BVAll, BVNow)
-        }
-
-        if (!is.null(BVAll)) {
-          BVScaled <- apply(X = BVAll, MARGIN = 2,
-                            FUN = function(BV) {
-                              return(scale(x = BV, center = TRUE,
-                                           scale = as.logical(sd(BV))))
-                            })
-          rownames(BVScaled) <- rownames(BVAll)
-          colnames(BVScaled) <- colnames(BVAll)
-        } else {
-          BVScaled <- NULL
-        }
-
-
-        if (self$matingMethod != "makeDH") {
-          if (!is.null(BVScaled)) {
-            BVEachPair <- (BVScaled[crosses0[, 1], , drop = FALSE] +
-                             BVScaled[crosses0[, 2], , drop = FALSE]) / 2
-          } else {
-            BVEachPair <- NULL
-          }
-
-          if ("selectOPV" %in% weightedAllocationMethod) {
-            OPVNow <- matrix(data = apply(X = crosses0, MARGIN = 1, private$computeOPV),
-                             nrow = nrow(crosses0), byrow = TRUE)
-            BVEachPair <- cbind(BVEachPair, OPVNow[, self$traitNoRA, drop = FALSE])
-          }
-
-          if (self$includeGVP) {
-            genVarProgenies <- private$computeGVP(crosses0 = crosses0)
-            BVEachPair <- cbind(BVEachPair, genVarProgenies[, self$traitNoRA, drop = FALSE])
-          }
-        } else {
-          BVEachPair <- BVScaled
-        }
-
-
-        weightedBVEachPair <- as.numeric(BVEachPair %*% as.matrix(h))
+        weightedBVEachPair <- self$computeWeightedBV(crosses0 = crosses0,
+                                                     h = h,
+                                                     weightedAllocationMethod = weightedAllocationMethod,
+                                                     traitNoRA = self$traitNoRA,
+                                                     includeGVP = self$includeGVP)
 
         nProgenies0 <- round(nNextPop * exp(weightedBVEachPair) / sum(exp(weightedBVEachPair)) / minimumUnitAllocate) * minimumUnitAllocate
 
@@ -1839,6 +1935,16 @@ crossInfo <- R6::R6Class(
           crosses0 <- self$makeDH
         }
 
+        if (self$performOCS) {
+          selectedIndex <- private$searchInitOC(crosses0 = crosses0,
+                                                initIndex = 1,
+                                                maxIter = 100)
+          selectedOptimalIndex <- private$searchOptimalOC(selectedIndex = selectedIndex,
+                                                          crosses0 = crosses0,
+                                                          initIndex = 1)
+          crosses0 <- crosses0[selectedOptimalIndex, ]
+        }
+
         self$allocateProgenies(crosses0 = crosses0)
       }
     },
@@ -1858,6 +1964,98 @@ crossInfo <- R6::R6Class(
         "Number of parent pairs: ", self$nPairs, "\n",
         "Number of progenies of a new population: ", self$nNextPop
       ))
+    },
+
+
+    #' @description
+    #' Return a vector of weighted BV for each mating pair
+    #' @param crosses0 [data.frame] data.frame with crossing instructions: parents names
+    #' \code{ind1} \code{ind2}
+    computeWeightedBV = function(crosses0, h,
+                                 weightedAllocationMethod,
+                                 traitNoRA, includeGVP) {
+      BVAll <- NULL
+
+      if ("selectBV" %in% weightedAllocationMethod) {
+        if (is.null(self$BV)) {
+          BVNow <- self$computeBV[, traitNoRA, drop = FALSE]
+        } else {
+          BVNow <- self$BV[, traitNoRA, drop = FALSE]
+        }
+        BVAll <- cbind(BVAll, BVNow)
+      }
+
+      if ("selectWBV" %in% weightedAllocationMethod) {
+        if (is.null(self$WBV)) {
+          BVNow <- self$computeWBV[, traitNoRA, drop = FALSE]
+        } else {
+          BVNow <- self$WBV[, traitNoRA, drop = FALSE]
+        }
+        BVAll <- cbind(BVAll, BVNow)
+      }
+
+      if ("selectOHV" %in% weightedAllocationMethod) {
+        if (is.null(self$OHV)) {
+          BVNow <- self$computeOHV[, traitNoRA, drop = FALSE]
+        } else {
+          BVNow <- self$OHV[, traitNoRA, drop = FALSE]
+        }
+        BVAll <- cbind(BVAll, BVNow)
+      }
+
+      if ("selectEMBV" %in% weightedAllocationMethod) {
+        if (is.null(self$EMBV)) {
+          BVNow <- self$computeEMBV[, traitNoRA, drop = FALSE]
+        } else {
+          BVNow <- self$EMBV[, traitNoRA, drop = FALSE]
+        }
+        BVAll <- cbind(BVAll, BVNow)
+      }
+
+      if ("userSI" %in% weightedAllocationMethod) {
+        BVNow <- self$userSI[, traitNoRA, drop = FALSE]
+        BVAll <- cbind(BVAll, BVNow)
+      }
+
+      if (!is.null(BVAll)) {
+        BVScaled <- apply(X = BVAll, MARGIN = 2,
+                          FUN = function(BV) {
+                            return(scale(x = BV, center = TRUE,
+                                         scale = as.logical(sd(BV))))
+                          })
+        rownames(BVScaled) <- rownames(BVAll)
+        colnames(BVScaled) <- colnames(BVAll)
+      } else {
+        BVScaled <- NULL
+      }
+
+
+      if (self$matingMethod != "makeDH") {
+        if (!is.null(BVScaled)) {
+          BVEachPair <- (BVScaled[crosses0[, 1], , drop = FALSE] +
+                           BVScaled[crosses0[, 2], , drop = FALSE]) / 2
+        } else {
+          BVEachPair <- NULL
+        }
+
+        if ("selectOPV" %in% weightedAllocationMethod) {
+          OPVNow <- matrix(data = apply(X = crosses0, MARGIN = 1, private$computeOPV),
+                           nrow = nrow(crosses0), byrow = TRUE)
+          BVEachPair <- cbind(BVEachPair, OPVNow[, traitNoRA, drop = FALSE])
+        }
+
+        if (includeGVP) {
+          genVarProgenies <- private$computeGVP(crosses0 = crosses0)
+          BVEachPair <- cbind(BVEachPair, genVarProgenies[, traitNoRA, drop = FALSE])
+        }
+      } else {
+        BVEachPair <- BVScaled
+      }
+
+
+      weightedBVEachPair <- as.numeric(BVEachPair %*% as.matrix(h))
+
+      return(weightedBVEachPair)
     }
 
 
@@ -2434,6 +2632,8 @@ crossInfo <- R6::R6Class(
       return(newInds)
     }
 
+
+
   ),
   private = list(
     # @description Make double haploid
@@ -2537,6 +2737,82 @@ crossInfo <- R6::R6Class(
     },
 
 
+
+    # @description Compute D matrices to evaluate the genetic variance of progenies in latter generations
+    computeDMat = function() {
+      parentPopulation <- self$parentPopulation
+      haploArray <- parentPopulation$haploArray
+      lociEffects <- self$lociEffects
+      lociInfo <- parentPopulation$traitInfo$lociInfo
+      nTraits <- parentPopulation$traitInfo$nTraits
+
+      genoMap <- lociInfo$genoMap
+      chrNames <- genoMap$chr
+      chrNamesUniq <- unique(chrNames)
+      nChrs <- length(chrNamesUniq)
+      chrNos <- 1:nChrs
+      targetGenGVP <- self$targetGenGVP
+      # targetGenGVP <- 2
+
+      lociInfo$computeRecombBetweenMarkers()
+      recombBetweenMarkersList <- lociInfo$recombBetweenMarkersList
+
+      indicesChrList <- list()
+      d12Mat1List <- list()
+      d13Mat1List <- list()
+      d12Mat2List <- rep(list(list()), nTraits)
+      d13Mat2List <- rep(list(list()), nTraits)
+      for (chrNo in chrNos) {
+        # chrNo <- 1
+        chrName <- chrNamesUniq[chrNo]
+        recombRatesMat <- recombBetweenMarkersList[[chrNo]]
+
+        if (targetGenGVP >= 2) {
+          l <- targetGenGVP - 1
+          ckMat <- 2 * recombRatesMat * (1 - (0.5 ** l) * (1 - 2 * recombRatesMat) ** l) / (1 + 2 * recombRatesMat)
+          d12Mat1 <- 0.25 * (1 - ckMat) * (1 - 2 * recombRatesMat)
+          d13Mat1 <- 0.25 * (1 - 2 * ckMat - (0.5 * (1 - 2 * recombRatesMat)) ** l)
+        } else {
+          d12Mat1 <- 0.25 * (1 - 2 * recombRatesMat)
+          d13Mat1 <- NULL
+        }
+        d12Mat1List[[chrName]] <- d12Mat1
+        d13Mat1List[[chrName]] <- d13Mat1
+
+
+        indicesChr <- which(chrNames == chrName)
+        indicesChrList[[chrName]] <- indicesChr
+
+
+
+        for (traitNo in 1:nTraits) {
+          # traitNo <- 1
+          lociEffectsNow <- lociEffects[, traitNo]
+          lociEffectsNowChr <- lociEffectsNow[indicesChr]
+          lociEffectsMatPow <- tcrossprod(as.matrix(lociEffectsNowChr))
+
+          d12Mat2 <- d12Mat1 * lociEffectsMatPow
+          if (!is.null(d13Mat1)) {
+            d13Mat2 <- d13Mat1 * lociEffectsMatPow
+          } else {
+            d13Mat2 <- None
+          }
+
+          d12Mat2List[[traitNo]][[chrName]] <- d12Mat2
+          d13Mat2List[[traitNo]][[chrName]] <- d13Mat2
+        }
+
+      }
+
+
+      self$indicesChrList <- indicesChrList
+      self$d12Mat1List <- d12Mat1List
+      self$d12Mat2List <- d12Mat2List
+      self$d13Mat1List <- d13Mat1List
+      self$d13Mat2List <- d13Mat2List
+    },
+
+
     # @description computeGVP [matrix] matrix of the genetic variance of progenies
     # @param crosses0 [data.frame] data.frame with crossing instructions: parents names
     # \code{ind1} \code{ind2}
@@ -2545,93 +2821,203 @@ crossInfo <- R6::R6Class(
       haploArray <- parentPopulation$haploArray
       lociEffects <- self$lociEffects
       lociInfo <- parentPopulation$traitInfo$lociInfo
+      nTraits <- parentPopulation$traitInfo$nTraits
+      traitNames <- parentPopulation$traitInfo$traitNames
       genoMap <- lociInfo$genoMap
-      chrNames <- lociInfo$specie$chrNames
+      chrNames <- genoMap$chr
+      chrNamesUniq <- unique(chrNames)
+      nChrs <- length(chrNamesUniq)
+      chrNos <- 1:nChrs
       lociNames <- rownames(lociEffects)
       selCands <- self$selCands
+      indNamesAll <- names(parentPopulation$inds)
+      targetGenGVP <- self$targetGenGVP
 
       haploArraySel <- haploArray[selCands, , , drop = FALSE]
 
-      lociInfo$computeRecombBetweenMarkers()
-      recombBetweenMarkersList <- lociInfo$recombBetweenMarkersList
+
+      if (targetGenGVP >= 2) {
+        if (is.null(self$self.d12Mat2List)) {
+          private$computeDMat()
+        }
+        indicesChrList <- self$indicesChrList
+        d12Mat2List <- self$d12Mat2List
+        d13Mat2List <- self$d13Mat2List
+
+        nPairs <- nrow(crosses0)
+        nIndSel <- length(selCands)
+
+        gvpWithinIndArray <- array(data = 0,
+                                   dim = c(nIndSel, nTraits, nChrs),
+                                   dimnames = list(Ind = selCands,
+                                                   Trait = traitNames,
+                                                   Chr = chrNamesUniq))
+        for (indNo in 1:nIndSel) {
+          genoVecP1 <- haploArraySel[indNo, , 1] * 2
+          genoVecP2 <- haploArraySel[indNo, , 2] * 2
+
+          for (chrNo in chrNos) {
+            indicesChr <- indicesChrList[[chrNo]]
+            genoVecP1Chr <- genoVecP1[indicesChr]
+            genoVecP2Chr <- genoVecP2[indicesChr]
+            gammaWithinIndChr <- genoVecP1Chr - genoVecP2Chr
+            gammaProdMat <- tcrossprod(as.matrix(gammaWithinIndChr))
+
+            for (traitNo in 1:nTraits) {
+              d12Mat2 <- d12Mat2List[[traitNo]][[chrNo]]
+              gvpWithinIndArray[indNo, traitNo, chrNo] <- sum(d12Mat2 * gammaProdMat)
+            }
+          }
+        }
+        gvpWithinInd <- apply(X = gvpWithinIndArray,
+                              MARGIN = c(1, 2), FUN = sum)
+
+        genVarProgenies <- array(data = 0,
+                                 dim = c(nPairs, nTraits),
+                                 dimnames = list(Cross = rownames(crosses0),
+                                                 Chr = chrNamesUniq))
+
+        for (pairNo in 1:nPairs) {
+          parentNamesNow <- as.matrix(crosses0)[pairNo, ]
+          gvpWithinIndPair <- gvpWithinInd[parentNamesNow, ]
+          gvpWithinIndSum <- apply(X = gvpWithinIndPair,
+                                   MARGIN = 2, FUN = sum)
+
+          if (targetGenGVP >= 2) {
+            genoVecP1 <- haploArraySel[parentNamesNow[1], , 1] * 2
+            genoVecP2 <- haploArraySel[parentNamesNow[1], , 2] * 2
+            genoVecP3 <- haploArraySel[parentNamesNow[2], , 1] * 2
+            genoVecP4 <- haploArraySel[parentNamesNow[2], , 2] * 2
 
 
-      genVarProgeniesChrSelList <- sapply(X = chrNames,
-                                          FUN = function(chrName) {
-                                            genoMapChr <- genoMap[genoMap$chr %in% chrName, ]
-                                            lociNamesChr <- genoMapChr$lociNames
-                                            lociEffectsChr <- lociEffects[lociNamesChr, ]
-                                            recombBetweenMarkers <- recombBetweenMarkersList[[chrName]]
+            gvpBeyondIndSumMat <- matrix(data = 0,
+                                         nrow = nTraits,
+                                         ncol = nChrs,
+                                         dimnames = list(Trait = traitNames,
+                                                         Chr = chrNamesUniq))
 
-                                            haploArraySelChr <- haploArraySel[, lociNamesChr, ]
 
-                                            genVarProgeniesChrSelList <- sapply(X = dimnames(haploArraySelChr)[[1]],
-                                                                                FUN = function(indName) {
-                                                                                  haploArraySelChrNow <- haploArraySelChr[indName, , , drop = TRUE]
+            for (chrNo in chrNos) {
+              indicesChr <- indicesChrList[[chrNo]]
+              genoVecP1Chr <- genoVecP1[indicesChr]
+              genoVecP2Chr <- genoVecP2[indicesChr]
+              genoVecP3Chr <- genoVecP3[indicesChr]
+              genoVecP4Chr <- genoVecP4[indicesChr]
 
-                                                                                  haploArraySelChrNowHetero10Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == 1)]
-                                                                                  haploArraySelChrNowHetero01Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == -1)]
+              gamma13 <- genoVecP1Chr - genoVecP3Chr
+              gamma14 <- genoVecP1Chr - genoVecP4Chr
+              gamma23 <- genoVecP2Chr - genoVecP3Chr
+              gamma24 <- genoVecP2Chr - genoVecP4Chr
 
-                                                                                  matForGenVarProgeniesChrSelNow <- matrix(data = 0,
-                                                                                                                           nrow = nrow(genoMapChr),
-                                                                                                                           ncol = nrow(genoMapChr),
-                                                                                                                           dimnames = list(lociNamesChr,
-                                                                                                                                           lociNamesChr))
+              gammaProdMat <- tcrossprod(as.matrix(gamma13)) +
+                tcrossprod(as.matrix(gamma14)) +
+                tcrossprod(as.matrix(gamma23)) +
+                tcrossprod(as.matrix(gamma24))
 
-                                                                                  if (length(haploArraySelChrNowHetero10Names) >= 1) {
-                                                                                    matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names] <-
-                                                                                      1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names]
-                                                                                    if (length(haploArraySelChrNowHetero01Names) >= 1) {
-                                                                                      matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] <-
-                                                                                        2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] - 1
-                                                                                      matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] <-
-                                                                                        2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] - 1
-                                                                                      matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
-                                                                                        1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
+
+              for (traitNo in 1:nTraits) {
+                d13Mat2 <- d13Mat2List[[traitNo]][[chrNo]]
+                gvpBeyondIndSumMat[traitNo, chrNo]  <- sum(d13Mat2 * gammaProdMat)
+
+              }
+            }
+
+            gvpBeyondIndSum <- apply(X = gvpBeyondIndSumMat,
+                                     MARGIN = 1, FUN = sum)
+          } else {
+            gvpBeyondIndSum <- rep(0, nTraits)
+            names(gvpBeyondIndSum) <- traitNames
+          }
+
+
+          gvpEachPair <- gvpWithinIndSum + gvpBeyondIndSum
+          genVarProgenies[pairNo, ] <- gvpEachPair
+        }
+
+
+      } else {
+
+        lociInfo$computeRecombBetweenMarkers()
+        recombBetweenMarkersList <- lociInfo$recombBetweenMarkersList
+
+
+        genVarProgeniesChrSelList <- sapply(X = chrNames,
+                                            FUN = function(chrName) {
+                                              genoMapChr <- genoMap[genoMap$chr %in% chrName, ]
+                                              lociNamesChr <- genoMapChr$lociNames
+                                              lociEffectsChr <- lociEffects[lociNamesChr, ]
+                                              recombBetweenMarkers <- recombBetweenMarkersList[[chrName]]
+
+                                              haploArraySelChr <- haploArraySel[, lociNamesChr, ]
+
+                                              genVarProgeniesChrSelList <- sapply(X = dimnames(haploArraySelChr)[[1]],
+                                                                                  FUN = function(indName) {
+                                                                                    haploArraySelChrNow <- haploArraySelChr[indName, , , drop = TRUE]
+
+                                                                                    haploArraySelChrNowHetero10Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == 1)]
+                                                                                    haploArraySelChrNowHetero01Names <- lociNamesChr[which(diff(t(haploArraySelChrNow)) == -1)]
+
+                                                                                    matForGenVarProgeniesChrSelNow <- matrix(data = 0,
+                                                                                                                             nrow = nrow(genoMapChr),
+                                                                                                                             ncol = nrow(genoMapChr),
+                                                                                                                             dimnames = list(lociNamesChr,
+                                                                                                                                             lociNamesChr))
+
+                                                                                    if (length(haploArraySelChrNowHetero10Names) >= 1) {
+                                                                                      matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names] <-
+                                                                                        1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero10Names]
+                                                                                      if (length(haploArraySelChrNowHetero01Names) >= 1) {
+                                                                                        matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] <-
+                                                                                          2 * recombBetweenMarkers[haploArraySelChrNowHetero10Names, haploArraySelChrNowHetero01Names] - 1
+                                                                                        matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] <-
+                                                                                          2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero10Names] - 1
+                                                                                        matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
+                                                                                          1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
+                                                                                      }
+                                                                                    } else {
+                                                                                      if (length(haploArraySelChrNowHetero01Names) >= 1) {
+                                                                                        matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
+                                                                                          1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
+                                                                                      }
                                                                                     }
-                                                                                  } else {
-                                                                                    if (length(haploArraySelChrNowHetero01Names) >= 1) {
-                                                                                      matForGenVarProgeniesChrSelNow[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names] <-
-                                                                                        1 - 2 * recombBetweenMarkers[haploArraySelChrNowHetero01Names, haploArraySelChrNowHetero01Names]
-                                                                                    }
-                                                                                  }
 
 
-                                                                                  genVarProgeniesChrSelNow <-
-                                                                                    diag(crossprod(lociEffectsChr,
-                                                                                                   matForGenVarProgeniesChrSelNow) %*%
-                                                                                           lociEffectsChr) / 4
+                                                                                    genVarProgeniesChrSelNow <-
+                                                                                      diag(crossprod(lociEffectsChr,
+                                                                                                     matForGenVarProgeniesChrSelNow) %*%
+                                                                                             lociEffectsChr) / 4
 
-                                                                                  return(genVarProgeniesChrSelNow)
-                                                                                }, simplify = FALSE)
-                                            genVarProgeniesChrSel <- do.call(what = rbind,
-                                                                             args = genVarProgeniesChrSelList)
+                                                                                    return(genVarProgeniesChrSelNow)
+                                                                                  }, simplify = FALSE)
+                                              genVarProgeniesChrSel <- do.call(what = rbind,
+                                                                               args = genVarProgeniesChrSelList)
 
-                                            genVarProgeniesChrSelOneArray <- array(data = genVarProgeniesChrSel,
-                                                                                   dim = c(dim(genVarProgeniesChrSel), 1),
-                                                                                   dimnames = c(dimnames(genVarProgeniesChrSel),
-                                                                                                list(chrName)))
-                                            return(genVarProgeniesChrSelOneArray)
-                                          }, simplify = FALSE)
+                                              genVarProgeniesChrSelOneArray <- array(data = genVarProgeniesChrSel,
+                                                                                     dim = c(dim(genVarProgeniesChrSel), 1),
+                                                                                     dimnames = c(dimnames(genVarProgeniesChrSel),
+                                                                                                  list(chrName)))
+                                              return(genVarProgeniesChrSelOneArray)
+                                            }, simplify = FALSE)
 
-      genVarProgeniesChrSelArray <- do.call(what = abind::abind,
-                                            args = genVarProgeniesChrSelList)
-      genVarProgeniesSelMat <- apply(X = genVarProgeniesChrSelArray,
-                                     MARGIN = c(1, 2), FUN = sum)
+        genVarProgeniesChrSelArray <- do.call(what = abind::abind,
+                                              args = genVarProgeniesChrSelList)
+        genVarProgeniesSelMat <- apply(X = genVarProgeniesChrSelArray,
+                                       MARGIN = c(1, 2), FUN = sum)
 
-      genVarProgenies <- matrix(data = apply(X = crosses0,
-                                             MARGIN = 1,
-                                             FUN = function(parentPair) {
-                                               genVarProgeniesEachParent <- genVarProgeniesSelMat[parentPair[!is.na(parentPair)], , drop = FALSE]
-                                               genVarProgeniesParentPair <- apply(X = genVarProgeniesEachParent,
-                                                                                  MARGIN = 2, FUN = sum)
-                                               return(genVarProgeniesParentPair)
-                                             }),
-                                nrow = nrow(crosses0),
-                                ncol = ncol(lociEffects),
-                                dimnames = list(1:nrow(crosses0),
-                                                colnames(lociEffects)),
-                                byrow = TRUE)
+        genVarProgenies <- matrix(data = apply(X = crosses0,
+                                               MARGIN = 1,
+                                               FUN = function(parentPair) {
+                                                 genVarProgeniesEachParent <- genVarProgeniesSelMat[parentPair[!is.na(parentPair)], , drop = FALSE]
+                                                 genVarProgeniesParentPair <- apply(X = genVarProgeniesEachParent,
+                                                                                    MARGIN = 2, FUN = sum)
+                                                 return(genVarProgeniesParentPair)
+                                               }),
+                                  nrow = nrow(crosses0),
+                                  ncol = ncol(lociEffects),
+                                  dimnames = list(1:nrow(crosses0),
+                                                  colnames(lociEffects)),
+                                  byrow = TRUE)
+      }
 
       genVarProgeniesScaled <- apply(X = genVarProgenies, MARGIN = 2,
                                      FUN = function(genVarProgeniesEach) {
@@ -2730,7 +3116,347 @@ crossInfo <- R6::R6Class(
                    FUN = sum)
 
       return(OPV)
+    },
+
+    # @description Calculating the He0 (the initial neutral diversity)
+    computeHe0 = function() {
+      genoMat <- self$parentPopulation$genoMat
+      alleleFreq <- apply(genoMat, 2, function(x) {
+        sum(x / 2) / length(x)
+      })
+      He0 <- (2 * t(alleleFreq) %*% (1 - alleleFreq)) / ncol(genoMat)
+
+      return(c(He0))
+    },
+
+    # @description Calculating the He0 (the initial neutral diversity)
+    computeK = function() {
+      genoMat <- self$parentPopulation$genoMat
+
+      K <- (tcrossprod(genoMat - 1) / ncol(genoMat) + 1) / 2
+
+      return(K)
+    },
+
+
+    # @description Search initial combination of crosses for OCS
+    searchInitOC = function(crosses0,
+                            initIndex = 1,
+                            maxIter = 100) {
+      parentPopulation <- self$parentPopulation
+      # genoMat <- parentPopulation$genoMat
+
+      targetGenOCS <- self$targetGenOCS
+      HeStarRatio <- self$HeStarRatio
+      degreeOCS <- self$degreeOCS
+      includeGVPOCS <- self$includeGVPOCS
+      hOCS <- self$hOCS
+      weightedAllocationMethodOCS <- self$weightedAllocationMethodOCS
+      traitNoOCS <- self$traitNoOCS
+      nCrosses <- self$nCrossesOCS
+
+      if (nCrosses > nrow(crosses0)) {
+        nCrosses <- nrow(crosses0)
+        self$nCrossesOCS <- nCrosses
+      }
+
+      generation <- parentPopulation$generation
+
+      indNames <- names(parentPopulation$inds)
+      Z1 <- t(RAINBOWR::design.Z(pheno.labels = crosses0[, 1],
+                                 geno.names = indNames))
+      Z2 <- t(RAINBOWR::design.Z(pheno.labels = crosses0[, 2],
+                                 geno.names = indNames))
+
+      if (is.null(self$K)) {
+        self$K <- private$computeK()
+      }
+      K <- self$K
+      if (is.null(self$He0)) {
+        self$He0 <- private$computeHe0()
+      }
+      He0 <- self$He0
+      HeStar <- He0 * HeStarRatio
+
+      # Calculating the He_t (genetic diversity required in generation t)
+      if ((generation + 1) > targetGenOCS) {
+        He <- HeStar
+      } else {
+        He <- He0 +
+          ((generation + 1) / targetGenOCS) ^ degreeOCS * (HeStar - He0)
+      }
+
+      if (is.null(self$potentialOfCrossOCS)) {
+        potentialOfCrossOCS <- self$computeWeightedBV(crosses0 = crosses0,
+                                                      h = hOCS,
+                                                      weightedAllocationMethod = weightedAllocationMethodOCS,
+                                                      traitNoRA = traitNoOCS,
+                                                      includeGVP = includeGVPOCS)
+        self$potentialOfCrossOCS <- potentialOfCrossOCS
+      } else{
+        potentialOfCrossOCS <- self$potentialOfCrossOCS
+      }
+
+      # the index for the selected crosses
+      initIndex <- 1
+      selectedIndex <- sample(1:nrow(crosses0), initIndex)
+      crossNames <- apply(crosses0, 1, paste, collapse = "x")
+      names(potentialOfCrossOCS) <- crossNames
+      while ((initIndex <= nCrosses) &  (length(selectedIndex) < nCrosses)) {
+        initIndex <- initIndex + 1
+        iter <- 1 # the number of iteration
+        print(initIndex)
+        # the index for the selcted crosses
+        selectedIndex <- sample(1:nrow(crosses0), initIndex)
+        while ((iter < maxIter) & (length(selectedIndex) < nCrosses)) {
+          selectedIndex <- sample(1:nrow(crosses0), initIndex)
+          selectedCross <- crosses0[selectedIndex, ]
+          selectedName <- c(as.matrix(selectedCross))
+          # check "the same cross is not selected",
+          # "each individual should not be used more than 2 times"
+          # if (max(table(selectedName)) > 2) {
+          #   iter <- iter + 1
+          #   next
+          # }
+
+          # set the contribution of Parent1 and Parent2
+          contribution1 <- contribution2 <- rep(0, length(crossNames))
+          names(contribution1) <- names(contribution2) <- crossNames
+          contribution1[selectedIndex] <- 1 / 2
+          contribution2[selectedIndex] <- 1 / 2
+
+          contribution <- (Z1 %*% contribution1 + Z2 %*% contribution2) / length(selectedIndex)
+
+          # genetic diversity
+          DA <- c(1 - (t(contribution) %*% K %*% contribution))
+
+          # adding a cross which meet the criterion one by one
+          for (cycleInd in (initIndex + 1):nCrosses) {
+            # cycleInd <- initIndex + 1
+            # calculating DB for all crosses at the same time
+            n <- length(selectedIndex)
+            # contribution1B <- rep(1 / 2, ncol(Z1))
+            # contribution2B <- rep(1 / 2, ncol(Z2))
+            Y <- Z1 / 2 + Z2 / 2
+
+            DB_1 <- 1 - DA
+            DB_2_tmp <- ((1 / n) ^ 2) * crossprod(Y, K) * t(Y)
+            DB_2 <- apply(DB_2_tmp, 1, sum)
+            DB_3 <- (2 / n) * t(contribution) %*% K %*% Y
+            DB <- 1 - (((n / (n + 1)) ^ 2) * (DB_1 + c(DB_2) + c(DB_3)))
+
+
+            if (any(DB > He)) {
+              # extracting the crosses which meet the criterion
+              crossNewCandIndex <- which(DB > He)
+              crossOrder <- order(potentialOfCrossOCS[crossNewCandIndex], decreasing = T)
+              cand <- 1
+              # selecting the crosses based on the potentialOfCrossOCS value
+              while (cand <= length(crossOrder)) {
+                # cand <- 1
+                crossNewIndex <- crossNewCandIndex[crossOrder][cand]
+                selectedCandIndex <- c(selectedIndex, crossNewIndex)
+                selectedCandCross <- crosses0[selectedCandIndex, ]
+                selectedCandName <- c(as.matrix(selectedCandCross))
+                # check "the same cross is not selected",
+                # "each individual should not be used more than 2 times"
+                if (max(table(selectedCandIndex)) == 1) {
+                  # add the new cross to the selected individuals
+                  selectedIndex <- selectedCandIndex
+                  selectedCross <- selectedCandCross
+                  selectedName <- selectedCandName
+                  DA <- DB[crossNewIndex]
+                  contribution1 <- contribution2 <- rep(0, length(crossNames))
+                  names(contribution1) <- names(contribution2) <- crossNames
+                  contribution1[selectedIndex] <- 1 / 2
+                  contribution2[selectedIndex] <- 1 / 2
+                  contribution <- (Z1 %*% contribution1 + Z2 %*% contribution2) / length(selectedIndex)
+                  if (self$verbose) {
+                    cat("Update the candidate!! \n")
+                  }
+                  # stop the while iteration
+                  cand <- 1e10
+                  # stop()
+                } else {
+                  # try next cross
+                  cand <- cand + 1
+                }
+              }
+            } else {
+              break
+            }
+            if (cand != 1e10) {
+              # if the crosses don't meet the criterion, go to the next iter
+              break
+            }
+          }
+          iter <- iter + 1
+        }
+      }
+      names(selectedIndex) <- NULL
+
+      return(selectedIndex)
+    },
+
+    # @description Search optimal combination of crosses for OCS
+    searchOptimalOC = function(selectedIndex,
+                               crosses0,
+                               initIndex = 1) {
+      parentPopulation <- self$parentPopulation
+      # genoMat <- parentPopulation$genoMat
+
+      targetGenOCS <- self$targetGenOCS
+      HeStarRatio <- self$HeStarRatio
+      degreeOCS <- self$degreeOCS
+      includeGVPOCS <- self$includeGVPOCS
+      hOCS <- self$hOCS
+      weightedAllocationMethodOCS <- self$weightedAllocationMethodOCS
+      traitNoOCS <- self$traitNoOCS
+      nCrosses <- self$nCrossesOCS
+
+      if (nCrosses > nrow(crosses0)) {
+        nCrosses <- nrow(crosses0)
+        self$nCrossesOCS <- nCrosses
+      }
+
+      generation <- parentPopulation$generation
+
+      indNames <- names(parentPopulation$inds)
+      Z1 <- t(RAINBOWR::design.Z(pheno.labels = crosses0[, 1],
+                                 geno.names = indNames))
+      Z2 <- t(RAINBOWR::design.Z(pheno.labels = crosses0[, 2],
+                                 geno.names = indNames))
+
+
+      if (is.null(self$K)) {
+        self$K <- private$computeK()
+      }
+      K <- self$K
+      if (is.null(self$He0)) {
+        self$He0 <- private$computeHe0()
+      }
+      He0 <- self$He0
+      HeStar <- He0 * HeStarRatio
+
+      # Calculating the He_t (genetic diversity required in generation t)
+      if ((generation + 1) > targetGenOCS) {
+        He <- HeStar
+      } else {
+        He <- He0 +
+          ((generation + 1) / targetGenOCS) ^ degreeOCS * (HeStar - He0)
+      }
+
+      if (is.null(self$potentialOfCrossOCS)) {
+        potentialOfCrossOCS <- self$computeWeightedBV(crosses0 = crosses0,
+                                                      h = hOCS,
+                                                      weightedAllocationMethod = weightedAllocationMethodOCS,
+                                                      traitNoRA = traitNoOCS,
+                                                      includeGVP = includeGVPOCS)
+        self$potentialOfCrossOCS <- potentialOfCrossOCS
+      } else{
+        potentialOfCrossOCS <- self$potentialOfCrossOCS
+      }
+      crossNames <- apply(crosses0, 1, paste, collapse = "x")
+      names(potentialOfCrossOCS) <- crossNames
+
+
+      # the index for the selected crosses
+      selectedOptimalIndex <- selectedIndex
+      valueOrderIndex <- 1
+      while (valueOrderIndex <= nCrosses) {
+        if (self$verbose) {
+          print(valueOrderIndex)
+        }
+        valueOrder <- order(potentialOfCrossOCS[selectedOptimalIndex])
+        valueSum <- sum(potentialOfCrossOCS[selectedOptimalIndex])
+        if (self$verbose) {
+          print(valueSum)
+        }
+
+        selectedHighIndex <- selectedOptimalIndex[-valueOrderIndex]
+        selectedHighCross <- crosses0[selectedHighIndex, ]
+        selectedHighName <- c(as.matrix(selectedHighCross))
+
+        # set the contribution of Parent1 and Parent2
+        contribution1 <- contribution2 <- rep(0, length(crossNames))
+        names(contribution1) <- names(contribution2) <- crossNames
+        contribution1[selectedIndex] <- 1 / 2
+        contribution2[selectedIndex] <- 1 / 2
+
+        contribution <- (Z1 %*% contribution1 + Z2 %*% contribution2) / length(selectedIndex)
+
+        # genetic diversity
+        DA <- c(1 - (t(contribution) %*% K %*% contribution))
+
+
+        # calculating DB for all crosses at the same time
+        n <- length(selectedIndex)
+        # contribution1B <- rep(1 / 2, ncol(Z1))
+        # contribution2B <- rep(1 / 2, ncol(Z2))
+        Y <- Z1 / 2 + Z2 / 2
+
+        DB_1 <- 1 - DA
+        DB_2_tmp <- ((1 / n) ^ 2) * crossprod(Y, K) * t(Y)
+        DB_2 <- apply(DB_2_tmp, 1, sum)
+        DB_3 <- (2 / n) * t(contribution) %*% K %*% Y
+        DB <- 1 - (((n / (n + 1)) ^ 2) * (DB_1 + c(DB_2) + c(DB_3)))
+
+
+        if (any(DB > He)) {
+          # extracting the crosses which meet the criterion
+          crossNewCandIndex <- which(DB > He)
+          crossOrder <- order(potentialOfCrossOCS[crossNewCandIndex], decreasing = T)
+          cand <- 1
+          # selecting the crosses based on the potentialOfCrossOCS value
+          while (cand <= length(crossOrder)) {
+            # cand <- 1
+            crossNewIndex <- crossNewCandIndex[crossOrder][cand]
+            selectedCandIndex <- c(selectedHighIndex, crossNewIndex)
+            selectedCandCross <- crosses0[selectedCandIndex, ]
+            selectedCandName <- c(as.matrix(selectedCandCross))
+
+            check1 <- max(table(selectedCandIndex)) == 1
+            check2 <- sum(potentialOfCrossOCS[selectedCandIndex]) > valueSum
+            # check "the same cross is not selected",
+            # "each individual should not be used more than 2 times"
+            if (all(c(check1, check2))) {
+              # add the new cross to the selected individuals
+              selectedOptimalIndex <- selectedCandIndex
+              selectedCross <- selectedCandCross
+              selectedName <- selectedCandName
+              DA <- DB[crossNewIndex]
+              contribution1 <- contribution2 <- rep(0, length(crossNames))
+              names(contribution1) <- names(contribution2) <- crossNames
+              contribution1[selectedIndex] <- 1 / 2
+              contribution2[selectedIndex] <- 1 / 2
+              contribution <- (Z1 %*% contribution1 + Z2 %*% contribution2) / length(selectedIndex)
+              if (self$verbose) {
+                cat("Update the candidate!! \n")
+              }
+              # stop the while iteration
+              cand <- 1e10
+              # stop()
+            } else {
+              # try next cross
+              if (cand == length(crossOrder)) {
+                valueOrderIndex <- valueOrderIndex + 1
+              }
+              cand <- cand + 1
+            }
+          }
+        } else {
+          valueOrderIndex <- valueOrderIndex + 1
+        }
+      }
+      names(selectedOptimalIndex) <- NULL
+
+      return(selectedOptimalIndex)
     }
+
+
+
+
+
 
   )
 )

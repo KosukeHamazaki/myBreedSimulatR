@@ -170,8 +170,7 @@ breederInfo <- R6::R6Class(
       populationsFB <- list()
       populationsFB[[initPopulationFB$name]] <- initPopulationFB
 
-      popNameBase <- (stringr::str_split(string = initPopulationFB$name,
-                                         pattern = "_")[[1]])[1]
+      popNameBase <- bsInfo$popNameBase
 
       if (traitInfoFB$nTraits == 1) {
         multiTraitsAsEnvs <- FALSE
