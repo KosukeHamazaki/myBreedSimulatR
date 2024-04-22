@@ -1370,7 +1370,7 @@ simBs <- R6::R6Class(
                        hList,")` instead."))
         hOCSList <- sapply(X = 1:nGenerationProceed,
                         FUN = function(generationProceedNo) {
-                          hOCSLenNow <- length(traitNoRAOCSList[[generationProceedNo]]) *
+                          hOCSLenNow <- length(traitNoOCSList[[generationProceedNo]]) *
                             (length(weightedAllocationMethodOCSList[[generationProceedNo]]) +
                                includeGVPOCSVec[generationProceedNo])
 
@@ -1386,7 +1386,7 @@ simBs <- R6::R6Class(
       stopifnot(all(unlist(lapply(hOCSList, is.numeric))))
       stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
       stopifnot(all(sapply(hOCSList, function(h) all(h <= 10))))
-      stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoRAOCSList, length)) *
+      stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoOCSList, length)) *
                                                         (unlist(lapply(weightedAllocationMethodOCSList, length)) + includeGVPOCSVec))))
 
       names(hOCSList) <- 1:nGenerationProceed
