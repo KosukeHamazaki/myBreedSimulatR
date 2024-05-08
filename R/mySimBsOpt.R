@@ -1732,24 +1732,24 @@ simBsOpt <- R6::R6Class(
                        targetGenGVPVec,"` instead."))
       }
 
-      if (!(length(targetGenGVPVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(targetGenGVPVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(targetGenGVPVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(targetGenGVPVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(targetGenGVPVec) == 1) {
-        targetGenGVPVec <- rep(targetGenGVPVec, nGenerationProceed)
+        targetGenGVPVec <- rep(targetGenGVPVec, nGenerationProceedSimulation)
       }
-      names(targetGenGVPVec) <- 1:nGenerationProceed
+      names(targetGenGVPVec) <- 1:nGenerationProceedSimulation
 
 
 
       # performOCSVec
       stopifnot(is.logical(performOCSVec))
 
-      if (!(length(performOCSVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(performOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(performOCSVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(performOCSVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(performOCSVec) == 1) {
-        performOCSVec <- rep(performOCSVec, nGenerationProceed)
+        performOCSVec <- rep(performOCSVec, nGenerationProceedSimulation)
       }
-      names(performOCSVec) <- 1:nGenerationProceed
+      names(performOCSVec) <- 1:nGenerationProceedSimulation
 
 
       # targetGenOCSVec
@@ -1758,17 +1758,17 @@ simBsOpt <- R6::R6Class(
         targetGenOCSVec <- floor(targetGenOCSVec)
         stopifnot(all(targetGenOCSVec >= 1))
       } else {
-        targetGenOCSVec <- nGenerationProceed
+        targetGenOCSVec <- nGenerationProceedSimulation
         message(paste0("`targetGenOCSVec` is not specified. We substitute `targetGenOCSVec = ",
                        targetGenOCSVec,"` instead."))
       }
 
-      if (!(length(targetGenOCSVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(targetGenOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(targetGenOCSVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(targetGenOCSVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(targetGenOCSVec) == 1) {
-        targetGenOCSVec <- rep(targetGenOCSVec, nGenerationProceed)
+        targetGenOCSVec <- rep(targetGenOCSVec, nGenerationProceedSimulation)
       }
-      names(targetGenOCSVec) <- 1:nGenerationProceed
+      names(targetGenOCSVec) <- 1:nGenerationProceedSimulation
 
 
 
@@ -1782,12 +1782,12 @@ simBsOpt <- R6::R6Class(
                        HeStarRatioVec,"` instead."))
       }
 
-      if (!(length(HeStarRatioVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(HeStarRatioVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(HeStarRatioVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(HeStarRatioVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(HeStarRatioVec) == 1) {
-        HeStarRatioVec <- rep(HeStarRatioVec, nGenerationProceed)
+        HeStarRatioVec <- rep(HeStarRatioVec, nGenerationProceedSimulation)
       }
-      names(HeStarRatioVec) <- 1:nGenerationProceed
+      names(HeStarRatioVec) <- 1:nGenerationProceedSimulation
 
 
       # degreeOCSVec
@@ -1800,23 +1800,23 @@ simBsOpt <- R6::R6Class(
                        degreeOCSVec,"` instead."))
       }
 
-      if (!(length(degreeOCSVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(degreeOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(degreeOCSVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(degreeOCSVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(degreeOCSVec) == 1) {
-        degreeOCSVec <- rep(degreeOCSVec, nGenerationProceed)
+        degreeOCSVec <- rep(degreeOCSVec, nGenerationProceedSimulation)
       }
-      names(degreeOCSVec) <- 1:nGenerationProceed
+      names(degreeOCSVec) <- 1:nGenerationProceedSimulation
 
 
       # includeGVPOCSVec
       stopifnot(is.logical(includeGVPOCSVec))
 
-      if (!(length(includeGVPOCSVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(includeGVPOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(includeGVPOCSVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(includeGVPOCSVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(includeGVPOCSVec) == 1) {
-        includeGVPOCSVec <- rep(includeGVPOCSVec, nGenerationProceed)
+        includeGVPOCSVec <- rep(includeGVPOCSVec, nGenerationProceedSimulation)
       }
-      names(includeGVPOCSVec) <- 1:nGenerationProceed
+      names(includeGVPOCSVec) <- 1:nGenerationProceedSimulation
 
 
       # hOCSList
@@ -1828,7 +1828,7 @@ simBsOpt <- R6::R6Class(
         hOCSList <- 1
         message(paste0("`hList` is not specified. We substitute `hList = list(",
                        hList,")` instead."))
-        hOCSList <- sapply(X = 1:nGenerationProceed,
+        hOCSList <- sapply(X = 1:nGenerationProceedSimulation,
                            FUN = function(generationProceedNo) {
                              hOCSLenNow <- length(traitNoOCSList[[generationProceedNo]]) *
                                (length(weightedAllocationMethodOCSList[[generationProceedNo]]) +
@@ -1838,10 +1838,10 @@ simBsOpt <- R6::R6Class(
                            }, simplify = FALSE)
       }
 
-      if (!(length(hOCSList) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(hOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(hOCSList) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(hOCSList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(hOCSList) == 1) {
-        hOCSList <- rep(hOCSList, nGenerationProceed)
+        hOCSList <- rep(hOCSList, nGenerationProceedSimulation)
       }
       stopifnot(all(unlist(lapply(hOCSList, is.numeric))))
       stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
@@ -1849,7 +1849,7 @@ simBsOpt <- R6::R6Class(
       stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoOCSList, length)) *
                                                            (unlist(lapply(weightedAllocationMethodOCSList, length)) + includeGVPOCSVec))))
 
-      names(hOCSList) <- 1:nGenerationProceed
+      names(hOCSList) <- 1:nGenerationProceedSimulation
 
 
       # weightedAllocationMethodOCSList
@@ -1864,14 +1864,14 @@ simBsOpt <- R6::R6Class(
         weightedAllocationMethodOCSList <- list(weightedAllocationMethodOCSList)
       }
 
-      if (!(length(weightedAllocationMethodOCSList) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(weightedAllocationMethodOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(weightedAllocationMethodOCSList) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(weightedAllocationMethodOCSList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(weightedAllocationMethodOCSList) == 1) {
-        weightedAllocationMethodOCSList <- rep(weightedAllocationMethodOCSList, nGenerationProceed)
+        weightedAllocationMethodOCSList <- rep(weightedAllocationMethodOCSList, nGenerationProceedSimulation)
       }
       weightedAllocationMethodOCSList <- lapply(weightedAllocationMethodOCSList, function(x) x[x %in% selectionMethodsWithSelection])
 
-      names(weightedAllocationMethodOCSList) <- 1:nGenerationProceed
+      names(weightedAllocationMethodOCSList) <- 1:nGenerationProceedSimulation
       stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, is.character))))
       stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, length)) >= 1))
 
@@ -1889,15 +1889,15 @@ simBsOpt <- R6::R6Class(
         traitNoOCSList <- list(traitNoOCSList)
       }
 
-      if (!(length(traitNoOCSList) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(traitNoOCSList) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(traitNoOCSList) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(traitNoOCSList) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(traitNoOCSList) == 1) {
-        traitNoOCSList <- rep(traitNoOCSList, nGenerationProceed)
+        traitNoOCSList <- rep(traitNoOCSList, nGenerationProceedSimulation)
       }
       stopifnot(all(unlist(lapply(traitNoOCSList, is.numeric))))
       stopifnot(all(sapply(traitNoOCSList, function(traitNoOCS) all(traitNoOCS >= 1))))
 
-      names(traitNoOCSList) <- 1:nGenerationProceed
+      names(traitNoOCSList) <- 1:nGenerationProceedSimulation
 
 
       # nCrossesOCSVec
@@ -1911,12 +1911,12 @@ simBsOpt <- R6::R6Class(
                        nCrossesOCSVec,"` instead."))
       }
 
-      if (!(length(nCrossesOCSVec) %in% c(1, nGenerationProceed))) {
-        stop(paste("length(nCrossesOCSVec) must be equal to 1 or equal to nGenerationProceed."))
+      if (!(length(nCrossesOCSVec) %in% c(1, nGenerationProceedSimulation))) {
+        stop(paste("length(nCrossesOCSVec) must be equal to 1 or equal to nGenerationProceedSimulation."))
       } else if (length(nCrossesOCSVec) == 1) {
-        nCrossesOCSVec <- rep(nCrossesOCSVec, nGenerationProceed)
+        nCrossesOCSVec <- rep(nCrossesOCSVec, nGenerationProceedSimulation)
       }
-      names(nCrossesOCSVec) <- 1:nGenerationProceed
+      names(nCrossesOCSVec) <- 1:nGenerationProceedSimulation
 
 
 
