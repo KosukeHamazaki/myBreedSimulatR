@@ -793,7 +793,7 @@ crossInfo <- R6::R6Class(
         stopifnot(targetGenGVP >= 0)
       } else {
         targetGenGVP <- 0
-        message(paste0("`targetGenOCS` is not specified. We substitute `targetGenGVP = ", targetGenGVP,"` instead."))
+        message(paste0("`targetGenGVP` is not specified. We substitute `targetGenGVP = ", targetGenGVP,"` instead."))
       }
 
 
