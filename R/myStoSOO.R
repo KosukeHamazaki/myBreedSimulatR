@@ -339,7 +339,6 @@ stoSOO <- R6::R6Class(
                                                       FUN = function(eachOptimalNode) {
                                                         eachOptimalNode$xRepresentative
                                                       }))
-        optimalHyperParamMat <- optimalHyperParamMat
       }
 
 
@@ -475,7 +474,6 @@ stoSOO <- R6::R6Class(
                                                             FUN = function(eachOptimalNode) {
                                                               eachOptimalNode$xRepresentative
                                                             }))
-              optimalHyperParamMat <- optimalHyperParamMat
               self$optimalHyperParamMat <- optimalHyperParamMat
 
               print(optimalHyperParamMat)

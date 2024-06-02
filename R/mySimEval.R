@@ -33,7 +33,7 @@ simEval <- R6::R6Class(
     #' @description Create a new simEval object.
     #' @param simEvalName [character] Name of this evaluation of simulation results
     #' @param simBsList [list] list of simulation results of breeding scheme
-    #'   (see:\link[myBreedSimulatR]{simBs}; \link[myBreedSimulatR]{simBsOpt})
+    #'   (see:\link[myBreedSimulatR]{simBs}; \link[myBreedSimulatR]{simBsOpt}; \link[myBreedSimulatR]{simBsCma})
     #' @param verbose [logical] Display info (optional)
     #' @return A new `simEval` object.
     #' @examples
@@ -125,7 +125,7 @@ simEval <- R6::R6Class(
 
       simBsListClass <- unlist(lapply(simBsList, function(x) class(x)[[1]]))
 
-      if (!all(simBsListClass %in% c("simBs", "simBsOpt"))) {
+      if (!all(simBsListClass %in% c("simBs", "simBsOpt", "simBsCma"))) {
         stop(paste('"simBsList" must be a list of simBs or simBsOpt object see: ?simBs; ?simBsOpt'))
       }
 

@@ -2,7 +2,7 @@
 # 2020 The University of Tokyo
 #
 # Description:
-# Definition of simBsOpt class
+# Definition of simBsCma class
 
 
 
@@ -10,15 +10,15 @@
 #' R6 Class Representing a Breeding Scheme
 #'
 #' @description
-#' simBsOpt object store specific information of simulation results of breeding scheme optimized by StoSOO.
+#' simBsCma object store specific information of simulation results of breeding scheme optimized by CMA-ES.
 #'
 # @details
-# Details: simBsOpt object store specific information of simulation results of breeding scheme optimized by StoSOO.
+# Details: simBsCma object store specific information of simulation results of breeding scheme optimized by CMA-ES.
 #'
 #' @export
 #' @import R6
-simBsOpt <- R6::R6Class(
-  "simBsOpt",
+simBsCma <- R6::R6Class(
+  "simBsCma",
   public = list(
     #' @field simBsName [character] Name of this simulation of breeding schemes
     simBsName = NULL,
@@ -77,20 +77,14 @@ simBsOpt <- R6::R6Class(
     nIterMrkEffectForRobustOptimization = NULL,
     #' @field nIterOptimization [numeric] Number of iterations required for one optimization
     nIterOptimization = NULL,
-    #' @field nMaxEvalPerNode [numeric] Number of maximum evaluation per node when optimizing hyper parameter by StoSOO
-    nMaxEvalPerNode = NULL,
-    #' @field maxDepth [numeric] Maximum depth of tree when optimizing hyper parameter by StoSOO
-    maxDepth = NULL,
-    #' @field nChildrenPerExpansion [numeric] Number of children per one expansion of nodes when optimizing hyper parameter by StoSOO
-    nChildrenPerExpansion = NULL,
-    #' @field confidenceParam [numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards
-    confidenceParam = NULL,
-    #' @field returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
-    returnOptimalNodes = NULL,
-    #' @field saveTreeNameBase [character] Base name of the tree to be saved
-    saveTreeNameBase = NULL,
-    #' @field whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
-    whenToSaveTrees = NULL,
+    #' @field lambda [numeric] Number of offspring in CMA-ES. Must be greater than or equal to mu.
+    lambda = NULL,
+    #' @field mu [numeric] Population size in CMA-ES.
+    mu = NULL,
+    #' @field saveObjNameBase [character] Base name of `cmaES` object to be saved
+    saveObjNameBase = NULL,
+    #' @field whenToSaveObj [numeric] When (how many iterations) to save `cmaES` object in CMA-ES
+    whenToSaveObj = NULL,
     #' @field nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     nTopEvalForOpt = NULL,
     #' @field rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
@@ -259,7 +253,7 @@ simBsOpt <- R6::R6Class(
 
 
 
-    #' @description Create a new simBsOpt object.
+    #' @description Create a new simBsCma object.
     #' @param simBsName [character] Name of this simulation of breeding schemes
     #' @param bsInfoInit [bsInfo] breeding scheme info
     #'   (see:\link[myBreedSimulatR]{bsInfo})
@@ -292,13 +286,10 @@ simBsOpt <- R6::R6Class(
     #' @param nIterSimulationForOneMrkEffect [numeric] Number of simulations per one evaluation of the hyperparameter set of your interest for one set of marker effects
     #' @param nIterMrkEffectForRobustOptimization [numeric] Number of sets of marker effects utilized for the robust optimization
     #' @param nIterOptimization [numeric] Number of iterations required for one optimization
-    #' @param nMaxEvalPerNode [numeric] Number of maximum evaluation per node when optimizing hyper parameter by StoSOO
-    #' @param maxDepth [numeric] Maximum depth of tree when optimizing hyper parameter by StoSOO
-    #' @param nChildrenPerExpansion [numeric] Number of children per one expansion of nodes when optimizing hyper parameter by StoSOO
-    #' @param confidenceParam [numeric] Confidence parameter of StoSOO, this parameter determines the width of the estimates of rewards
-    #' @param returnOptimalNodes [numeric] When (how many iterations) to return (or save) the optimal nodes when optimizing hyper parameter by StoSOO
-    #' @param saveTreeNameBase [character] Base name of the tree to be saved
-    #' @param whenToSaveTrees [numeric] When (how many iterations) to save the tree in StoSOO
+    #' @param lambda [numeric] Number of offspring in CMA-ES. Must be greater than or equal to mu.
+    #' @param mu [numeric] Population size in CMA-ES.
+    #' @param saveObjNameBase [character] Base name of the Obj to be saved
+    #' @param whenToSaveObj [numeric] When (how many iterations) to save the Obj in StoSOO
     #' @param nTopEvalForOpt [numeric] Number of individuals to be evaluated when evaluating population max or population min for optimization of hyperparameters
     #' @param rewardWeightVec [numeric] When returning reward function, `rewardWeightVec` will be multiplied by estimated GVs for each generation to evaluate the method.
     #' If you want to apply discounted method, you can achieve by `rewardWeightVec = sapply(1:nGenerationProceedSimulation, function(genProceedNo) gamma ^ (genProceedNo - 1))` where `gamma` is discounted rate.
@@ -474,13 +465,10 @@ simBsOpt <- R6::R6Class(
                           nIterSimulationForOneMrkEffect = NULL,
                           nIterMrkEffectForRobustOptimization = NULL,
                           nIterOptimization = NULL,
-                          nMaxEvalPerNode = NULL,
-                          maxDepth = NULL,
-                          nChildrenPerExpansion = NULL,
-                          confidenceParam = NULL,
-                          returnOptimalNodes = NULL,
-                          saveTreeNameBase = NULL,
-                          whenToSaveTrees = NA,
+                          lambda = NULL,
+                          mu = NULL,
+                          saveObjNameBase = NULL,
+                          whenToSaveObj = NA,
                           nTopEvalForOpt = NULL,
                           rewardWeightVec = NULL,
                           digitsEval = NULL,
@@ -770,106 +758,63 @@ simBsOpt <- R6::R6Class(
       }
 
 
+
+      # lambda
+      if (!is.null(lambda)) {
+        stopifnot(is.numeric(lambda))
+      } else {
+        lambda <- 4 + floor(3 * log(paramLen))
+        message(paste0("You do not specify `lambda`. We set `lambda = ",
+                       lambda, "`."))
+      }
+
+
+
+      # mu
+      if (!is.null(mu)) {
+        stopifnot(is.numeric(mu))
+      } else {
+        mu <- floor(lambda / 2)
+        message(paste0("You do not specify `mu`. We set `mu = ",
+                       mu, "`."))
+      }
+
+
       # nIterOptimization
       if (!is.null(nIterOptimization)) {
         stopifnot(is.numeric(nIterOptimization))
         nIterOptimization <- floor(nIterOptimization)
         stopifnot(nIterOptimization >= 1)
       } else {
-        nIterOptimization <- round(nTotalIterForOneOptimization / nIterSimulationPerEvaluation)
+        nIterOptimization <- round(nTotalIterForOneOptimization / (nIterSimulationPerEvaluation * lambda))
         message(paste0("`nIterOptimization` is not specified. We substitute `nIterOptimization = ",
                        nIterOptimization,"` instead."))
       }
 
-      if (nTotalIterForOneOptimization != nIterSimulationPerEvaluation * nIterOptimization) {
-        nTotalIterForOneOptimization <- nIterSimulationPerEvaluation * nIterOptimization
+      if (nTotalIterForOneOptimization != nIterSimulationPerEvaluation * nIterOptimization * lambda) {
+        nTotalIterForOneOptimization <- nIterSimulationPerEvaluation * nIterOptimization * lambda
         message((paste0("We substitute `nTotalIterForOneOptimization = ",
                         nTotalIterForOneOptimization,"` instead.")))
       }
 
 
-      # nChildrenPerExpansion
-      if (!is.null(nChildrenPerExpansion)) {
-        stopifnot(is.numeric(nChildrenPerExpansion))
-        nChildrenPerExpansion <- floor(x = nChildrenPerExpansion)
-        stopifnot(nChildrenPerExpansion >= 2)
-      } else {
-        nChildrenPerExpansion <- 3
-        message(paste0("You do not specify `nChildrenPerExpansion`. We set `nChildrenPerExpansion = ",
-                       nChildrenPerExpansion, "`."))
+      # saveObjNameBase
+      if (is.null(saveObjNameBase)) {
+        whenToSaveObj <- NULL
       }
 
-
-      # nMaxEvalPerNode
-      if (!is.null(nMaxEvalPerNode)) {
-        stopifnot(is.numeric(nMaxEvalPerNode))
-        nMaxEvalPerNode <- ceiling(x = nMaxEvalPerNode)
-        stopifnot(nMaxEvalPerNode >= 1)
-      } else {
-        nMaxEvalPerNode <- ceiling(x = nIterOptimization / (log(x = nIterOptimization) ^ 3))
-        message(paste0("You do not specify `nMaxEvalPerNode`. We set `nMaxEvalPerNode = ",
-                       nMaxEvalPerNode, "`."))
-      }
-
-
-      # maxDepth
-      if (!is.null(maxDepth)) {
-        stopifnot(is.numeric(maxDepth))
-        maxDepth <- ceiling(x = maxDepth)
-        stopifnot(maxDepth >= 1)
-      } else {
-        maxDepth <- ceiling(x = sqrt(x = nIterOptimization / nMaxEvalPerNode))
-        message(paste0("You do not specify `maxDepth`. We set `maxDepth = ",
-                       maxDepth, "`."))
-      }
-      maxDepthInR <- floor(x = logb(x = 9e15, base = nChildrenPerExpansion))
-      if (maxDepth > maxDepthInR) {
-        message(paste0("This function can only treat depth smaller than ", maxDepthInR, ".\n",
-                       "We set `maxDepth = ", maxDepthInR, ".` We're sorry."))
-        maxDepth <- maxDepthInR
-      }
-
-
-      # confidenceParam
-      if (!is.null(confidenceParam)) {
-        stopifnot(is.numeric(confidenceParam))
-      } else {
-        confidenceParam <- 1 / sqrt(x = nIterOptimization)
-        message(paste0("You do not specify `confidenceParam`. We set `confidenceParam = ",
-                       round(confidenceParam, 3), "`."))
-      }
-
-
-      # returnOptimalNodes
-      if (!is.null(returnOptimalNodes)) {
-        stopifnot(is.numeric(returnOptimalNodes))
-        returnOptimalNodes <- floor(returnOptimalNodes)
-        stopifnot(all(returnOptimalNodes >= 1))
-        stopifnot(all(returnOptimalNodes <= nIterOptimization))
-      } else {
-        returnOptimalNodes <- 1:nIterOptimization
-        message(paste0("You do not specify `returnOptimalNodes`. We set `returnOptimalNodes = 1:",
-                       max(returnOptimalNodes), "`."))
-      }
-
-
-      # saveTreeNameBase
-      if (is.null(saveTreeNameBase)) {
-        whenToSaveTrees <- NULL
-      }
-
-      # whenToSaveTrees
-      if (!is.null(whenToSaveTrees)) {
-        if (!all(is.na(whenToSaveTrees))) {
-          stopifnot(is.numeric(whenToSaveTrees))
-          whenToSaveTrees <- whenToSaveTrees[!is.na(whenToSaveTrees)]
-          whenToSaveTrees <- floor(whenToSaveTrees)
-          stopifnot(all(whenToSaveTrees >= 1))
-          stopifnot(all(whenToSaveTrees <= nIterOptimization))
+      # whenToSaveObj
+      if (!is.null(whenToSaveObj)) {
+        if (!all(is.na(whenToSaveObj))) {
+          stopifnot(is.numeric(whenToSaveObj))
+          whenToSaveObj <- whenToSaveObj[!is.na(whenToSaveObj)]
+          whenToSaveObj <- floor(whenToSaveObj)
+          stopifnot(all(whenToSaveObj >= 1))
+          stopifnot(all(whenToSaveObj <= nIterOptimization))
         } else {
-          whenToSaveTrees <- nIterOptimization
-          message(paste0("You do not specify `whenToSaveTrees`. We set `whenToSaveTrees = ",
-                         whenToSaveTrees, "`."))
+          whenToSaveObj <- nIterOptimization
+          message(paste0("You do not specify `whenToSaveObj`. We set `whenToSaveObj = ",
+                         whenToSaveObj, "`."))
         }
       }
 
@@ -2248,7 +2193,7 @@ simBsOpt <- R6::R6Class(
         }
 
         if (!dir.exists(paths = summaryAllResAt)) {
-          message(paste0("There is no directory named '", summaryAllResAt, "'. We will summarize the simulation results inside the `simBsOpt` object."))
+          message(paste0("There is no directory named '", summaryAllResAt, "'. We will summarize the simulation results inside the `simBsCma` object."))
           summaryAllResAt <- NULL
         }
       }
@@ -2281,13 +2226,10 @@ simBsOpt <- R6::R6Class(
       self$nIterSimulationForOneMrkEffect <- nIterSimulationForOneMrkEffect
       self$nIterMrkEffectForRobustOptimization <- nIterMrkEffectForRobustOptimization
       self$nIterOptimization <- nIterOptimization
-      self$nMaxEvalPerNode <- nMaxEvalPerNode
-      self$maxDepth <- maxDepth
-      self$nChildrenPerExpansion <- nChildrenPerExpansion
-      self$confidenceParam <- confidenceParam
-      self$returnOptimalNodes <- returnOptimalNodes
-      self$saveTreeNameBase <- saveTreeNameBase
-      self$whenToSaveTrees <- whenToSaveTrees
+      self$lambda <- lambda
+      self$mu <- mu
+      self$saveObjNameBase <- saveObjNameBase
+      self$whenToSaveObj <- whenToSaveObj
       self$nTopEvalForOpt <- nTopEvalForOpt
       self$rewardWeightVec <- rewardWeightVec
       self$digitsEval <- digitsEval
@@ -2470,11 +2412,8 @@ simBsOpt <- R6::R6Class(
       nIterSimulationForOneMrkEffect <- self$nIterSimulationForOneMrkEffect
       nIterMrkEffectForRobustOptimization <- self$nIterMrkEffectForRobustOptimization
       nIterOptimization <- self$nIterOptimization
-      nMaxEvalPerNode <- self$nMaxEvalPerNode
-      maxDepth <- self$maxDepth
-      nChildrenPerExpansion <- self$nChildrenPerExpansion
-      confidenceParam <- self$confidenceParam
-      returnOptimalNodes <- self$returnOptimalNodes
+      lambda <- self$lambda
+      mu <- self$mu
       nTopEvalForOpt <- self$nTopEvalForOpt
       rewardWeightVec <- self$rewardWeightVec
       digitsEval <- self$digitsEval
@@ -2529,7 +2468,7 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
-      saveTreeNameBase <- self$saveTreeNameBase
+      saveObjNameBase <- self$saveObjNameBase
 
 
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
@@ -2608,79 +2547,70 @@ simBsOpt <- R6::R6Class(
       # self$solnInit <- soln
       # hVecOpt <- soln$par
 
-      if (is.null(saveTreeNameBase)) {
-        saveTreeNameBaseInit <- NULL
+      if (is.null(saveObjNameBase)) {
+        saveObjNameBaseInit <- NULL
         fileNameSolResInit <- ""
       } else {
-        saveTreeNameBaseInit <- paste0(saveTreeNameBase, "_Initial")
-        fileNameSolResInit <- paste0(saveTreeNameBaseInit, "_solution_results.rds")
+        saveObjNameBaseInit <- paste0(saveObjNameBase, "_Initial")
+        fileNameSolResInit <- paste0(saveObjNameBaseInit, "_solution_results.rds")
       }
 
       if (!file.exists(fileNameSolResInit)) {
-        if (!is.null(saveTreeNameBase)) {
-          savedTreeFilesAll <- list.files(dirname(saveTreeNameBase))
+        if (!is.null(saveObjNameBase)) {
+          savedObjFilesAll <- list.files(dirname(saveObjNameBase))
 
-          saveTreeNameInitial <- paste0(saveTreeNameBase, "_Initial")
+          saveObjNameInitial <- paste0(saveObjNameBase, "_Initial")
 
-          wherePastTreeFiles <- grep(pattern = basename(saveTreeNameInitial),
-                                     x = savedTreeFilesAll)
+          wherePastObjFiles <- grep(pattern = basename(saveObjNameInitial),
+                                    x = savedObjFilesAll)
 
-          savedTreeFilesNow <- savedTreeFilesAll[wherePastTreeFiles]
-          savedCurrentTreeFile <- savedTreeFilesNow[
-            grep(pattern = ".*_tree.rds",
-                 x = savedTreeFilesNow)
-          ]
-          savedOptimalNodesFile <- savedTreeFilesNow[
-            grep(pattern = ".*_optimal_nodes_list.rds",
-                 x = savedTreeFilesNow)
+          savedObjFilesNow <- savedObjFilesAll[wherePastObjFiles]
+          savedCurrentObjFile <- savedObjFilesNow[
+            grep(pattern = ".*_CMA-ES_object.rds",
+                 x = savedObjFilesNow)
           ]
 
-          if (length(savedCurrentTreeFile) == 1) {
-            currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                       savedCurrentTreeFile))
-            optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                            savedOptimalNodesFile))
+          if (length(savedCurrentObjFile) == 1) {
+            cmaESNow <- readRDS(file = paste0(dirname(saveObjNameBase), "/",
+                                              savedCurrentObjFile))
           } else {
-            currentTreeMidNow <- NULL
-            optimalNodesListMidNow <- list()
+            cmaESNow <- NULL
           }
         } else {
-          currentTreeMidNow <- NULL
-          optimalNodesListMidNow <- list()
+          cmaESNow <- NULL
         }
 
-        stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
+
+        if (is.null(cmaESNow)) {
+          cmaESNow <- myBreedSimulatR::cmaES$new(parameter = hStart[1:hVecLenNow],
                                                  optimizeFunc = private$maximizeFunc,
                                                  nGenerationProceedSimulation = nGenerationProceedSimulation,
                                                  lowerBound = hMin[1:hVecLenNow],
                                                  upperBound = hMax[1:hVecLenNow],
                                                  nIterOptimization = nIterOptimization,
-                                                 nMaxEvalPerNode = nMaxEvalPerNode,
-                                                 maxDepth = maxDepth,
-                                                 nChildrenPerExpansion = nChildrenPerExpansion,
-                                                 confidenceParam = confidenceParam,
+                                                 lambda = lambda,
+                                                 mu = mu,
                                                  maximize = TRUE,
-                                                 optimizeType = "stochastic",
-                                                 returnOptimalNodes = returnOptimalNodes,
-                                                 saveTreeNameBase = saveTreeNameBaseInit,
-                                                 whenToSaveTrees = self$whenToSaveTrees,
-                                                 currentTree = currentTreeMidNow,
-                                                 optimalNodes = optimalNodesListMidNow,
-                                                 withCheck = TRUE,
+                                                 saveObjNameBase = saveObjNameBaseInit,
+                                                 whenToSaveObj = self$whenToSaveObj,
                                                  verbose = showProgress)
-        stoSOONow$startOptimization()
-        optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
+        }
 
-        hVecOpt <- stoSOONow$optimalParameter
-        solnInit <- list(value = stoSOONow$optimalValue,
+        cmaESNow$startOptimization()
+        saveRDS(object = cmaESNow,
+                file = cmaESNow$fileNameSaveObj)
+        optimalHyperParamMat <- cmaESNow$optimalHyperParamMat
+
+        hVecOpt <- cmaESNow$optimalParameter
+        solnInit <- list(value = cmaESNow$optimalValue,
                          par = hVecOpt)
 
-        rm(stoSOONow)
+        rm(cmaESNow)
         gc(reset = TRUE); gc(reset = TRUE)
 
         solnRes <- c(solnInit,
                      list(optimalHyperParamMat = optimalHyperParamMat))
-        if (!is.null(saveTreeNameBase)) {
+        if (!is.null(saveObjNameBase)) {
           saveRDS(object = solnRes, file = fileNameSolResInit)
         }
       } else {
@@ -2712,7 +2642,7 @@ simBsOpt <- R6::R6Class(
         if (verbose) {
           print("Perform simulation based on optimized hyperparameters.")
         }
-        simBsOpt <- myBreedSimulatR::simBs$new(simBsName = simBsName,
+        simBsCma <- myBreedSimulatR::simBs$new(simBsName = simBsName,
                                                bsInfoInit = bsInfoInit,
                                                breederInfoInit = breederInfoInit,
                                                lociEffMethod = lociEffMethod,
@@ -2781,10 +2711,10 @@ simBsOpt <- R6::R6Class(
                                                hEval = hEval,
                                                summaryAllResAt = summaryAllResAt,
                                                verbose = verbose)
-        simBsOpt$startSimulation()
-        self$simBsRes[[simBsName]] <- simBsOpt$simBsRes[[simBsName]]
-        self$trueGVMatList <- simBsOpt$trueGVMatList
-        self$estimatedGVMatList <- simBsOpt$estimatedGVMatList
+        simBsCma$startSimulation()
+        self$simBsRes[[simBsName]] <- simBsCma$simBsRes[[simBsName]]
+        self$trueGVMatList <- simBsCma$trueGVMatList
+        self$estimatedGVMatList <- simBsCma$estimatedGVMatList
       } else {
         if (nCores == 1) {
           conductSimulations <- sapply(X = iterNames,
@@ -3577,11 +3507,8 @@ simBsOpt <- R6::R6Class(
       nTotalIterForOneOptimization <- self$nTotalIterForOneOptimization
       nIterSimulationPerEvaluation <- self$nIterSimulationPerEvaluation
       nIterOptimization <- self$nIterOptimization
-      nMaxEvalPerNode <- self$nMaxEvalPerNode
-      maxDepth <- self$maxDepth
-      nChildrenPerExpansion <- self$nChildrenPerExpansion
-      confidenceParam <- self$confidenceParam
-      returnOptimalNodes <- self$returnOptimalNodes
+      lambda <- self$lambda
+      mu <- self$mu
       nTopEvalForOpt <- self$nTopEvalForOpt
       digitsEval <- self$digitsEval
       nRefreshMemoryEvery <- self$nRefreshMemoryEvery
@@ -3635,7 +3562,7 @@ simBsOpt <- R6::R6Class(
       hEval <- self$hEval
       summaryAllResAt <- self$summaryAllResAt
       verbose <- self$verbose
-      saveTreeNameBase <- self$saveTreeNameBase
+      saveObjNameBase <- self$saveObjNameBase
 
 
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
@@ -3692,18 +3619,18 @@ simBsOpt <- R6::R6Class(
       }
 
 
-      if (!is.null(saveTreeNameBase)) {
-        savedTreeFilesAll <- list.files(dirname(saveTreeNameBase))
+      if (!is.null(saveObjNameBase)) {
+        savedObjFilesAll <- list.files(dirname(saveObjNameBase))
 
-        saveTreeNameIter <- paste0(saveTreeNameBase, "_", iterName)
-        saveTreeNameIterBase <- basename(saveTreeNameIter)
+        saveObjNameIter <- paste0(saveObjNameBase, "_", iterName)
+        saveObjNameIterBase <- basename(saveObjNameIter)
 
-        fileNameSimResIter <- paste0(saveTreeNameIter, "_simulation_results.rds")
+        fileNameSimResIter <- paste0(saveObjNameIter, "_simulation_results.rds")
 
 
-        fileNameBreederInfoIters <- savedTreeFilesAll[
-          grep(pattern = paste0(saveTreeNameIterBase, ".*_breederInfo.rds"),
-               x = savedTreeFilesAll)
+        fileNameBreederInfoIters <- savedObjFilesAll[
+          grep(pattern = paste0(saveObjNameIterBase, ".*_breederInfo.rds"),
+               x = savedObjFilesAll)
         ]
 
         genSavedBreederInfoIters <- readr::parse_number(
@@ -3727,15 +3654,15 @@ simBsOpt <- R6::R6Class(
 
 
       for (genProceedNo in 1:nGenerationProceed) {
-        if (is.null(saveTreeNameBase)) {
-          saveTreeNameIterGen <- NULL
+        if (is.null(saveObjNameBase)) {
+          saveObjNameIterGen <- NULL
           fileNameSolResIterGen <- ""
         } else {
-          saveTreeNameIterGen <- paste0(saveTreeNameBase, "_", iterName, "_Generation_", genProceedNo)
-          fileNameSolResIterGen <- paste0(saveTreeNameIterGen, "_solution_results.rds")
+          saveObjNameIterGen <- paste0(saveObjNameBase, "_", iterName, "_Generation_", genProceedNo)
+          fileNameSolResIterGen <- paste0(saveObjNameIterGen, "_solution_results.rds")
 
-          fileNameBsInfoIterGen <- paste0(saveTreeNameIterGen, "_bsInfo.rds")
-          fileNameBreederInfoIterGen <- paste0(saveTreeNameIterGen, "_breederInfo.rds")
+          fileNameBsInfoIterGen <- paste0(saveObjNameIterGen, "_bsInfo.rds")
+          fileNameBreederInfoIterGen <- paste0(saveObjNameIterGen, "_breederInfo.rds")
         }
 
 
@@ -3756,84 +3683,62 @@ simBsOpt <- R6::R6Class(
 
 
           if (!file.exists(fileNameSolResIterGen)) {
-            if (!is.null(saveTreeNameBase)) {
-              saveTreeNameIterGenBase <- basename(saveTreeNameIterGen)
-              wherePastTreeFiles <- grep(pattern = saveTreeNameIterGenBase,
-                                         x = savedTreeFilesAll)
-              if (length(wherePastTreeFiles) >= 1) {
-                savedTreeFilesNow <- savedTreeFilesAll[wherePastTreeFiles]
-                savedCurrentTreeFile <- savedTreeFilesNow[
-                  grep(pattern = ".*_tree.rds",
-                       x = savedTreeFilesNow)
-                ]
-                savedOptimalNodesFile <- savedTreeFilesNow[
-                  grep(pattern = ".*_optimal_nodes_list.rds",
-                       x = savedTreeFilesNow)
+
+            if (!is.null(saveObjNameBase)) {
+              saveObjNameIterGenBase <- basename(saveObjNameIterGen)
+              wherePastObjFiles <- grep(pattern = saveObjNameIterGenBase,
+                                        x = savedObjFilesAll)
+
+              if (length(wherePastObjFiles) >= 1) {
+                savedObjFilesNow <- savedObjFilesAll[wherePastObjFiles]
+                savedCurrentObjFile <- savedObjFilesNow[
+                  grep(pattern = ".*_CMA-ES_object.rds",
+                       x = savedObjFilesNow)
                 ]
 
-                currentTreeMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                           savedCurrentTreeFile))
-                optimalNodesListMidNow <- readRDS(file = paste0(dirname(saveTreeNameBase), "/",
-                                                                savedOptimalNodesFile))
+                cmaESNow <- readRDS(file = paste0(dirname(saveObjNameBase), "/",
+                                                  savedCurrentObjFile))
               } else {
-                currentTreeMidNow <- NULL
-                optimalNodesListMidNow <- list()
+                cmaESNow <- NULL
               }
             } else {
-              currentTreeMidNow <- NULL
-              optimalNodesListMidNow <- list()
+              cmaESNow <- NULL
             }
 
 
-            # soln <- OOR::StoSOO(par = hStart[1:hVecLenNow], fn = private$maximizeFunc,
-            #                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-            #                     lower = hMin[1:hVecLenNow], upper = hMax[1:hVecLenNow],
-            #                     nb_iter = nIterOptimization,
-            #                     control = list(type = "sto", verbose = 0, max = TRUE))
-            #
-            # hVecOpt <- soln$par
-
-
-            stoSOONow <- myBreedSimulatR::stoSOO$new(parameter = hStart[1:hVecLenNow],
+            if (is.null(cmaESNow)) {
+              cmaESNow <- myBreedSimulatR::cmaES$new(parameter = hStart[1:hVecLenNow],
                                                      optimizeFunc = private$maximizeFunc,
-                                                     nGenerationProceedSimulation = nGenerationProceedSimulationNow,
-                                                     bsInfo = bsInfo$clone(deep = FALSE),
-                                                     breederInfo = breederInfo$clone(deep = FALSE),
+                                                     nGenerationProceedSimulation = nGenerationProceedSimulation,
                                                      lowerBound = hMin[1:hVecLenNow],
                                                      upperBound = hMax[1:hVecLenNow],
                                                      nIterOptimization = nIterOptimization,
-                                                     nMaxEvalPerNode = nMaxEvalPerNode,
-                                                     maxDepth = maxDepth,
-                                                     nChildrenPerExpansion = nChildrenPerExpansion,
-                                                     confidenceParam = confidenceParam,
+                                                     lambda = lambda,
+                                                     mu = mu,
                                                      maximize = TRUE,
-                                                     optimizeType = "stochastic",
-                                                     returnOptimalNodes = returnOptimalNodes,
-                                                     saveTreeNameBase = saveTreeNameIterGen,
-                                                     whenToSaveTrees = self$whenToSaveTrees,
-                                                     currentTree = currentTreeMidNow,
-                                                     optimalNodes = optimalNodesListMidNow,
-                                                     withCheck = TRUE,
+                                                     saveObjNameBase = saveObjNameBaseInit,
+                                                     whenToSaveObj = self$whenToSaveObj,
                                                      verbose = showProgress)
-            rm(currentTreeMidNow); rm(optimalNodesListMidNow)
-            gc(reset = TRUE); gc(reset = TRUE)
-
-            stoSOONow$startOptimization()
-            optimalHyperParamMat <- stoSOONow$optimalHyperParamMat
-            hVecOpt <- stoSOONow$optimalParameter
-
-            solnNow <- list(value = stoSOONow$optimalValue,
-                            par = hVecOpt)
-
-            rm(stoSOONow)
-            gc(reset = TRUE); gc(reset = TRUE)
-
-            solnRes <- c(solnNow,
-                         list(optimalHyperParamMat = optimalHyperParamMat))
-
-            if (!is.null(saveTreeNameBase)) {
-              saveRDS(object = solnRes, file = fileNameSolResIterGen)
             }
+
+            cmaESNow$startOptimization()
+            saveRDS(object = cmaESNow,
+                    file = cmaESNow$fileNameSaveObj)
+            optimalHyperParamMat <- cmaESNow$optimalHyperParamMat
+
+            hVecOpt <- cmaESNow$optimalParameter
+            solnInit <- list(value = cmaESNow$optimalValue,
+                             par = hVecOpt)
+
+            rm(cmaESNow)
+            gc(reset = TRUE); gc(reset = TRUE)
+
+            solnRes <- c(solnInit,
+                         list(optimalHyperParamMat = optimalHyperParamMat))
+            if (!is.null(saveObjNameBase)) {
+              saveRDS(object = solnRes, file = fileNameSolResInit)
+            }
+
           } else {
             solnRes <- readRDS(file = fileNameSolResIterGen)
             optimalHyperParamMat <- solnRes$optimalHyperParamMat
@@ -3931,7 +3836,7 @@ simBsOpt <- R6::R6Class(
                 gc(reset = TRUE); gc(reset = TRUE)
 
                 if (updateModels[genProceedNo]) {
-                  if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
+                  if (performOptimization[genProceedNo + 1] & (!is.null(saveObjNameBase))) {
                     saveRDS(object = bsInfo, file = fileNameBsInfoIterGen)
                     saveRDS(object = breederInfo, file = fileNameBreederInfoIterGen)
                   }
@@ -3944,7 +3849,7 @@ simBsOpt <- R6::R6Class(
             }
           } else if (genProceedNo == genSavedBreederInfoIterMax) {
             if (updateModels[genProceedNo]) {
-              if (performOptimization[genProceedNo + 1] & (!is.null(saveTreeNameBase))) {
+              if (performOptimization[genProceedNo + 1] & (!is.null(saveObjNameBase))) {
                 bsInfo <- readRDS(file = fileNameBsInfoIterGen)
                 breederInfo <- readRDS(file = fileNameBreederInfoIterGen)
               }
