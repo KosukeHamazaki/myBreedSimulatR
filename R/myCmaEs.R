@@ -833,8 +833,22 @@ cmaES <- R6::R6Class(
       if (vectorized) {
         progFuncVal <- minimizeFunc(parameter = progParamsIn)
       } else {
-        progFuncVal <- apply(X = progParamsIn, MARGIN = 2,
-                             FUN = minimizeFunc)
+        # progFuncVal <- apply(X = progParamsIn, MARGIN = 2,
+        #                      FUN = minimizeFunc)
+
+        progFuncVal <- rep(NA, ncol(progParamsIn))
+        for (i in 1:ncol(progParamsIn)) {
+          st <- Sys.time()
+          progFuncVal[i] <- minimizeFunc(parameter = progParamsIn[, i])
+          ed <- Sys.time()
+
+          timeCheck <- as.numeric(difftime(time1 = ed, time2 = st, units = "secs")) > 100
+          if (timeCheck & verbose) {
+            cat(paste0("Finish evaluation of ", i, " / ",
+                       lambda, " candidate."))
+            print(ed - st)
+          }
+        }
       }
 
       countEval <- countEval + lambda
@@ -1128,7 +1142,7 @@ cmaES <- R6::R6Class(
 
 
 
-      while((iterNo < nIterOptimization) & continueOptimization) {
+      while ((iterNo < nIterOptimization) & continueOptimization) {
         self$proceedOneGeneration()
         iterNo <- self$iterNo
         nIterOptimization <- self$nIterOptimization
