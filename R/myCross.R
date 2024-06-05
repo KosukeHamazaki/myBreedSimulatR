@@ -2875,7 +2875,7 @@ crossInfo <- R6::R6Class(
         genVarProgenies <- array(data = 0,
                                  dim = c(nPairs, nTraits),
                                  dimnames = list(Cross = rownames(crosses0),
-                                                 Chr = chrNamesUniq))
+                                                 Trait = traitNames))
 
         for (pairNo in 1:nPairs) {
           parentNamesNow <- as.matrix(crosses0)[pairNo, ]

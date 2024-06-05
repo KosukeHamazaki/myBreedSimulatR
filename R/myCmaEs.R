@@ -842,7 +842,7 @@ cmaES <- R6::R6Class(
           progFuncVal[i] <- minimizeFunc(parameter = progParamsIn[, i])
           edNow <- Sys.time()
 
-          timeCheck <- as.numeric(difftime(time1 = ed, time2 = st, units = "secs")) > 100
+          timeCheck <- as.numeric(difftime(time1 = edNow, time2 = stNow, units = "secs")) > 100
           # if (timeCheck & verbose) {
           if (verbose) {
             cat(paste0("Finish evaluation of ", i, " / ",
