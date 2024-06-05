@@ -838,15 +838,19 @@ cmaES <- R6::R6Class(
 
         progFuncVal <- rep(NA, ncol(progParamsIn))
         for (i in 1:ncol(progParamsIn)) {
-          st <- Sys.time()
+          stNow <- Sys.time()
           progFuncVal[i] <- minimizeFunc(parameter = progParamsIn[, i])
-          ed <- Sys.time()
+          edNow <- Sys.time()
 
           timeCheck <- as.numeric(difftime(time1 = ed, time2 = st, units = "secs")) > 100
-          if (timeCheck & verbose) {
+          # if (timeCheck & verbose) {
+          if (verbose) {
             cat(paste0("Finish evaluation of ", i, " / ",
                        lambda, " candidate."))
-            print(ed - st)
+            cat("\n")
+            cat(paste0("Time: ", round(as.numeric(edNow - stNow), 3),
+                       " ", attr(edNow - stNow, "units")))
+            cat("\n\n")
           }
         }
       }
