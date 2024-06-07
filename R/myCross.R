@@ -2879,7 +2879,7 @@ crossInfo <- R6::R6Class(
 
         for (pairNo in 1:nPairs) {
           parentNamesNow <- as.matrix(crosses0)[pairNo, ]
-          gvpWithinIndPair <- gvpWithinInd[parentNamesNow, ]
+          gvpWithinIndPair <- gvpWithinInd[parentNamesNow, , drop = FALSE]
           gvpWithinIndSum <- apply(X = gvpWithinIndPair,
                                    MARGIN = 2, FUN = sum)
 
@@ -2941,7 +2941,7 @@ crossInfo <- R6::R6Class(
         recombBetweenMarkersList <- lociInfo$recombBetweenMarkersList
 
 
-        genVarProgeniesChrSelList <- sapply(X = chrNames,
+        genVarProgeniesChrSelList <- sapply(X = chrNamesUniq,
                                             FUN = function(chrName) {
                                               genoMapChr <- genoMap[genoMap$chr %in% chrName, ]
                                               lociNamesChr <- genoMapChr$lociNames

@@ -843,8 +843,8 @@ cmaES <- R6::R6Class(
           edNow <- Sys.time()
 
           timeCheck <- as.numeric(difftime(time1 = edNow, time2 = stNow, units = "secs")) > 100
-          # if (timeCheck & verbose) {
-          if (verbose) {
+          # if (verbose) {
+          if (timeCheck & verbose) {
             cat(paste0("Finish evaluation of ", i, " / ",
                        lambda, " candidate."))
             cat("\n")
