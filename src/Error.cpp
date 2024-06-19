@@ -1,5 +1,5 @@
-////////////////////////////////////////////////////////////////////// 
-// Error.cpp 
+//////////////////////////////////////////////////////////////////////
+// Error.cpp
 //////////////////////////////////////////////////////////////////////////////
 //              COPYRIGHT NOTICE FOR GENOME CODE
 //
@@ -52,11 +52,12 @@ void error ( const char * msg, ... )
    va_start(ap, msg);
 
    Rprintf("\nFATAL ERROR - \n");
-   Rprintf(msg);
+   // Rprintf(msg);
+   Rprintf("%s", msg);
    Rprintf("\n\n");
 
    va_end(ap);
-   
+
    Rcpp::stop("Error!\n");
 
 //   exit(EXIT_FAILURE);
@@ -69,7 +70,8 @@ void warning ( const char * msg, ... )
    va_start(ap, msg);
 
    Rprintf("\n\aWARNING - \n");
-   Rprintf(msg);
+   // Rprintf(msg);
+   Rprintf("%s", msg);
    Rprintf("\n");
 
    va_end(ap);
@@ -82,11 +84,12 @@ void numerror ( const char * msg , ... )
    va_start(ap, msg);
 
    Rprintf("\nFATAL NUMERIC ERROR - ");
-   Rprintf(msg);
+   // Rprintf(msg);
+   Rprintf("%s", msg);
    Rprintf("\n\n");
 
    va_end(ap);
-   
+
    Rcpp::stop("Error!\n");
 
 //   exit(EXIT_FAILURE);

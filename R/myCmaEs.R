@@ -376,8 +376,8 @@ cmaES <- R6::R6Class(
         stopifnot(is.numeric(etaRankMu))
       } else {
         # etaRankMu <- muEff
-
-        etaRankMu <- min(1 - etaRankOne, 2 * (muEff - 2 + 1 / muEff) / ((nIterOptimization + 2) ^ 2 + muEff))
+        etaRankMu <- min(1 - etaRankOne, 2 * (muEff - 2 + 1 / muEff) / ((paramLen + 2) ^ 2 + muEff))
+        # etaRankMu <- min(1 - etaRankOne, 2 * (muEff - 2 + 1 / muEff) / ((nIterOptimization + 2) ^ 2 + muEff))
         # message(paste0("You do not specify `etaRankMu`. We set `etaRankMu = ",
         #                round(etaRankMu, 3), "`."))
       }
@@ -890,19 +890,19 @@ cmaES <- R6::R6Class(
                            ifelse(progMean < upperBound,
                                   progMean, upperBound),
                            lowerBound)
-      if (!all(progMean == progMeanIn)) {
-        if (all(gammas == 0) | (iterNo == 2)) {
-          gammas <- rep(2 * deltaFit, paramLen)
-        }
-
-        deltaMean <- abs(progMean - progMeanIn) / (sigma * sqrt(diag(progCov)))
-        gammas <- gammas * exp(dGamma * tanh(pmax(0, deltaMean - deltaTh) / 3) / 2)
-
-        # if (any(gammas > 5 * deltaFit)) {
-        # gammas[gammas > 5 * deltaFit] <- gammas[gammas > 5 * deltaFit] * exp(-dGamma / 3)
-        # }
-        gammas <- gammas * min(3 * deltaFit / sum(gammas), 1)
+      # if (!all(progMean == progMeanIn)) {
+      if (all(gammas == 0) | (iterNo == 2)) {
+        gammas <- rep(2 * deltaFit, paramLen)
       }
+      # }
+      deltaMean <- abs(progMean - progMeanIn) / (sigma * sqrt(diag(progCov)))
+      gammas <- gammas * exp(dGamma * tanh(pmax(0, deltaMean - deltaTh) / 3) / 2)
+
+      # if (any(gammas > 5 * deltaFit)) {
+      # gammas[gammas > 5 * deltaFit] <- gammas[gammas > 5 * deltaFit] * exp(-dGamma / 3)
+      # }
+      gammas <- gammas * min(3 * deltaFit / mean(gammas), 1)
+      # }
 
 
       penalty <- colMeans(matrix(rep(gammas, lambda), ncol = lambda) *
