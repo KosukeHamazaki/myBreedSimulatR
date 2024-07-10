@@ -175,8 +175,8 @@ simBs <- R6::R6Class(
     summaryAllResAt = NULL,
     #' @field verbose [logical] Display info (optional)
     verbose = NULL,
-    
-    
+
+
     #' @field lociEffectsInit [matrix] Marker and QTL effects used for crossInfo object for initial population
     lociEffectsInit = NULL,
     #' @field simBsRes [list] Simulation results of each method
@@ -193,9 +193,9 @@ simBs <- R6::R6Class(
     estimatedGVMatList = list(),
     #' @field estimatedGVSummaryArray [array] An array of summary statistics of estimated GVs for each population & each iteration
     estimatedGVSummaryArray = NULL,
-    
-    
-    
+
+
+
     #' @description Create a new simBs object.
     #' @param simBsName [character] Name of this simulation of breeding schemes
     #' @param bsInfoInit [bsInfo] breeding scheme info
@@ -356,8 +356,8 @@ simBs <- R6::R6Class(
     #'               targetPopulation = 1:11,
     #'               plotType = "jitter")
     #'
-    
-    
+
+
     initialize = function(simBsName = "Undefined",
                           bsInfoInit,
                           breederInfoInit = NULL,
@@ -427,7 +427,7 @@ simBs <- R6::R6Class(
                           hEval = NULL,
                           summaryAllResAt = NULL,
                           verbose = TRUE) {
-      
+
       # define some methods
       lociEffMethodsOffered <- c("true", "estimated")
       trainingPopTypesOffered <- c("all", "latest")
@@ -447,28 +447,28 @@ simBs <- R6::R6Class(
       multiTraitsEvalMethodsOffered <- c("sum", "prod")
       nameMethodsOffered <- c("pairBase", "individualBase")
       returnMethodsOffered <- c("all", "summary", "max", "mean", "median", "min", "var")
-      
-      
+
+
       # simBsName
       if (is.null(simBsName)) {
         simBsName <- "Undefined"
       }
       stopifnot(is.character(simBsName))
-      
+
       # bsInfoInit class
       if (class(bsInfoInit)[1] != "bsInfo") {
         stop(paste('class(bsInfoInit)[1] != "bsInfo"\n"bsInfo" must be a',
                    'bsInfo object see: ?bsInfo'))
       }
-      
-      
-      
+
+
+
       # define some variables
       nIndNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$nInd
       nTraits <- bsInfoInit$traitInfo$nTraits
-      
-      
-      
+
+
+
       # nIterSimulation
       if (!is.null(nIterSimulation)) {
         stopifnot(is.numeric(nIterSimulation))
@@ -479,9 +479,9 @@ simBs <- R6::R6Class(
         message(paste0("`nIterSimulation` is not specified. We substitute `nIterSimulation = ",
                        nIterSimulation,"` instead."))
       }
-      
-      
-      
+
+
+
       # nGenerationProceed
       if (!is.null(nGenerationProceed)) {
         stopifnot(is.numeric(nGenerationProceed))
@@ -492,7 +492,7 @@ simBs <- R6::R6Class(
         message(paste0("`nGenerationProceed` is not specified. We substitute `nGenerationProceed = ",
                        nGenerationProceed,"` instead."))
       }
-      
+
       # nRefreshMemoryEvery
       if (!is.null(nRefreshMemoryEvery)) {
         stopifnot(is.numeric(nRefreshMemoryEvery))
@@ -502,21 +502,21 @@ simBs <- R6::R6Class(
         message(paste0("`nRefreshMemoryEvery` is not specified. We substitute `nRefreshMemoryEvery = ",
                        nRefreshMemoryEvery,"` instead."))
       }
-      
+
       # updateBreederInfo
       stopifnot(is.logical(updateBreederInfo))
-      
+
       if (!(length(updateBreederInfo) %in% c(1, nGenerationProceed))) {
         stop(paste("length(updateBreederInfo) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateBreederInfo) == 1) {
         updateBreederInfo <- rep(updateBreederInfo, nGenerationProceed)
       }
       names(updateBreederInfo) <- 1:nGenerationProceed
-      
-      
+
+
       # phenotypingInds
       stopifnot(is.logical(phenotypingInds))
-      
+
       if (!(length(phenotypingInds) %in% c(1, nGenerationProceed))) {
         stop(paste("length(phenotypingInds) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(phenotypingInds) == 1) {
@@ -524,8 +524,8 @@ simBs <- R6::R6Class(
       }
       names(phenotypingInds) <- 1:nGenerationProceed
       phenotypingInds[!updateBreederInfo] <- FALSE
-      
-      
+
+
       # nRepForPhenoInit
       if (!is.null(nRepForPhenoInit)) {
         stopifnot(is.numeric(nRepForPhenoInit))
@@ -536,8 +536,8 @@ simBs <- R6::R6Class(
         message(paste0("`nRepForPhenoInit` is not specified. We substitute `nRepForPhenoInit = ",
                        nRepForPhenoInit,"` instead."))
       }
-      
-      
+
+
       # nRepForPheno
       if (!is.null(nRepForPheno)) {
         stopifnot(is.numeric(nRepForPheno))
@@ -548,17 +548,17 @@ simBs <- R6::R6Class(
         message(paste0("`nRepForPheno` is not specified. We substitute `nRepForPheno = ",
                        nRepForPheno,"` instead."))
       }
-      
+
       if (!(length(nRepForPheno) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nRepForPheno) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nRepForPheno) == 1) {
         nRepForPheno <- rep(nRepForPheno, nGenerationProceed)
       }
       names(nRepForPheno) <- 1:nGenerationProceed
-      
+
       nRepForPheno[!phenotypingInds] <- 0
-      
-      
+
+
       # lociEffMethod
       if (!is.null(lociEffMethod)) {
         if (!(lociEffMethod %in% lociEffMethodsOffered)) {
@@ -570,8 +570,8 @@ simBs <- R6::R6Class(
         message(paste0("`lociEffMethod` is not specified. We substitute `lociEffMethod = ",
                        lociEffMethod,"` instead."))
       }
-      
-      
+
+
       # trainingPopType
       if (!is.null(trainingPopType)) {
         if (!(trainingPopType %in% trainingPopTypesOffered)) {
@@ -583,11 +583,11 @@ simBs <- R6::R6Class(
         message(paste0("`trainingPopType` is not specified. We substitute `trainingPopType = ",
                        trainingPopType,"` instead."))
       }
-      
-      
+
+
       # multiTraitInit
       stopifnot(is.logical(multiTraitInit))
-      
+
       # methodMLRInit
       if (!is.null(methodMLRInit)) {
         if (!(methodMLRInit %in% supportedMethodsMLR)) {
@@ -603,8 +603,8 @@ simBs <- R6::R6Class(
         message(paste0("`methodMLRInit` is not specified. We substitute `methodMLRInit = ",
                        methodMLRInit,"` instead."))
       }
-      
-      
+
+
       if (methodMLRInit %in% supportedMethodsBGLR) {
         if (!multiTraitInit) {
           if (methodMLRInit == "SpikeSlab") {
@@ -624,16 +624,16 @@ simBs <- R6::R6Class(
           }
         }
       }
-      
-      
+
+
       # samplingMrkEffInit
       if (samplingMrkEffInit & (!(methodMLRInit %in% supportedMethodsBGLR))) {
         message(paste0("For non-bayesian model, `samplingMrkEffInit = TRUE` is not offered.\n",
                        "We use `samplingMrkEffInit = FALSE` instead."))
         samplingMrkEffInit <- FALSE
       }
-      
-      
+
+
       # seedMrkEffSamplingInit
       if (samplingMrkEffInit) {
         seedMrkEffSamplingInit <- NA
@@ -642,24 +642,24 @@ simBs <- R6::R6Class(
           seedMrkEffSamplingInit <- sample(x = 1:1e09, size = 1)
         }
       }
-      
-      
+
+
       # updateModels
       stopifnot(is.logical(updateModels))
-      
+
       if (!(length(updateModels) %in% c(1, nGenerationProceed))) {
         stop(paste("length(updateModels) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(updateModels) == 1) {
         updateModels <- rep(updateModels, nGenerationProceed)
       }
       names(updateModels) <- 1:nGenerationProceed
-      
+
       updateModels[!phenotypingInds] <- FALSE
-      
-      
+
+
       # multiTrait
       stopifnot(is.logical(multiTrait))
-      
+
       # methodMLR
       if (!is.null(methodMLR)) {
         if (!(methodMLR %in% supportedMethodsMLR)) {
@@ -671,8 +671,8 @@ simBs <- R6::R6Class(
         message(paste0("`methodMLR` is not specified. We substitute `methodMLR = ",
                        methodMLR,"` instead."))
       }
-      
-      
+
+
       if (methodMLR %in% supportedMethodsBGLR) {
         if (!multiTrait) {
           if (methodMLR == "SpikeSlab") {
@@ -692,8 +692,8 @@ simBs <- R6::R6Class(
           }
         }
       }
-      
-      
+
+
       # breederInfoInit class
       if (!is.null(breederInfoInit)) {
         if (class(breederInfoInit)[1] != "breederInfo") {
@@ -720,8 +720,8 @@ simBs <- R6::R6Class(
                                    estimateGV = TRUE,
                                    estimatedGVMethod = "lme4")
       }
-      
-      
+
+
       # nSelectionWaysVec
       if (!is.null(nSelectionWaysVec)) {
         stopifnot(is.numeric(nSelectionWaysVec))
@@ -732,15 +732,15 @@ simBs <- R6::R6Class(
         message(paste0("`nSelectionWaysVec` is not specified. We substitute `nSelectionWaysVec = ",
                        nSelectionWaysVec,"` instead."))
       }
-      
+
       if (!(length(nSelectionWaysVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nSelectionWaysVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nSelectionWaysVec) == 1) {
         nSelectionWaysVec <- rep(nSelectionWaysVec, nGenerationProceed)
       }
       names(nSelectionWaysVec) <- 1:nGenerationProceed
-      
-      
+
+
       # selectionMethodList
       if (!is.null(selectionMethodList)) {
         if (!is.list(selectionMethodList)) {
@@ -755,7 +755,7 @@ simBs <- R6::R6Class(
                                         rep(selectionMethodList, nSelectionWays)
                                       }, simplify = FALSE)
       }
-      
+
       if (!(length(selectionMethodList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(selectionMethodList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(selectionMethodList) == 1) {
@@ -764,24 +764,24 @@ simBs <- R6::R6Class(
       names(selectionMethodList) <- 1:nGenerationProceed
       stopifnot(all(unlist(lapply(selectionMethodList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(selectionMethodList, function(x) all(x %in% selectionMethodsOffered)))))
-      
+
       whereSelectionList <- lapply(selectionMethodList, function(x) x %in% selectionMethodsWithSelection)
-      
-      
+
+
       # traitNoSelList
       if (!is.null(traitNoSelList)) {
         if (!is.list(traitNoSelList)) {
           traitNoSelList <- sapply(nSelectionWaysVec,
                                    function(nSelectionWays) {
                                      traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
-                                     
+
                                      return(traitNoSelListNow)
                                    }, simplify = FALSE)
         } else if (!is.list(traitNoSelList[[1]])) {
           traitNoSelList <- sapply(nSelectionWaysVec,
                                    function(nSelectionWays) {
                                      traitNoSelListNow <- rep(traitNoSelList, nSelectionWays)
-                                     
+
                                      return(traitNoSelListNow)
                                    }, simplify = FALSE)
         }
@@ -792,11 +792,11 @@ simBs <- R6::R6Class(
         traitNoSelList <- sapply(nSelectionWaysVec,
                                  function(nSelectionWays) {
                                    traitNoSelListNow <- rep(list(traitNoSelList), nSelectionWays)
-                                   
+
                                    return(traitNoSelListNow)
                                  }, simplify = FALSE)
       }
-      
+
       if (!(length(traitNoSelList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(traitNoSelList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(traitNoSelList) == 1) {
@@ -807,10 +807,10 @@ simBs <- R6::R6Class(
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x >= 1)))))))
       stopifnot(all(sapply(traitNoSelList, function(traitNoSel) all(unlist(lapply(traitNoSel, function(x) all(x <= nTraits)))))))
       stopifnot(all(unlist(lapply(traitNoSelList, length)) == nSelectionWaysVec))
-      
+
       names(traitNoSelList) <- 1:nGenerationProceed
-      
-      
+
+
       # blockSplitMethod
       if (!is.null(blockSplitMethod)) {
         if (!(blockSplitMethod %in% blockSplitMethodsOffered)) {
@@ -821,8 +821,8 @@ simBs <- R6::R6Class(
         blockSplitMethod <- "minimumSegmentLength"
         message("You do not specify the block splitting method. We will define blocks by the minimum length of segements.")
       }
-      
-      
+
+
       # nMrkInBlock
       if (!is.null(nMrkInBlock)) {
         stopifnot(is.numeric(nMrkInBlock))
@@ -831,13 +831,13 @@ simBs <- R6::R6Class(
         stopifnot(nMrkInBlock <= min(bsInfoInit$specie$nLoci))
       } else {
         nMrkInBlock <- min(bsInfoInit$specie$nLoci) %/% 10
-        
+
         if (any(unlist(lapply(selectionMethodList, function(selectionMethod) c("selectOHV", "selectOPV") %in% selectionMethod)))) {
           message(paste0("`nMrkInBlock` is not specified even though you choose 'selectOHV' / 'selectOPV' method. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
         }
       }
-      
-      
+
+
       # minimumSegmentLength
       if (!is.null(minimumSegmentLength)) {
         stopifnot(is.numeric(minimumSegmentLength))
@@ -850,9 +850,9 @@ simBs <- R6::R6Class(
           message(paste0("`nMrkInBlock` is not specified even though you choose 'selectOHV' / 'selectOPV' method. We substitute `nMrkInBlock = ", nMrkInBlock,"` instead."))
         }
       }
-      
-      
-      
+
+
+
       # nIterOPV
       if (!is.null(nIterOPV)) {
         stopifnot(is.numeric(nIterOPV))
@@ -864,9 +864,9 @@ simBs <- R6::R6Class(
           message(paste0("`nIterOPV` is not specified even though you choose 'selectOPV' method. We substitute `nIterOPV = ", nIterOPV,"` instead."))
         }
       }
-      
-      
-      
+
+
+
       # clusteringForSelList
       if (!is.null(clusteringForSelList)) {
         if (!is.list(clusteringForSelList)) {
@@ -881,7 +881,7 @@ simBs <- R6::R6Class(
                                          rep(clusteringForSelList, nSelectionWays)
                                        }, simplify = FALSE)
       }
-      
+
       if (!(length(clusteringForSelList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(clusteringForSelList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(clusteringForSelList) == 1) {
@@ -890,10 +890,10 @@ simBs <- R6::R6Class(
       names(clusteringForSelList) <- 1:nGenerationProceed
       stopifnot(all(unlist(lapply(clusteringForSelList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(clusteringForSelList, is.logical))))
-      
-      
-      
-      
+
+
+
+
       # nSelList
       if (!is.null(nSelList)) {
         if (!is.list(nSelList)) {
@@ -908,7 +908,7 @@ simBs <- R6::R6Class(
                              rep(nSelList, nSelectionWays)
                            }, simplify = FALSE)
       }
-      
+
       if (!(length(nSelList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nSelList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nSelList) == 1) {
@@ -916,21 +916,21 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nSelList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nSelList, is.numeric))))
-      
+
       nSelList <- sapply(X = 1:nGenerationProceed,
                          FUN = function(generationProceedNo) {
                            nSel <- nSelList[[generationProceedNo]]
                            whereSelection <- whereSelectionList[[generationProceedNo]]
-                           
+
                            nSel[!whereSelection] <- nIndNow
-                           
+
                            return(nSel)
                          }, simplify = FALSE)
-      
-      
+
+
       names(nSelList) <- 1:nGenerationProceed
-      
-      
+
+
       # nSelInitOPVList
       if (!is.null(nSelInitOPVList)) {
         if (!is.list(nSelInitOPVList)) {
@@ -947,7 +947,7 @@ simBs <- R6::R6Class(
                                     rep(nSelInitOPVList, nSelectionWays)
                                   }, simplify = FALSE)
       }
-      
+
       if (!(length(nSelInitOPVList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nSelInitOPVList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nSelInitOPVList) == 1) {
@@ -956,34 +956,34 @@ simBs <- R6::R6Class(
       stopifnot(all(unlist(lapply(nSelInitOPVList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
       stopifnot(all(unlist(lapply(nSelInitOPVList, is.numeric))))
-      
+
       whereNSelSatisfy <- unlist(mapply(FUN = function(nSelInitOPV, nSel) {
         all(nSelInitOPV >= nSel)
       },
       nSelInitOPVList,
       nSelList))
-      
+
       if (any(!whereNSelSatisfy)) {
         if (any(lapply(selectionMethodList, function(selectionMethod) "selectOPV" %in% selectionMethod))) {
           message("`nSelInitOPV` should be larger than `nSel`. We substitute `nSelInitOPV` by `nSel` when `nSelInitOPV` is smaller than `nSel`.")
         }
-        
+
         nSelInitOPVList[whereNSelSatisfy] <- sapply(X = (1:nGenerationProceed)[whereNSelSatisfy],
                                                     FUN = function(generationProceedNo) {
                                                       nSelInitOPV <- nSelInitOPVList[generationProceedNo]
                                                       nSel <- nSelList[generationProceedNo]
-                                                      
+
                                                       nSelInitOPV[nSelInitOPV < nSel] <- nSel[nSelInitOPV < nSel]
-                                                      
+
                                                       return(nSelInitOPV)
                                                     }, simplify = FALSE)
       }
-      
+
       names(nSelInitOPVList) <- 1:nGenerationProceed
-      
-      
-      
-      
+
+
+
+
       # nClusterList
       if (!is.null(nClusterList)) {
         if (!is.list(nClusterList)) {
@@ -998,7 +998,7 @@ simBs <- R6::R6Class(
                                  rep(nClusterList, nSelectionWays)
                                }, simplify = FALSE)
       }
-      
+
       if (!(length(nClusterList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nClusterList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nClusterList) == 1) {
@@ -1006,21 +1006,21 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nClusterList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nClusterList, is.numeric))))
-      
+
       nClusterList <- sapply(X = 1:nGenerationProceed,
                              FUN = function(generationProceedNo) {
                                nCluster <- nClusterList[[generationProceedNo]]
                                clusteringForSel <- clusteringForSelList[[generationProceedNo]]
-                               
+
                                nCluster[!clusteringForSel] <- 1
-                               
+
                                return(nCluster)
                              }, simplify = FALSE)
-      
-      
+
+
       names(nClusterList) <- 1:nGenerationProceed
-      
-      
+
+
       # nTopClusterList
       if (!is.null(nTopClusterList)) {
         if (!is.list(nTopClusterList)) {
@@ -1035,7 +1035,7 @@ simBs <- R6::R6Class(
                                     rep(nTopClusterList, nSelectionWays)
                                   }, simplify = FALSE)
       }
-      
+
       if (!(length(nTopClusterList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nTopClusterList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nTopClusterList) == 1) {
@@ -1043,22 +1043,22 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nTopClusterList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nTopClusterList, is.numeric))))
-      
+
       nTopClusterList <- sapply(X = 1:nGenerationProceed,
                                 FUN = function(generationProceedNo) {
                                   nTopCluster <- nTopClusterList[[generationProceedNo]]
                                   clusteringForSel <- clusteringForSelList[[generationProceedNo]]
-                                  
+
                                   nTopCluster[!clusteringForSel] <- 1
-                                  
+
                                   return(nTopCluster)
                                 }, simplify = FALSE)
-      
-      
+
+
       names(nTopClusterList) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # nTopEachList
       if (!is.null(nTopEachList)) {
         if (!is.list(nTopEachList)) {
@@ -1070,15 +1070,15 @@ simBs <- R6::R6Class(
                                  nTopEach <- nTopEachList[[generationProceedNo]]
                                  nSel <- nSelList[[generationProceedNo]]
                                  nTopCluster <- nTopClusterList[[generationProceedNo]]
-                                 
+
                                  nTopEach <- nSel %/% nTopCluster
-                                 
+
                                  return(nTopEach)
                                }, simplify = FALSE)
         message(paste0("`nTopEachList` is not specified. We substitute `nTopEachList = list(",
                        nTopEachList,")` instead."))
       }
-      
+
       if (!(length(nTopEachList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nTopEachList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nTopEachList) == 1) {
@@ -1086,10 +1086,10 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(nTopEachList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(nTopEachList, is.numeric))))
-      
+
       names(nTopEachList) <- 1:nGenerationProceed
-      
-      
+
+
       # multiTraitsEvalMethodList
       if (!is.null(multiTraitsEvalMethodList)) {
         if (!is.list(multiTraitsEvalMethodList)) {
@@ -1104,7 +1104,7 @@ simBs <- R6::R6Class(
                                               rep(multiTraitsEvalMethodList, nSelectionWays)
                                             }, simplify = FALSE)
       }
-      
+
       if (!(length(multiTraitsEvalMethodList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(multiTraitsEvalMethodList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(multiTraitsEvalMethodList) == 1) {
@@ -1113,23 +1113,23 @@ simBs <- R6::R6Class(
       names(multiTraitsEvalMethodList) <- 1:nGenerationProceed
       stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, length)) == nSelectionWaysVec))
       stopifnot(all(unlist(lapply(multiTraitsEvalMethodList, function(x) all(x %in% multiTraitsEvalMethodsOffered)))))
-      
-      
-      
+
+
+
       # hSelList
       if (!is.null(hSelList)) {
         if (!is.list(hSelList)) {
           hSelList <- sapply(nSelectionWaysVec,
                              function(nSelectionWays) {
                                hSelListNow <- rep(list(hSelList), nSelectionWays)
-                               
+
                                return(hSelListNow)
                              }, simplify = FALSE)
         } else if (!is.list(hSelList[[1]])) {
           hSelList <- sapply(nSelectionWaysVec,
                              function(nSelectionWays) {
                                hSelListNow <- rep(hSelList, nSelectionWays)
-                               
+
                                return(hSelListNow)
                              }, simplify = FALSE)
         }
@@ -1139,16 +1139,16 @@ simBs <- R6::R6Class(
                        hSelList,"))` instead."))
         hSelList <- sapply(1:nGenerationProceed,
                            function(generationProceedNo) {
-                             
+
                              hSelListNow <- sapply(X = traitNoSelList[[generationProceedNo]],
                                                    FUN = function(traitNoSelNow) {
                                                      rep(hSelList, length(traitNoSelNow))
                                                    }, simplify = FALSE)
-                             
+
                              return(hSelListNow)
                            }, simplify = FALSE)
       }
-      
+
       if (!(length(hSelList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(hSelList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(hSelList) == 1) {
@@ -1158,13 +1158,13 @@ simBs <- R6::R6Class(
       stopifnot(all(unlist(lapply(hSelList, function(hSel) all(unlist(lapply(hSel, is.numeric)))))))
       stopifnot(all(sapply(hSelList, function(hSel) all(unlist(lapply(hSel, function(x) all(x >= 0)))))))
       stopifnot(all(unlist(lapply(hSelList, length)) == nSelectionWaysVec))
-      
+
       names(hSelList) <- 1:nGenerationProceed
-      
+
       stopifnot(all(unlist(lapply(X = hSelList, FUN = function(x) lapply(x, length))) ==
                       unlist(lapply(X = traitNoSelList, FUN = function(x) lapply(x, length)))))
-      
-      
+
+
       # matingMethodVec
       if (!is.null(matingMethodVec)) {
         stopifnot(is.character(matingMethodVec))
@@ -1174,15 +1174,15 @@ simBs <- R6::R6Class(
         message(paste0("`matingMethodVec` is not specified. We substitute `matingMethodVec = ",
                        matingMethodVec,"` instead."))
       }
-      
+
       if (!(length(matingMethodVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(matingMethodVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(matingMethodVec) == 1) {
         matingMethodVec <- rep(matingMethodVec, nGenerationProceed)
       }
       names(matingMethodVec) <- 1:nGenerationProceed
-      
-      
+
+
       # allocateMethodVec
       if (!is.null(allocateMethodVec)) {
         stopifnot(is.character(allocateMethodVec))
@@ -1192,16 +1192,16 @@ simBs <- R6::R6Class(
         message(paste0("`allocateMethodVec` is not specified. We substitute `allocateMethodVec = ",
                        allocateMethodVec,"` instead."))
       }
-      
+
       if (!(length(allocateMethodVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(allocateMethodVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(allocateMethodVec) == 1) {
         allocateMethodVec <- rep(allocateMethodVec, nGenerationProceed)
       }
       names(allocateMethodVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # weightedAllocationMethodList
       if (!is.null(weightedAllocationMethodList)) {
         if (!is.list(weightedAllocationMethodList)) {
@@ -1213,20 +1213,20 @@ simBs <- R6::R6Class(
                        weightedAllocationMethodList,")` instead."))
         weightedAllocationMethodList <- list(weightedAllocationMethodList)
       }
-      
+
       if (!(length(weightedAllocationMethodList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(weightedAllocationMethodList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(weightedAllocationMethodList) == 1) {
         weightedAllocationMethodList <- rep(weightedAllocationMethodList, nGenerationProceed)
       }
       weightedAllocationMethodList <- lapply(weightedAllocationMethodList, function(x) x[x %in% selectionMethodsWithSelection])
-      
+
       names(weightedAllocationMethodList) <- 1:nGenerationProceed
       stopifnot(all(unlist(lapply(weightedAllocationMethodList, is.character))))
       stopifnot(all(unlist(lapply(weightedAllocationMethodList, length)) >= 1))
-      
-      
-      
+
+
+
       # traitNoRAList
       if (!is.null(traitNoRAList)) {
         if (!is.list(traitNoRAList)) {
@@ -1238,7 +1238,7 @@ simBs <- R6::R6Class(
                        traitNoRAList,")` instead."))
         traitNoRAList <- list(traitNoRAList)
       }
-      
+
       if (!(length(traitNoRAList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(traitNoRAList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(traitNoRAList) == 1) {
@@ -1246,21 +1246,21 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(traitNoRAList, is.numeric))))
       stopifnot(all(sapply(traitNoRAList, function(traitNoRA) all(traitNoRA >= 1))))
-      
+
       names(traitNoRAList) <- 1:nGenerationProceed
-      
-      
+
+
       # includeGVPVec
       stopifnot(is.logical(includeGVPVec))
-      
+
       if (!(length(includeGVPVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(includeGVPVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(includeGVPVec) == 1) {
         includeGVPVec <- rep(includeGVPVec, nGenerationProceed)
       }
       names(includeGVPVec) <- 1:nGenerationProceed
-      
-      
+
+
       # targetGenGVPVec
       if (!is.null(targetGenGVPVec)) {
         stopifnot(is.numeric(targetGenGVPVec))
@@ -1271,27 +1271,27 @@ simBs <- R6::R6Class(
         message(paste0("`targetGenGVPVec` is not specified. We substitute `targetGenGVPVec = ",
                        targetGenGVPVec,"` instead."))
       }
-      
+
       if (!(length(targetGenGVPVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(targetGenGVPVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(targetGenGVPVec) == 1) {
         targetGenGVPVec <- rep(targetGenGVPVec, nGenerationProceed)
       }
       names(targetGenGVPVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # performOCSVec
       stopifnot(is.logical(performOCSVec))
-      
+
       if (!(length(performOCSVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(performOCSVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(performOCSVec) == 1) {
         performOCSVec <- rep(performOCSVec, nGenerationProceed)
       }
       names(performOCSVec) <- 1:nGenerationProceed
-      
-      
+
+
       # targetGenOCSVec
       if (!is.null(targetGenOCSVec)) {
         stopifnot(is.numeric(targetGenOCSVec))
@@ -1302,16 +1302,16 @@ simBs <- R6::R6Class(
         message(paste0("`targetGenOCSVec` is not specified. We substitute `targetGenOCSVec = ",
                        targetGenOCSVec,"` instead."))
       }
-      
+
       if (!(length(targetGenOCSVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(targetGenOCSVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(targetGenOCSVec) == 1) {
         targetGenOCSVec <- rep(targetGenOCSVec, nGenerationProceed)
       }
       names(targetGenOCSVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # HeStarRatioVec
       if (!is.null(HeStarRatioVec)) {
         stopifnot(is.numeric(HeStarRatioVec))
@@ -1321,15 +1321,15 @@ simBs <- R6::R6Class(
         message(paste0("`HeStarRatioVec` is not specified. We substitute `HeStarRatioVec = ",
                        HeStarRatioVec,"` instead."))
       }
-      
+
       if (!(length(HeStarRatioVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(HeStarRatioVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(HeStarRatioVec) == 1) {
         HeStarRatioVec <- rep(HeStarRatioVec, nGenerationProceed)
       }
       names(HeStarRatioVec) <- 1:nGenerationProceed
-      
-      
+
+
       # degreeOCSVec
       if (!is.null(degreeOCSVec)) {
         stopifnot(is.numeric(degreeOCSVec))
@@ -1339,26 +1339,26 @@ simBs <- R6::R6Class(
         message(paste0("`degreeOCSVec` is not specified. We substitute `degreeOCSVec = ",
                        degreeOCSVec,"` instead."))
       }
-      
+
       if (!(length(degreeOCSVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(degreeOCSVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(degreeOCSVec) == 1) {
         degreeOCSVec <- rep(degreeOCSVec, nGenerationProceed)
       }
       names(degreeOCSVec) <- 1:nGenerationProceed
-      
-      
+
+
       # includeGVPOCSVec
       stopifnot(is.logical(includeGVPOCSVec))
-      
+
       if (!(length(includeGVPOCSVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(includeGVPOCSVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(includeGVPOCSVec) == 1) {
         includeGVPOCSVec <- rep(includeGVPOCSVec, nGenerationProceed)
       }
       names(includeGVPOCSVec) <- 1:nGenerationProceed
-      
-      
+
+
       # hOCSList
       if (!is.null(hOCSList)) {
         if (!is.list(hOCSList)) {
@@ -1373,25 +1373,25 @@ simBs <- R6::R6Class(
                              hOCSLenNow <- length(traitNoOCSList[[generationProceedNo]]) *
                                (length(weightedAllocationMethodOCSList[[generationProceedNo]]) +
                                   includeGVPOCSVec[generationProceedNo])
-                             
+
                              return(rep(hOCSList, hLenOCSNow))
                            }, simplify = FALSE)
       }
-      
+
       if (!(length(hOCSList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(hOCSList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(hOCSList) == 1) {
         hOCSList <- rep(hOCSList, nGenerationProceed)
       }
       stopifnot(all(unlist(lapply(hOCSList, is.numeric))))
-      stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
+      # stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
       stopifnot(all(sapply(hOCSList, function(h) all(h <= 10))))
       stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoOCSList, length)) *
                                                            (unlist(lapply(weightedAllocationMethodOCSList, length)) + includeGVPOCSVec))))
-      
+
       names(hOCSList) <- 1:nGenerationProceed
-      
-      
+
+
       # weightedAllocationMethodOCSList
       if (!is.null(weightedAllocationMethodOCSList)) {
         if (!is.list(weightedAllocationMethodOCSList)) {
@@ -1403,20 +1403,20 @@ simBs <- R6::R6Class(
                        weightedAllocationMethodOCSList,")` instead."))
         weightedAllocationMethodOCSList <- list(weightedAllocationMethodOCSList)
       }
-      
+
       if (!(length(weightedAllocationMethodOCSList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(weightedAllocationMethodOCSList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(weightedAllocationMethodOCSList) == 1) {
         weightedAllocationMethodOCSList <- rep(weightedAllocationMethodOCSList, nGenerationProceed)
       }
       weightedAllocationMethodOCSList <- lapply(weightedAllocationMethodOCSList, function(x) x[x %in% selectionMethodsWithSelection])
-      
+
       names(weightedAllocationMethodOCSList) <- 1:nGenerationProceed
       stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, is.character))))
       stopifnot(all(unlist(lapply(weightedAllocationMethodOCSList, length)) >= 1))
-      
-      
-      
+
+
+
       # traitNoOCSList
       if (!is.null(traitNoOCSList)) {
         if (!is.list(traitNoOCSList)) {
@@ -1428,7 +1428,7 @@ simBs <- R6::R6Class(
                        traitNoOCSList,")` instead."))
         traitNoOCSList <- list(traitNoOCSList)
       }
-      
+
       if (!(length(traitNoOCSList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(traitNoOCSList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(traitNoOCSList) == 1) {
@@ -1436,10 +1436,10 @@ simBs <- R6::R6Class(
       }
       stopifnot(all(unlist(lapply(traitNoOCSList, is.numeric))))
       stopifnot(all(sapply(traitNoOCSList, function(traitNoOCS) all(traitNoOCS >= 1))))
-      
+
       names(traitNoOCSList) <- 1:nGenerationProceed
-      
-      
+
+
       # nCrossesOCSVec
       if (!is.null(nCrossesOCSVec)) {
         stopifnot(is.numeric(nCrossesOCSVec))
@@ -1450,16 +1450,16 @@ simBs <- R6::R6Class(
         message(paste0("`nCrossesOCSVec` is not specified. We substitute `nCrossesOCSVec = ",
                        nCrossesOCSVec,"` instead."))
       }
-      
+
       if (!(length(nCrossesOCSVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nCrossesOCSVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nCrossesOCSVec) == 1) {
         nCrossesOCSVec <- rep(nCrossesOCSVec, nGenerationProceed)
       }
       names(nCrossesOCSVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # hList
       if (!is.null(hList)) {
         if (!is.list(hList)) {
@@ -1474,26 +1474,26 @@ simBs <- R6::R6Class(
                           hLenNow <- length(traitNoOCSList[[generationProceedNo]]) *
                             (length(weightedAllocationMethodList[[generationProceedNo]]) +
                                includeGVPVec[generationProceedNo])
-                          
+
                           return(rep(hList, hLenNow))
                         }, simplify = FALSE)
       }
-      
+
       if (!(length(hList) %in% c(1, nGenerationProceed))) {
         stop(paste("length(hList) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(hList) == 1) {
         hList <- rep(hList, nGenerationProceed)
       }
       stopifnot(all(unlist(lapply(hList, is.numeric))))
-      stopifnot(all(sapply(hList, function(h) all(h >= 0))))
+      # stopifnot(all(sapply(hList, function(h) all(h >= 0))))
       stopifnot(all(sapply(hList, function(h) all(h <= 10))))
       stopifnot(all(unlist(lapply(hList, length)) == (unlist(lapply(traitNoRAList, length)) *
                                                         (unlist(lapply(weightedAllocationMethodList, length)) + includeGVPVec))))
-      
+
       names(hList) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # minimumUnitAllocateVec
       if (!is.null(minimumUnitAllocateVec)) {
         stopifnot(is.numeric(minimumUnitAllocateVec))
@@ -1504,16 +1504,16 @@ simBs <- R6::R6Class(
         message(paste0("`minimumUnitAllocateVec` is not specified. We substitute `minimumUnitAllocateVec = ",
                        minimumUnitAllocateVec,"` instead."))
       }
-      
+
       if (!(length(minimumUnitAllocateVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(minimumUnitAllocateVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(minimumUnitAllocateVec) == 1) {
         minimumUnitAllocateVec <- rep(minimumUnitAllocateVec, nGenerationProceed)
       }
       names(minimumUnitAllocateVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # nNextPopVec
       if (!is.null(nNextPopVec)) {
         stopifnot(is.numeric(nNextPopVec))
@@ -1524,16 +1524,16 @@ simBs <- R6::R6Class(
         message(paste0("`nNextPopVec` is not specified. We substitute `nNextPopVec = ",
                        nNextPopVec,"` instead."))
       }
-      
+
       if (!(length(nNextPopVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nNextPopVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nNextPopVec) == 1) {
         nNextPopVec <- rep(nNextPopVec, nGenerationProceed)
       }
       names(nNextPopVec) <- 1:nGenerationProceed
-      
-      
-      
+
+
+
       # nProgeniesEMBV
       if (!is.null(nProgeniesEMBVVec)) {
         stopifnot(is.numeric(nProgeniesEMBVVec))
@@ -1547,16 +1547,16 @@ simBs <- R6::R6Class(
                          ")` instead."))
         }
       }
-      
-      
+
+
       if (!(length(nProgeniesEMBVVec) %in% c(1, nGenerationProceed))) {
         stop(paste("length(nProgeniesEMBVVec) must be equal to 1 or equal to nGenerationProceed."))
       } else if (length(nProgeniesEMBVVec) == 1) {
         nProgeniesEMBVVec <- rep(nProgeniesEMBVVec, nGenerationProceed)
       }
       names(nProgeniesEMBVVec) <- 1:nGenerationProceed
-      
-      
+
+
       # nIterEMBV
       if (!is.null(nIterEMBV)) {
         stopifnot(is.numeric(nIterEMBV))
@@ -1568,8 +1568,8 @@ simBs <- R6::R6Class(
           message(paste0("`nIterEMBV` is not specified. We substitute `nIterEMBV = ", nIterEMBV,"` instead."))
         }
       }
-      
-      
+
+
       # nCoresEMBV
       if (!is.null(nCoresEMBV)) {
         stopifnot(is.numeric(nCoresEMBV))
@@ -1582,13 +1582,13 @@ simBs <- R6::R6Class(
                          nCoresEMBV,"` instead."))
         }
       }
-      
+
       if (nCoresEMBV >= parallel::detectCores()) {
         warning("You are going to assign the number of cores larger than that of your PC to `nCoresEMBV` ! Is it OK ?")
       }
-      
-      
-      
+
+
+
       # nameMethod
       if (!is.null(nameMethod)) {
         if (!(nameMethod %in% nameMethodsOffered)) {
@@ -1596,20 +1596,20 @@ simBs <- R6::R6Class(
                       paste(nameMethodsOffered, collapse = "; ")))
         }
       }
-      
+
       # returnMethod
       if (!is.null(returnMethod)) {
         if (!all(returnMethod %in% returnMethodsOffered)) {
           returnMethod <- returnMethod[returnMethod %in% returnMethodsOffered]
           message(paste0("We only offer the following methods for returining the simulation results: ",
                          paste(returnMethodsOffered, collapse = "; ")))
-          
+
           stopifnot(length(returnMethod) >= 1)
         }
       } else {
         returnMethod <- "summary"
       }
-      
+
       # evaluateGVMethod
       if (!is.null(evaluateGVMethod)) {
         if (!(evaluateGVMethod %in% lociEffMethodsOffered)) {
@@ -1619,8 +1619,8 @@ simBs <- R6::R6Class(
       } else {
         evaluateGVMethod <- "true"
       }
-      
-      
+
+
       # nTopEval
       if (!is.null(nTopEval)) {
         stopifnot(is.numeric(nTopEval))
@@ -1632,8 +1632,8 @@ simBs <- R6::R6Class(
         message(paste0("`nTopEval` is not specified. We substitute `nTopEval = ",
                        nTopEval,"` instead."))
       }
-      
-      
+
+
       # traitNoEval
       if (!is.null(traitNoEval)) {
         stopifnot(is.numeric(traitNoEval))
@@ -1644,8 +1644,8 @@ simBs <- R6::R6Class(
         traitNoEval <- 1
         message(paste0("`traitNoEval` is not specified. We substitute `traitNoEval = ", traitNoEval,"` instead."))
       }
-      
-      
+
+
       # hEval
       if (!is.null(hEval)) {
         stopifnot(is.numeric(hEval))
@@ -1654,16 +1654,16 @@ simBs <- R6::R6Class(
         hEval <- 0.1
         message(paste0("`hEval` is not specified. We substitute `hEval = ", hEval, "` instead."))
       }
-      
+
       hEvalLen <- length(traitNoEval)
-      
+
       if (!(length(hEval) %in% c(1, hEvalLen))) {
         stop(paste("length(hEval) must be equal to 1 or equal to `length(traitNoEval)`"))
       } else if (length(hEval) == 1) {
         hEval <- rep(hEval, hEvalLen)
       }
-      
-      
+
+
       # nCores
       if (!is.null(nCores)) {
         stopifnot(is.numeric(nCores))
@@ -1674,12 +1674,12 @@ simBs <- R6::R6Class(
         message(paste0("`nCores` is not specified. We substitute `nCores = ",
                        nCores,"` instead."))
       }
-      
+
       if (nCores >= parallel::detectCores()) {
         warning("You are going to assign the number of cores larger than that of your PC to `nCores` ! Is it OK ?")
       }
-      
-      
+
+
       estimatedGVInitExist <- !is.null(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]])
       if (!estimatedGVInitExist) {
         # trainingPopInit
@@ -1698,20 +1698,20 @@ simBs <- R6::R6Class(
             trainingPopInit <- trainingPopInit[trainingPopInit %in% (1:bsInfoInit$generation)]
           }
         }
-        
+
         # trainingIndNamesInit
         if (!is.null(trainingIndNamesInit)) {
           stopifnot(is.character(trainingIndNamesInit))
           stopifnot(length(trainingIndNamesInit) >= 1)
         }
       }
-      
-      
+
+
       # saveAllResAt
       if (!is.null(saveAllResAt)) {
         stopifnot(is.character(saveAllResAt))
         tailCheck <- TRUE
-        
+
         while (tailCheck) {
           strLength <- stringr::str_length(string = saveAllResAt)
           tailCheck <- stringr::str_sub(string = saveAllResAt, start = strLength, end = strLength) == "/"
@@ -1719,18 +1719,18 @@ simBs <- R6::R6Class(
             saveAllResAt <- stringr::str_sub(string = saveAllResAt, start = 1, end = strLength - 1)
           }
         }
-        
+
         if (!dir.exists(paths = saveAllResAt)) {
           dir.create(path = saveAllResAt)
         }
       }
-      
-      
+
+
       # summaryAllResAt
       if (!is.null(summaryAllResAt)) {
         stopifnot(is.character(summaryAllResAt))
         tailCheck <- TRUE
-        
+
         while (tailCheck) {
           strLength <- stringr::str_length(string = summaryAllResAt)
           tailCheck <- stringr::str_sub(string = summaryAllResAt, start = strLength, end = strLength) == "/"
@@ -1738,16 +1738,16 @@ simBs <- R6::R6Class(
             summaryAllResAt <- stringr::str_sub(string = summaryAllResAt, start = 1, end = strLength - 1)
           }
         }
-        
-        
+
+
         if (!dir.exists(paths = summaryAllResAt)) {
           message(paste0("There is no directory named '", summaryAllResAt, "'. We will summarize the simulation results inside the `simBs` object."))
           summaryAllResAt <- NULL
         }
       }
-      
-      
-      
+
+
+
       # Save arguments in `self`
       self$simBsName <- simBsName
       self$bsInfoInit <- bsInfoInit
@@ -1818,20 +1818,20 @@ simBs <- R6::R6Class(
       self$hEval <- hEval
       self$summaryAllResAt <- summaryAllResAt
       self$verbose <- verbose
-      
-      
-      
-      
+
+
+
+
       # trueGVMatList
       trueGVMatInit <- list(bsInfoInit$populations[[length(bsInfoInit$populations)]]$trueGVMat)
       names(trueGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       trueGVMatInitList <- rep(list(trueGVMatInit), nIterSimulation)
       names(trueGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       self$trueGVMatInit <- trueGVMatInit[[1]]
       self$trueGVMatList <- trueGVMatInitList
-      
-      
+
+
       # estimatedGVMatList
       # if (!estimatedGVInitExist) {
       #   self$computeLociEffInit()
@@ -1849,23 +1849,23 @@ simBs <- R6::R6Class(
       #
       #
       # estimatedGVMatInit <- list(breederInfoInit$estimatedGVByMLRInfo[[names(bsInfoInit$populations[length(bsInfoInit$populations)])]]$testingEstimatedGVByMLR)
-      
+
       self$computeLociEffInit()
       lociEffects <- self$lociEffectsInit
       genoMatNow <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$genoMat
       genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                  genoMatNow)
-      
+
       estimatedGVMatInit <- list(genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects)
       names(estimatedGVMatInit) <- bsInfoInit$populations[[length(bsInfoInit$populations)]]$name
       estimatedGVMatInitList <- rep(list(estimatedGVMatInit), nIterSimulation)
       names(estimatedGVMatInitList) <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       self$estimatedGVMatInit <- estimatedGVMatInit[[1]]
       self$estimatedGVMatList <- estimatedGVMatInitList
     },
-    
-    
+
+
     #' @description
     #' estimate/extract marker/QTL effects information
     computeLociEffInit = function() {
@@ -1881,15 +1881,15 @@ simBs <- R6::R6Class(
       samplingMrkEffInit <- self$samplingMrkEffInit
       seedMrkEffSamplingInit <- self$seedMrkEffSamplingInit
       verbose <- self$verbose
-      
-      
-      
+
+
+
       if (lociEffMethod == "true") {
         lociEffectsInit <- bsInfoInit$lociEffects
       } else if (lociEffMethod == "estimated") {
         trainingPopName <- names(breederInfoInit$populationsFB)[trainingPopInit]
         estimatedMrkEffName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLRInit)
-        
+
         if (is.null(breederInfoInit$estimatedMrkEffInfo[[estimatedMrkEffName]])) {
           breederInfoInit$estimateMrkEff(trainingPop = trainingPopInit,
                                          trainingIndNames = trainingIndNamesInit,
@@ -1907,14 +1907,14 @@ simBs <- R6::R6Class(
                                                        samplingMrkEff = samplingMrkEffInit,
                                                        seedMrkEffSampling = seedMrkEffSamplingInit)
       }
-      
+
       self$lociEffectsInit <- lociEffectsInit
     },
-    
-    
-    
-    
-    
+
+
+
+
+
     #' @description
     #' start simulation of breeding scheme
     startSimulation = function() {
@@ -1976,13 +1976,13 @@ simBs <- R6::R6Class(
       traitNoEval <- self$traitNoEval
       hEval <- self$hEval
       verbose <- self$verbose
-      
+
       lociEffectsInit <- self$lociEffectsInit
-      
+
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       if (!is.null(saveAllResAt)) {
         saveAllResAtSplit <- stringr::str_split(string = list.files(saveAllResAt),
                                                 pattern = "_")
@@ -1990,65 +1990,65 @@ simBs <- R6::R6Class(
                                         FUN = function(saveAllResAtSplitVec) {
                                           return(saveAllResAtSplitVec[length(saveAllResAtSplitVec)])
                                         })
-        
+
         saveAllNumeric <- unique(sort(as.numeric(stringr::str_remove(saveAllResAtSplitLast, ".rds"))))
       }
-      
-      
+
+
       if (is.null(self$lociEffectsInit)) {
         self$computeLociEffInit()
       }
       lociEffectsInit <- self$lociEffectsInit
-      
+
       if (is.null(self$simBsRes[[simBsName]])) {
         self$simBsRes[[simBsName]] <- list()
-        
+
         if ("all" %in% returnMethod) {
           self$simBsRes[[simBsName]]$all <- list()
         }
-        
+
         if ("max" %in% returnMethod) {
           self$simBsRes[[simBsName]]$max <- rep(x = NA, nIterSimulation)
           names(self$simBsRes[[simBsName]]$max) <- iterNames
         }
-        
+
         if ("mean" %in% returnMethod) {
           self$simBsRes[[simBsName]]$mean <- rep(x = NA, nIterSimulation)
           names(self$simBsRes[[simBsName]]$mean) <- iterNames
         }
-        
+
         if ("median" %in% returnMethod) {
           self$simBsRes[[simBsName]]$median <- rep(x = NA, nIterSimulation)
           names(self$simBsRes[[simBsName]]$median) <- iterNames
         }
-        
+
         if ("min" %in% returnMethod) {
           self$simBsRes[[simBsName]]$min <- rep(x = NA, nIterSimulation)
           names(self$simBsRes[[simBsName]]$min) <- iterNames
         }
-        
+
         if ("var" %in% returnMethod) {
           self$simBsRes[[simBsName]]$var <- rep(x = NA, nIterSimulation)
           names(self$simBsRes[[simBsName]]$var) <- iterNames
         }
       }
-      
-      
+
+
       if (nCores == 1) {
         if (showProgress) {
           pb <- utils::txtProgressBar(min = 0, max = nIterSimulation, style = 3)
         }
-        
-        
-        
+
+
+
         simulationCounts <- 0
         for (iterNo in 1:nIterSimulation) {
           if (showProgress) {
             utils::setTxtProgressBar(pb, iterNo)
           }
-          
+
           iterName <- iterNames[iterNo]
-          
+
           if (!((is.null(self$simBsRes[[simBsName]]$all[[iterName]])) &
                 (length(self$trueGVMatList[[iterName]]) <= 1))) {
             if (overWriteRes) {
@@ -2071,30 +2071,30 @@ simBs <- R6::R6Class(
               }
             }
           }
-          
+
           if (!is.null(saveAllResAt)) {
             if (!overWriteRes) {
               conductSimulation <- !(iterNo %in% saveAllNumeric)
             }
           }
-          
+
           if (conductSimulation) {
             simulationCounts <- simulationCounts + 1
             bsInfo <- bsInfoInit$clone(deep = FALSE)
             breederInfo <- breederInfoInit$clone(deep = FALSE)
             lociEffects <- lociEffectsInit
-            
-            
+
+
             # trueGVMatList
             if (is.null(self$trueGVMatList[[iterName]])) {
               self$trueGVMatList[[iterName]][[populationNameInit]] <- self$trueGVMatInit
             }
-            
+
             # estimatedGVMatList
             if (is.null(self$estimatedGVMatList[[iterName]])) {
               self$estimatedGVMatList[[iterName]][[populationNameInit]] <- self$estimatedGVMatInit
             }
-            
+
             for (genProceedNo in 1:nGenerationProceed) {
               crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                              nSelectionWays = nSelectionWaysVec[genProceedNo],
@@ -2145,8 +2145,8 @@ simBs <- R6::R6Class(
                                                              crosses = NULL,
                                                              verbose = verbose)
               bsInfo$nextGeneration(crossInfo = crossInfoNow)
-              
-              
+
+
               if (updateBreederInfo[genProceedNo]) {
                 breederInfo$getNewPopulation(bsInfo = bsInfo,
                                              generationNew = NULL,
@@ -2158,27 +2158,27 @@ simBs <- R6::R6Class(
                                          estimateGV = TRUE,
                                          estimatedGVMethod = "lme4",
                                          nRep = nRepForPheno[genProceedNo])
-                  
+
                   if (updateModels[genProceedNo]) {
                     lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                        breederInfo = breederInfo$clone(deep = FALSE))
                   }
                 }
               }
-              
-              
+
+
               if (any(c("all", "summary") %in% returnMethod)) {
                 populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
                 trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                 self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
-                
+
                 # if (breederInfo$generation < bsInfo$generation) {
                 #   breederInfo$getNewPopulation(bsInfo = bsInfo,
                 #                                generationNew = bsInfo$generation,
                 #                                genotyping = TRUE,
                 #                                genotypedIndNames = NULL)
                 # }
-                
+
                 # if (is.null(breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]])) {
                 #   breederInfo$estimateGVByMLR(trainingPop = self$trainingPopInit,
                 #                               trainingIndNames = self$trainingIndNamesInit,
@@ -2192,28 +2192,28 @@ simBs <- R6::R6Class(
                 #                               bayesian = TRUE)
                 # }
                 # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-                
-                
+
+
                 genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
                 genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                            genoMatNow)
-                
+
                 estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
             }
-            
+
             if (!is.null(saveAllResAt)) {
               fileNameBsInfoRes <- here::here(saveAllResAt,
                                               paste0(simBsName, "_bsInfo_", iterName, ".rds"))
               fileNameBreederInfoRes <- here::here(saveAllResAt,
                                                    paste0(simBsName, "_breederInfo_", iterName, ".rds"))
-              
+
               saveRDS(object = bsInfo, file = fileNameBsInfoRes)
               saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
             }
-            
-            
+
+
             if ("all" %in% returnMethod) {
               self$simBsRes[[simBsName]]$all[[iterName]] <- list(bsInfo = bsInfo,
                                                                  breederInfo = breederInfo)
@@ -2226,7 +2226,7 @@ simBs <- R6::R6Class(
               } else {
                 trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
                 self$trueGVMatList[[iterName]][[populationNameNow]] <- trueGVMat
-                
+
                 # if (breederInfo$generation < bsInfo$generation) {
                 #   breederInfo$getNewPopulation(bsInfo = bsInfo,
                 #                                generationNew = bsInfo$generation,
@@ -2247,22 +2247,22 @@ simBs <- R6::R6Class(
                 #                               bayesian = TRUE)
                 # }
                 # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-                
+
                 genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
                 genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                            genoMatNow)
-                
+
                 estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
                 self$estimatedGVMatList[[iterName]][[populationNameNow]] <- estimatedGVMat
               }
-              
-              
+
+
               if (evaluateGVMethod == "true") {
                 trueGVMatNow <- trueGVMat
               } else {
                 trueGVMatNow <- estimatedGVMat
               }
-              
+
               # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
               #                          FUN = function(trueGV) {
               #                            return(scale(x = trueGV, center = TRUE,
@@ -2279,45 +2279,45 @@ simBs <- R6::R6Class(
                                                          } else {
                                                            trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
                                                          }
-                                                         
+
                                                          return(trueGVScaled)
                                                        }, simplify = FALSE))
-              
+
               rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
               colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
-              
+
               trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
-              
+
               if ("max" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$max[iterName] <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
               }
-              
+
               if ("mean" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$mean[iterName] <- mean(x = trueEvals)
               }
-              
+
               if ("median" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$median[iterName] <- median(x = trueEvals)
               }
-              
+
               if ("min" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$min[iterName] <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
               }
-              
+
               if ("var" %in% returnMethod) {
                 self$simBsRes[[simBsName]]$var[iterName] <- var(x = trueEvals)
               }
             }
-            
-            
+
+
             if (simulationCounts %% nRefreshMemoryEvery == 0) {
               rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
               gc(reset = TRUE); gc(reset = TRUE)
             }
           }
-          
+
         }
-        
+
         if (showProgress) {
           cat("\n")
         }
@@ -2346,16 +2346,16 @@ simBs <- R6::R6Class(
                                            }
                                          }
                                        }
-                                       
+
                                        return(conductSimulation)
                                      })
-        
+
         if (!is.null(saveAllResAt)) {
           if (!overWriteRes) {
             conductSimulations[saveAllNumeric] <- FALSE
           }
         }
-        
+
         if (any(conductSimulations)) {
           if (showProgress) {
             simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
@@ -2367,38 +2367,38 @@ simBs <- R6::R6Class(
                                             mc.cores = nCores)
           }
           names(simResAll) <- iterNames[conductSimulations]
-          
+
           if ("all" %in% returnMethod) {
             self$simBsRes[[simBsName]]$all[iterNames[conductSimulations]] <- lapply(simResAll, function(x) x$all)
           }
-          
+
           if ("max" %in% returnMethod) {
             self$simBsRes[[simBsName]]$max[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$max))
           }
-          
+
           if ("mean" %in% returnMethod) {
             self$simBsRes[[simBsName]]$mean[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$mean))
           }
-          
+
           if ("median" %in% returnMethod) {
             self$simBsRes[[simBsName]]$median[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$median))
           }
-          
+
           if ("min" %in% returnMethod) {
             self$simBsRes[[simBsName]]$min[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$min))
           }
-          
+
           if ("var" %in% returnMethod) {
             self$simBsRes[[simBsName]]$var[iterNames[conductSimulations]] <- unlist(lapply(simResAll, function(x) x$var))
           }
-          
+
           trueGVMatListNow <- lapply(simResAll, function(x) x$trueGVMatList)
           self$trueGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
                                                                       function(iterName) {
                                                                         c(self$trueGVMatList[[iterName]],
                                                                           trueGVMatListNow[[iterName]])
                                                                       }, simplify = FALSE)
-          
+
           estimatedGVMatListNow <- lapply(simResAll, function(x) x$estimatedGVMatList)
           self$estimatedGVMatList[iterNames[conductSimulations]] <- sapply(iterNames[conductSimulations],
                                                                            function(iterName) {
@@ -2408,9 +2408,9 @@ simBs <- R6::R6Class(
         }
       }
     },
-    
-    
-    
+
+
+
     #' @description
     #' start simulation of breeding scheme
     summaryResults = function() {
@@ -2424,8 +2424,8 @@ simBs <- R6::R6Class(
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
-      
+
+
       if (!is.null(summaryAllResAt)) {
         fileNameBsInfoRes0 <- here::here(summaryAllResAt,
                                          paste0(simBsName, "_bsInfo_"))
@@ -2440,17 +2440,17 @@ simBs <- R6::R6Class(
                                                 FUN = private$extractGVMatList,
                                                 mc.cores = self$nCores)
         }
-        
+
         if (!is.null(listOfGVMatList$warning)) {
           listOfGVMatList <- listOfGVMatList$value
         }
-        
+
         trueGVMatList <- lapply(listOfGVMatList, function(x) x$trueGVMatEachList)
         names(trueGVMatList) <- iterNames
         trueGVMatListNonNULL <- which(!unlist(lapply(trueGVMatList, is.null)))
         trueGVMatList <- trueGVMatList[trueGVMatListNonNULL]
         self$trueGVMatList <- trueGVMatList
-        
+
         estimatedGVMatList <- lapply(listOfGVMatList, function(x) x$estimatedGVMatEachList)
         names(estimatedGVMatList) <- iterNames
         estimatedGVMatListNonNULL <- which(!unlist(lapply(estimatedGVMatList, is.null)))
@@ -2464,38 +2464,38 @@ simBs <- R6::R6Class(
           stop("Please start simulation with `returnMethod = 'summary'`. You do not have simulation results.")
         }
       }
-      
-      
+
+
       trueGVSummaryArrayList <- lapply(X = trueGVMatList,
                                        FUN = private$extractTrueSummaryRes)
-      
-      
+
+
       trueGVSummaryArray <- do.call(what = abind::abind,
                                     args = trueGVSummaryArrayList)
       dimnames(trueGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                        Population = names(trueGVMatList[[1]]),
                                                        Iteration = names(trueGVMatList))
-      
-      
+
+
       self$trueGVSummaryArray <- trueGVSummaryArray
-      
-      
-      
+
+
+
       estimatedGVSummaryArrayList <- lapply(X = estimatedGVMatList,
                                             FUN = private$extractEstimatedSummaryRes)
-      
-      
+
+
       estimatedGVSummaryArray <- do.call(what = abind::abind,
                                          args = estimatedGVSummaryArrayList)
       dimnames(estimatedGVSummaryArray)[c(1, 3, 4)] <- list(Index = c("max", "mean", "median", "min", "var"),
                                                             Population = names(estimatedGVMatList[[1]]),
                                                             Iteration = names(estimatedGVMatList))
-      
-      
+
+
       self$estimatedGVSummaryArray <- estimatedGVSummaryArray
     },
-    
-    
+
+
     #' @description
     #' Display information about the object
     print = function() {
@@ -2507,8 +2507,8 @@ simBs <- R6::R6Class(
       ))
       print(self$nNextPopVec)
     },
-    
-    
+
+
     #' @description Draw figures for visualization of simulation results for summary statistics
     #' @param targetTrait [numeric] Target trait. character is OK, but numeric vector
     #'  corresponding to target traits is preferred. It should be a vector with length 1.
@@ -2538,15 +2538,15 @@ simBs <- R6::R6Class(
         stop("`targetTraitName` must be `numeric` or `character`!")
       }
       stopifnot(length(targetTraitName) == 1)
-      
-      
+
+
       # plotType
       plotTypeOffered <- c("box", "violin", "lines", "density")
-      
+
       stopifnot(length(plotType) == 1)
       stopifnot(plotType %in% plotTypeOffered)
-      
-      
+
+
       # plotGVMethod
       if (!is.null(plotGVMethod)) {
         if (!(plotGVMethod %in% lociEffMethodsOffered)) {
@@ -2556,34 +2556,34 @@ simBs <- R6::R6Class(
       } else {
         plotGVMethod <- "true"
       }
-      
-      
+
+
       if (plotGVMethod == "true") {
         if (is.null(self$trueGVSummaryArray)) {
           self$summaryResults()
         }
-        
+
         trueGVSummaryArray <- self$trueGVSummaryArray
       } else {
         if (is.null(self$estimatedGVSummaryArray)) {
           self$summaryResults()
         }
-        
+
         trueGVSummaryArray <- self$estimatedGVSummaryArray
       }
-      
+
       # targetPopulation
       if (is.null(targetPopulation)) {
         targetPopulation <- 1:dim(trueGVSummaryArray)[3]
       }
       targetPopulation <- targetPopulation[targetPopulation %in% (1:dim(trueGVSummaryArray)[3])]
-      
-      
+
+
       trueGVSummaryArray <- trueGVSummaryArray[ , , targetPopulation, , drop = FALSE]
-      
+
       dimSummary <- dim(trueGVSummaryArray)
       dimnamesSummary <- dimnames(trueGVSummaryArray)
-      
+
       trueGVSummaryDf <- data.frame(SummaryStatistics = rep(dimnamesSummary[[1]], prod(dimSummary[-1])),
                                     Trait = rep(rep(dimnamesSummary[[2]], each = dimSummary[1]),
                                                 prod(dimSummary[3:4])),
@@ -2595,7 +2595,7 @@ simBs <- R6::R6Class(
       trueGVSummaryDf$Trait <- factor(trueGVSummaryDf$Trait, levels = dimnamesSummary[[2]])
       trueGVSummaryDf$Population <- factor(trueGVSummaryDf$Population, levels = dimnamesSummary[[3]])
       trueGVSummaryDf$Iteration <- factor(trueGVSummaryDf$Iteration, levels = dimnamesSummary[[4]])
-      
+
       if (plotType %in% c("box", "violin")) {
         # trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$SummaryStatistics %in% plotTarget, ]
         trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$Trait %in% targetTraitName, ]
@@ -2626,10 +2626,10 @@ simBs <- R6::R6Class(
       } else if (plotType %in% c("lines")) {
         trueGVSummaryMeanArray <- apply(X = trueGVSummaryArray,
                                         MARGIN = 1:3, FUN = mean)
-        
+
         dimSummaryMean <- dim(trueGVSummaryMeanArray)
         dimnamesSummaryMean <- dimnames(trueGVSummaryMeanArray)
-        
+
         trueGVSummaryMeanDf <- data.frame(SummaryStatistics = rep(dimnamesSummaryMean[[1]], prod(dimSummaryMean[-1])),
                                           Trait = rep(rep(dimnamesSummaryMean[[2]], each = dimSummaryMean[1]),
                                                       prod(dimSummaryMean[3])),
@@ -2638,7 +2638,7 @@ simBs <- R6::R6Class(
         trueGVSummaryMeanDf$SummaryStatistics <- factor(trueGVSummaryMeanDf$SummaryStatistics, levels = dimnamesSummaryMean[[1]])
         trueGVSummaryMeanDf$Trait <- factor(trueGVSummaryMeanDf$Trait, levels = dimnamesSummaryMean[[2]])
         trueGVSummaryMeanDf$Population <- factor(trueGVSummaryMeanDf$Population, levels = dimnamesSummaryMean[[3]])
-        
+
         trueGVSummaryMeanDfTarget <- trueGVSummaryMeanDf[trueGVSummaryMeanDf$Trait %in% targetTraitName, ]
         trueGVSummaryMeanDfTarget$Value <- round(trueGVSummaryMeanDfTarget$Value, 3)
         plt <- plot_ly(
@@ -2661,24 +2661,24 @@ simBs <- R6::R6Class(
       } else if (plotType == "density") {
         trueGVSummaryDfTarget <- trueGVSummaryDf[trueGVSummaryDf$Trait %in% targetTraitName, ]
         trueGVSummaryDfTargetSS <- trueGVSummaryDfTarget[trueGVSummaryDfTarget$SummaryStatistics %in% plotTargetDensity, ]
-        
+
         densityValueDfList <- lapply(X = dimnames(trueGVSummaryArray)[[3]],
                                      FUN = function(popName) {
                                        trueGVSummaryDfTargetSSEachPop <- trueGVSummaryDfTargetSS[trueGVSummaryDfTargetSS$Population %in% popName, ]
                                        densityResEachPop <- density(x = sort(trueGVSummaryDfTargetSSEachPop$Value), adjust = adjust)
-                                       
+
                                        x <- densityResEachPop$x
                                        x <- c(min(x), x)
                                        y <- cumsum(densityResEachPop$y / sum(densityResEachPop$y))
                                        y <- c(0, y)
-                                       
+
                                        return(data.frame(x, y))
                                      })
         densityValueDf <- do.call(what = rbind,
                                   args = densityValueDfList)
         densityValueDf$Population <- rep(dimnames(trueGVSummaryArray)[[3]], unlist(lapply(densityValueDfList, nrow)))
         densityValueDf$Population <- factor(densityValueDf$Population, levels = dimnames(trueGVSummaryArray)[[3]])
-        
+
         plt <- plot_ly(
           data = densityValueDf,
           x = ~ x,
@@ -2694,12 +2694,12 @@ simBs <- R6::R6Class(
           plotly::layout(title = list(text = paste0(targetTraitName, "-", plotTargetDensity)),
                          xaxis = list(title = list(text = paste0(plotGVMethod, " GV"))))
       }
-      
-      
+
+
       return(plt)
     }
   ),
-  
+
   private = list(
     # @description marker and QTL effects used for crossInfo object
     #
@@ -2720,21 +2720,21 @@ simBs <- R6::R6Class(
       methodMLR <- self$methodMLR
       multiTrait <- self$multiTrait
       verbose <- self$verbose
-      
-      
-      
+
+
+
       if (lociEffMethod == "true") {
         lociEffects <- bsInfo$lociEffects
       } else if (lociEffMethod == "estimated") {
         trainingPopName <- names(breederInfo$populationsFB)
         infoName <- paste0(trainingPopName[length(trainingPopName)], "_", methodMLR)
-        
+
         if (trainingPopType == "all") {
           trainingPop <- 1:length(breederInfo$populationsFB)
         } else {
           trainingPop <- length(breederInfo$populationsFB)
         }
-        
+
         if (is.null(breederInfo$estimatedMrkEffInfo[[infoName]])) {
           breederInfo$estimateMrkEff(trainingPop = trainingPop,
                                      methodMLR = methodMLR,
@@ -2749,14 +2749,14 @@ simBs <- R6::R6Class(
                                                trainingPop = trainingPop,
                                                methodMLR = methodMLR)
       }
-      
-      
+
+
       return(lociEffects)
     },
-    
-    
-    
-    
+
+
+
+
     # @description Proceed breeding scheme (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
@@ -2818,35 +2818,35 @@ simBs <- R6::R6Class(
       traitNoEval <- self$traitNoEval
       hEval <- self$hEval
       verbose <- self$verbose
-      
+
       lociEffectsInit <- self$lociEffectsInit
-      
+
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
       lociEffectsInit <- self$lociEffectsInit
-      
-      
+
+
       iterName <- iterNames[iterNo]
       simRes <- list()
       simRes$trueGVMatList <- list()
       simRes$estimatedGVMatList <- list()
-      
+
       bsInfo <- bsInfoInit$clone(deep = FALSE)
       breederInfo <- breederInfoInit$clone(deep = FALSE)
       lociEffects <- lociEffectsInit
-      
+
       # trueGVMatList
       if (is.null(self$trueGVMatList[[iterName]])) {
         simRes$trueGVMatList[[populationNameInit]] <- self$trueGVMatInit
       }
-      
+
       # estimatedGVMatList
       if (is.null(self$estimatedGVMatList[[iterName]])) {
         simRes$estimatedGVMatList[[populationNameInit]] <- self$estimatedGVMatInit
       }
-      
-      
+
+
       for (genProceedNo in 1:nGenerationProceed) {
         crossInfoNow <- myBreedSimulatR::crossInfo$new(parentPopulation = bsInfo$populations[[length(bsInfo$populations)]],
                                                        nSelectionWays = nSelectionWaysVec[genProceedNo],
@@ -2897,8 +2897,8 @@ simBs <- R6::R6Class(
                                                        crosses = NULL,
                                                        verbose = verbose)
         bsInfo$nextGeneration(crossInfo = crossInfoNow)
-        
-        
+
+
         if (updateBreederInfo[genProceedNo]) {
           breederInfo$getNewPopulation(bsInfo = bsInfo,
                                        generationNew = NULL,
@@ -2910,20 +2910,20 @@ simBs <- R6::R6Class(
                                    estimateGV = TRUE,
                                    estimatedGVMethod = "lme4",
                                    nRep = nRepForPheno[genProceedNo])
-            
+
             if (updateModels[genProceedNo]) {
               lociEffects <- private$lociEffects(bsInfo = bsInfo$clone(deep = FALSE),
                                                  breederInfo = breederInfo$clone(deep = FALSE))
             }
           }
         }
-        
-        
+
+
         if (any(c("all", "summary") %in% returnMethod)) {
           populationNameNow <- names(bsInfo$populations)[length(bsInfo$populations)]
           trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-          
+
           # if (breederInfo$generation < bsInfo$generation) {
           #   breederInfo$getNewPopulation(bsInfo = bsInfo,
           #                                generationNew = bsInfo$generation,
@@ -2944,27 +2944,27 @@ simBs <- R6::R6Class(
           #                               bayesian = TRUE)
           # }
           # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-          
+
           genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
-          
+
           estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
       }
-      
+
       if (!is.null(saveAllResAt)) {
         fileNameBsInfoRes <- here::here(saveAllResAt,
                                         paste0(simBsName, "_bsInfo_", iterName, ".rds"))
         fileNameBreederInfoRes <- here::here(saveAllResAt,
                                              paste0(simBsName, "_breederInfo_", iterName, ".rds"))
-        
+
         saveRDS(object = bsInfo, file = fileNameBsInfoRes)
         saveRDS(object = breederInfo, file = fileNameBreederInfoRes)
       }
-      
-      
+
+
       if ("all" %in% returnMethod) {
         simRes$all <- list(bsInfo = bsInfo,
                            breederInfo = breederInfo)
@@ -2977,7 +2977,7 @@ simBs <- R6::R6Class(
         } else {
           trueGVMat <- bsInfo$populations[[length(bsInfo$populations)]]$trueGVMat
           simRes$trueGVMatList[[populationNameNow]] <- trueGVMat
-          
+
           # if (breederInfo$generation < bsInfo$generation) {
           #   breederInfo$getNewPopulation(bsInfo = bsInfo,
           #                                generationNew = bsInfo$generation,
@@ -2998,28 +2998,28 @@ simBs <- R6::R6Class(
           #                               bayesian = TRUE)
           # }
           # estimatedGVMat <- breederInfo$estimatedGVByMLRInfo[[names(bsInfo$populations[length(bsInfo$populations)])]]$testingEstimatedGVByMLR
-          
+
           genoMatNow <- bsInfo$populations[[length(bsInfo$populations)]]$genoMat
           genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                      genoMatNow)
-          
+
           estimatedGVMat <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
           simRes$estimatedGVMatList[[populationNameNow]] <- estimatedGVMat
         }
-        
-        
+
+
         if (evaluateGVMethod == "true") {
           trueGVMatNow <- trueGVMat
         } else {
           trueGVMatNow <- estimatedGVMat
         }
-        
+
         # trueGVMatScaled <- apply(X = trueGVMatNow, MARGIN = 2,
         #                          FUN = function(trueGV) {
         #                            return(scale(x = trueGV, center = TRUE,
         #                                         scale = as.logical(sd(trueGV))))
         #                          })
-        
+
         trueGVMatInit <- self$trueGVMatInit
         trueGVMatScaled <- do.call(what = cbind,
                                    args = sapply(X = 1:ncol(trueGVMatNow),
@@ -3031,80 +3031,80 @@ simBs <- R6::R6Class(
                                                    } else {
                                                      trueGVScaled <- (trueGVMatNow[, traitNo] - trueGVMean)
                                                    }
-                                                   
+
                                                    return(trueGVScaled)
                                                  }, simplify = FALSE))
         rownames(trueGVMatScaled) <- rownames(trueGVMatNow)
         colnames(trueGVMatScaled) <- colnames(trueGVMatNow)
-        
+
         trueEvals <- (trueGVMatScaled[, traitNoEval, drop = FALSE] %*% hEval)[, 1]
-        
+
         if ("max" %in% returnMethod) {
           simRes$max <- mean(x = sort(x = trueEvals, decreasing = TRUE)[1:nTopEval])
         }
-        
+
         if ("mean" %in% returnMethod) {
           simRes$mean <- mean(x = trueEvals)
         }
-        
+
         if ("median" %in% returnMethod) {
           simRes$median <- median(x = trueEvals)
         }
-        
+
         if ("min" %in% returnMethod) {
           simRes$min <- mean(x = sort(x = trueEvals, decreasing = FALSE)[1:nTopEval])
         }
-        
+
         if ("var" %in% returnMethod) {
           simRes$var <- var(x = trueEvals)
         }
       }
-      
+
       if (iterNo %% nRefreshMemoryEvery == 0) {
         rm(trueGVMat); rm(estimatedGVMat); rm(trueGVMatNow); rm(trueGVMatScaled); rm(bsInfo); rm(breederInfo)
         gc(reset = TRUE); gc(reset = TRUE)
       }
-      
+
       return(simRes)
     },
-    
-    
+
+
     # @description Proceed breeding scheme with try-error (one simulation)
     #
     # @param iterNo [numeric] Iteration No.
     performOneSimulationTryError = function(iterNo) {
       simRes <- try(private$performOneSimulation(iterNo = iterNo),
                     silent = TRUE)
-      
+
       nIterSimulation <- self$nIterSimulation
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       iterName <- iterNames[iterNo]
-      
+
       bsInfoInit <- self$bsInfoInit
       populationNameInit <- names(bsInfoInit$populations[length(bsInfoInit$populations)])
-      
+
       if ("try-error" %in% class(simRes)) {
         simRes <- list()
         simRes$trueGVMatList <- list()
         simRes$estimatedGVMatList <- list()
-        
+
         # trueGVMatList
         if (is.null(self$trueGVMatList[[iterName]])) {
           simRes$trueGVMatList[[populationNameInit]] <- self$trueGVMatInit
         }
-        
+
         # estimatedGVMatList
         if (is.null(self$estimatedGVMatList[[iterName]])) {
           simRes$estimatedGVMatList[[populationNameInit]] <- self$estimatedGVMatInit
         }
       }
-      
-      
+
+
       return(simRes)
     },
-    
-    
+
+
     # @description Extract GV matrix as a list from bsInfo & breederInfo objects
     #
     # @param iterName [character] Iteration Name
@@ -3119,33 +3119,33 @@ simBs <- R6::R6Class(
       summaryAllResAt <- self$summaryAllResAt
       nIterSimulation <- self$nIterSimulation
       lociEffectsInit <- self$lociEffectsInit
-      
+
       iterNames <- paste0("Iteration_", 1:nIterSimulation)
-      
+
       fileNameBsInfoRes0 <- here::here(summaryAllResAt,
                                        paste0(simBsName, "_bsInfo_"))
       fileNameBreederInfoRes0 <- here::here(summaryAllResAt,
                                             paste0(simBsName, "_breederInfo_"))
-      
-      
+
+
       fileNameBsInfoRes <- paste0(fileNameBsInfoRes0, iterName, ".rds")
       bsInfoEach <- try(readRDS(file = fileNameBsInfoRes), silent = TRUE)
-      
+
       if (!("try-error" %in% class(bsInfoEach))) {
         trueGVMatEachList <- lapply(X = bsInfoEach$populations,
                                     FUN = function(eachPop) {
                                       trueGVMatEachPop <- eachPop$trueGVMat
-                                      
+
                                       return(trueGVMatEachPop)
                                     })
       } else {
         trueGVMatEachList <- NULL
       }
-      
-      
+
+
       # fileNameBreederInfoRes <- paste0(fileNameBreederInfoRes0,  iterName, ".rds")
       # breederInfoEach <- try(readRDS(file = fileNameBreederInfoRes), silent = TRUE)
-      
+
       # if (!("try-error" %in% class(breederInfoEach))) {
       # if (breederInfoEach$generation < bsInfoEach$generation) {
       #   for (generationAdd in (breederInfoEach$generation + 1):bsInfoEach$generation) {
@@ -3181,28 +3181,28 @@ simBs <- R6::R6Class(
       #       } else {
       #         estimatedGVMatEachList <- NULL
       #       }
-      
+
       estimatedGVMatEachList <- lapply(X = bsInfoEach$populations,
                                        FUN = function(eachPop) {
                                          genoMatNow <- eachPop$genoMat
                                          genoMatWithIntNow <- cbind(Intercept = rep(1, nrow(genoMatNow)),
                                                                     genoMatNow)
                                          estimatedGVMatEachPop <- genoMatWithIntNow[, rownames(lociEffects)] %*% lociEffects
-                                         
+
                                          return(estimatedGVMatEachPop)
                                        })
-      
+
       return(list(trueGVMatEachList = trueGVMatEachList,
                   estimatedGVMatEachList = estimatedGVMatEachList))
     },
-    
-    
+
+
     # @description Extract summary results from true GV matrix
     #
     # @param trueGVMatListEach [list] Each list of true GV matrix
     extractTrueSummaryRes = function(trueGVMatListEach) {
       nTopEval <- self$nTopEval
-      
+
       trueGVSummaryArrayEachList <- lapply(X = trueGVMatListEach,
                                            FUN = function(trueGVMatEachPop) {
                                              trueGVSummaryEachPop <- apply(X = trueGVMatEachPop,
@@ -3213,15 +3213,15 @@ simBs <- R6::R6Class(
                                                                                                                 median(trueGVMatEachPopEachTrait),
                                                                                                                 mean(x = sort(x = trueGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                 var(trueGVMatEachPopEachTrait))
-                                                                             
+
                                                                              return(trueGVSummaryEachPopEachTrait)
                                                                            })
                                              trueGVSummaryArrayEachPop <- array(data = trueGVSummaryEachPop,
                                                                                 dim = c(dim(trueGVSummaryEachPop), 1),
                                                                                 dimnames = c(dimnames(trueGVSummaryEachPop),
                                                                                              list(Population = "")))
-                                             
-                                             
+
+
                                              return(trueGVSummaryArrayEachPop)
                                            })
       trueGVSummaryArrayEach <- do.call(what = abind::abind,
@@ -3232,14 +3232,14 @@ simBs <- R6::R6Class(
                                                    list(Iteration = "")))
       return(trueGVSummaryArrayEach)
     },
-    
-    
+
+
     # @description Extract summary results from estimated GV matrix
     #
     # @param estimatedGVMatListEach [list] Each list of estimated GV matrix
     extractEstimatedSummaryRes = function(estimatedGVMatListEach) {
       nTopEval <- self$nTopEval
-      
+
       estimatedGVSummaryArrayEachList <- lapply(X = estimatedGVMatListEach,
                                                 FUN = function(estimatedGVMatEachPop) {
                                                   estimatedGVSummaryEachPop <- apply(X = estimatedGVMatEachPop,
@@ -3250,15 +3250,15 @@ simBs <- R6::R6Class(
                                                                                                                                median(estimatedGVMatEachPopEachTrait),
                                                                                                                                mean(x = sort(x = estimatedGVMatEachPopEachTrait, decreasing = FALSE)[1:nTopEval]),
                                                                                                                                var(estimatedGVMatEachPopEachTrait))
-                                                                                       
+
                                                                                        return(estimatedGVSummaryEachPopEachTrait)
                                                                                      })
                                                   estimatedGVSummaryArrayEachPop <- array(data = estimatedGVSummaryEachPop,
                                                                                           dim = c(dim(estimatedGVSummaryEachPop), 1),
                                                                                           dimnames = c(dimnames(estimatedGVSummaryEachPop),
                                                                                                        list(Population = "")))
-                                                  
-                                                  
+
+
                                                   return(estimatedGVSummaryArrayEachPop)
                                                 })
       estimatedGVSummaryArrayEach <- do.call(what = abind::abind,

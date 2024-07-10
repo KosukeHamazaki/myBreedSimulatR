@@ -799,7 +799,7 @@ crossInfo <- R6::R6Class(
 
       if (!is.null(h)) {
         stopifnot(is.numeric(h))
-        stopifnot(all(h >= 0))
+        # stopifnot(all(h >= 0))
       } else {
         h <- 0.1
         message(paste0("`h` is not specified. We substitute `h = ", h, "` instead."))

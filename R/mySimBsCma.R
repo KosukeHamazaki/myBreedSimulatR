@@ -1799,7 +1799,7 @@ simBsCma <- R6::R6Class(
         hOCSList <- rep(hOCSList, nGenerationProceedSimulation)
       }
       stopifnot(all(unlist(lapply(hOCSList, is.numeric))))
-      stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
+      # stopifnot(all(sapply(hOCSList, function(h) all(h >= 0))))
       stopifnot(all(sapply(hOCSList, function(h) all(h <= 10))))
       stopifnot(all(unlist(lapply(hOCSList, length)) == (unlist(lapply(traitNoOCSList, length)) *
                                                            (unlist(lapply(weightedAllocationMethodOCSList, length)) + includeGVPOCSVec))))
