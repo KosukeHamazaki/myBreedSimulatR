@@ -1923,7 +1923,7 @@ simBsCma <- R6::R6Class(
       # hMin
       if (!is.null(hMin)) {
         stopifnot(is.numeric(hMin))
-        stopifnot(hMin >= 0)
+        # stopifnot(hMin >= 0)
       } else {
         hMin <- 0
         message(paste0("`hMin` is not specified. We substitute `hMin = ",
