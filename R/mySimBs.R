@@ -2357,16 +2357,25 @@ simBs <- R6::R6Class(
         }
 
         if (any(conductSimulations)) {
-          if (showProgress) {
-            simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
-                                               FUN = private$performOneSimulationTryError,
-                                               mc.cores = nCores)
-          } else {
-            simResAll <- parallel::mclapply(X = (1:nIterSimulation)[conductSimulations],
-                                            FUN = private$performOneSimulationTryError,
-                                            mc.cores = nCores)
+          continueSimulation <- TRUE
+
+          while (continueSimulation) {
+            if (showProgress) {
+              simResAll <- pbmcapply::pbmclapply(X = (1:nIterSimulation)[conductSimulations],
+                                                 FUN = private$performOneSimulationTryError,
+                                                 mc.cores = nCores)
+            } else {
+              simResAll <- parallel::mclapply(X = (1:nIterSimulation)[conductSimulations],
+                                              FUN = private$performOneSimulationTryError,
+                                              mc.cores = nCores)
+            }
+            names(simResAll) <- iterNames[conductSimulations]
+
+            continueSimulation <- all(unlist(lapply(X = simResAll,
+                                         FUN = function(simRes) {
+                                           length(simRes$trueGVMatList) == 1
+                                         })))
           }
-          names(simResAll) <- iterNames[conductSimulations]
 
           if ("all" %in% returnMethod) {
             self$simBsRes[[simBsName]]$all[iterNames[conductSimulations]] <- lapply(simResAll, function(x) x$all)
