@@ -2370,11 +2370,11 @@ simBs <- R6::R6Class(
                                               mc.cores = nCores)
             }
             names(simResAll) <- iterNames[conductSimulations]
-
-            continueSimulation <- all(unlist(lapply(X = simResAll,
-                                         FUN = function(simRes) {
-                                           length(simRes$trueGVMatList) == 1
-                                         })))
+            if ("max" %in% returnMethod) {
+              continueSimulation <- length(unlist(lapply(simResAll, function(x) x$max))) == 0
+            } else {
+              continueSimulation <- all(unlist(lapply(simResAll, function(x) length(x$trueGVMatList) == 1)))
+            }
           }
 
           if ("all" %in% returnMethod) {
